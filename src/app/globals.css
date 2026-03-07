@@ -17,3 +17,13 @@ body {
   background-color: var(--color-background);
   color: var(--color-text-dark);
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
