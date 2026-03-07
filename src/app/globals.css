@@ -27,3 +27,13 @@ body {
 .animate-shimmer {
   animation: shimmer 1.5s infinite;
 }
+
+@keyframes spin-slow {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
