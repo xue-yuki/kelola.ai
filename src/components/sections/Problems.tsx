@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue, Variants } from "framer-motion";
 import { MessageSquareWarning, ReceiptText, TrendingDown, AlertCircle } from "lucide-react";
 import { MouseEvent } from "react";
 
@@ -34,7 +34,7 @@ const problems = [
     },
 ];
 
-const containerVariants = {
+const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
@@ -44,7 +44,7 @@ const containerVariants = {
     },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
     hidden: { y: 40, opacity: 0 },
     visible: {
         y: 0,
