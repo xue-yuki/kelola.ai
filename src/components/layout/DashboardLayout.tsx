@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
 import {
     LayoutDashboard,
     ShoppingCart,
@@ -42,22 +43,82 @@ const NOTIFICATIONS = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isScrolled, setIsScrolled] = useState(false);
-    const [showNotifications, setShowNotifications] = useState(false);
-    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const router = useRouter();
+    const supabase = createClient();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
+
+    // Auth State
+    const [userName, setUserName] = useState("User");
+    const [userAvatar, setUserAvatar] = useState("");
+    const [businessName, setBusinessName] = useState("Bisnis");
+    const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
     // Handle scroll for header styling
     useEffect(() => {
-        const handleScroll = () => setIsScrolled(window.scrollY > 10);
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20);
+        };
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
+    // Fetch Auth and Business Data
+    useEffect(() => {
+        let isMounted = true;
+
+        async function loadProfile() {
+            try {
+                // 1. Get Session
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError || !session) {
+                    router.push('/auth/login');
+                    return;
+                }
+
+                if (isMounted) {
+                    // Extract from Google Identity metadata
+                    setUserName(session.user.user_metadata.full_name || session.user.email?.split('@')[0] || "User");
+                    setUserAvatar(session.user.user_metadata.avatar_url || "");
+                }
+
+                // 2. Get Business Name
+                const { data: business } = await supabase
+                    .from('businesses')
+                    .select('business_name')
+                    .eq('user_id', session.user.id)
+                    .single();
+
+                if (isMounted && business) {
+                    setBusinessName(business.business_name);
+                } else if (!business) {
+                    // No business yet, force onboarding
+                    router.push('/onboarding');
+                }
+
+            } catch (error) {
+                console.error("Error loading profile:", error);
+            } finally {
+                if (isMounted) setIsLoadingAuth(false);
+            }
+        }
+
+        loadProfile();
+
+        return () => { isMounted = false };
+    }, [supabase, router]);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push('/auth/login');
+    };
+
     // Close sidebar on larger screens when resizing
     useEffect(() => {
         const handleResize = () => {
-            if (window.innerWidth >= 1024) setIsSidebarOpen(false);
+            if (window.innerWidth >= 1024) setIsMobileMenuOpen(false);
         };
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
@@ -66,8 +127,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Close dropdowns when clicking outside (simplified for clarity, ideally use a hook)
     useEffect(() => {
         const handleClickOutside = () => {
-            setShowNotifications(false);
-            setShowProfileMenu(false);
+            setIsNotificationOpen(false);
+            setIsProfileOpen(false);
         };
         document.addEventListener('click', handleClickOutside);
         return () => document.removeEventListener('click', handleClickOutside);
@@ -77,12 +138,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-orange-500/30">
             {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
-                {isSidebarOpen && (
+                {isMobileMenuOpen && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setIsSidebarOpen(false)}
+                        onClick={() => setIsMobileMenuOpen(false)}
                         className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
                     />
                 )}
@@ -90,7 +151,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Sidebar */}
             <motion.aside
-                className={`fixed top-0 left-0 z-50 h-full w-72 bg-white border-r border-slate-100 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                className={`fixed top-0 left-0 z-50 h-full w-72 bg-white border-r border-slate-100 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
             >
                 <div className="p-6 flex items-center justify-between">
@@ -98,7 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <span className="font-display font-bold text-2xl tracking-tighter text-[#111]">kelola</span>
                         <span className="text-orange-600 font-bold text-2xl">.ai</span>
                     </Link>
-                    <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
                         <Menu size={20} />
                     </button>
                 </div>
@@ -146,11 +207,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Main Content Area */}
             <div className="lg:pl-72 flex flex-col min-h-screen">
                 {/* Top Header */}
-                <header className={`sticky top-0 z-30 transition-all duration-200 ${isScrolled ? "bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm" : "bg-transparent"
+                <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm" : "bg-transparent"
                     }`}>
                     <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-xl bg-white shadow-sm border border-slate-100 transition-colors">
+                            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-xl bg-white shadow-sm border border-slate-100 transition-colors">
                                 <Menu size={20} />
                             </button>
                             {/* Search Bar (Hidden on mobile) */}
@@ -172,8 +233,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <button
                                     onClick={() => {
-                                        setShowNotifications(!showNotifications);
-                                        setShowProfileMenu(false);
+                                        setIsNotificationOpen(!isNotificationOpen);
+                                        setIsProfileOpen(false);
                                     }}
                                     className="relative p-2.5 text-slate-400 hover:text-slate-600 rounded-xl bg-white shadow-sm border border-slate-100 transition-colors group"
                                 >
@@ -182,7 +243,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 </button>
 
                                 <AnimatePresence>
-                                    {showNotifications && (
+                                    {isNotificationOpen && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -227,23 +288,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <button
                                     onClick={() => {
-                                        setShowProfileMenu(!showProfileMenu);
-                                        setShowNotifications(false);
+                                        setIsProfileOpen(!isProfileOpen);
+                                        setIsNotificationOpen(false);
                                     }}
                                     className="flex items-center gap-3 p-1.5 pr-3 rounded-full bg-white shadow-sm border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all"
                                 >
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-500 to-rose-500 overflow-hidden shrink-0 border-2 border-white shadow-sm">
-                                        <img src="https://i.pravatar.cc/150?img=11" alt="Profile" className="w-full h-full object-cover" />
+                                    <div className="flex items-center gap-3">
+                                        {isLoadingAuth ? (
+                                            <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+                                        ) : userAvatar ? (
+                                            <img src={userAvatar} alt="Profile" className="w-10 h-10 rounded-full object-cover ring-2 ring-white" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-rose-500 text-white flex items-center justify-center font-bold shadow-md ring-2 ring-white">
+                                                {userName.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
+                                        <div className="hidden md:block text-left">
+                                            {isLoadingAuth ? (
+                                                <div className="h-4 w-24 bg-slate-200 animate-pulse rounded mb-1" />
+                                            ) : (
+                                                <p className="text-sm font-bold text-slate-900 leading-none">{userName}</p>
+                                            )}
+                                            {isLoadingAuth ? (
+                                                <div className="h-3 w-16 bg-slate-200 animate-pulse rounded" />
+                                            ) : (
+                                                <p className="text-xs font-medium text-slate-500 mt-1 truncate max-w-[120px]">{businessName}</p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="hidden sm:block text-left">
-                                        <p className="text-sm font-bold text-slate-800 leading-none mb-1">Andi P.</p>
-                                        <p className="text-[10px] font-bold text-slate-400 leading-none uppercase tracking-wider">Kopi Kita</p>
-                                    </div>
-                                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${showProfileMenu ? "rotate-180" : ""}`} />
+                                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
                                 </button>
 
                                 <AnimatePresence>
-                                    {showProfileMenu && (
+                                    {isProfileOpen && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -252,8 +329,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden"
                                         >
                                             <div className="px-5 py-4 border-b border-slate-50">
-                                                <p className="text-sm font-bold text-slate-800">Andi Pratama</p>
-                                                <p className="text-xs text-slate-500 font-medium">andi@kopikita.com</p>
+                                                <p className="text-sm font-bold text-slate-800">{userName}</p>
+                                                <p className="text-xs text-slate-500 font-medium">{businessName}</p>
                                             </div>
                                             <div className="py-2">
                                                 <Link href="/dashboard/pengaturan" className="flex items-center gap-3 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-orange-600 transition-colors">
@@ -262,10 +339,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                                 </Link>
                                             </div>
                                             <div className="py-2 border-t border-slate-50">
-                                                <Link href="/login" className="flex items-center gap-3 px-5 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors">
-                                                    <LogOut size={16} />
+                                                <div className="h-[1px] bg-slate-100 my-1" />
+                                                <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-colors flex items-center justify-between group">
                                                     Keluar
-                                                </Link>
+                                                    <LogOut size={16} className="text-rose-400 group-hover:text-rose-600 transition-colors" />
+                                                </button>
                                             </div>
                                         </motion.div>
                                     )}

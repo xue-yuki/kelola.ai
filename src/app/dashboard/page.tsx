@@ -24,55 +24,8 @@ import {
     ResponsiveContainer
 } from "recharts";
 
-// Mock Data for Chart
-const revenueData = [
-    { name: "Sen", total: 1200000 },
-    { name: "Sel", total: 1800000 },
-    { name: "Rab", total: 1400000 },
-    { name: "Kam", total: 2200000 },
-    { name: "Jum", total: 1900000 },
-    { name: "Sab", total: 2800000 },
-    { name: "Min", total: 2450000 },
-];
-
-// Mock Data for Recent Orders
-const RECENT_ORDERS = [
-    { id: "ORD-001", customer: "Budi Santoso", items: "Kopi Arabika 250g x2", total: "Rp 150.000", status: "Lunas", date: "Hari ini, 10:42" },
-    { id: "ORD-002", customer: "Siti Aminah", items: "Set Alat Seduh V60", total: "Rp 350.000", status: "Kirim", date: "Hari ini, 09:15" },
-    { id: "ORD-003", customer: "Hendra Wijaya", items: "Filter Kertas x5", total: "Rp 75.000", status: "Menunggu", date: "Kemarin, 16:30" },
-    { id: "ORD-004", customer: "Toko Harapan", items: "Kopi Robusta 1kg x5", total: "Rp 600.000", status: "Lunas", date: "Kemarin, 14:20" },
-];
-
-const METRICS = [
-    {
-        title: "Omzet Hari Ini",
-        value: "Rp 2.450.000",
-        change: "+12.5%",
-        isPositive: true,
-        icon: TrendingUp,
-        color: "text-emerald-500",
-        bg: "bg-emerald-50",
-    },
-    {
-        title: "Pesanan Aktif",
-        value: "24",
-        change: "+4",
-        isPositive: true,
-        icon: ShoppingBag,
-        color: "text-blue-500",
-        bg: "bg-blue-50",
-    },
-    {
-        title: "Pelanggan Baru",
-        value: "15",
-        change: "-2%",
-        isPositive: false,
-        icon: Users,
-        color: "text-indigo-500",
-        bg: "bg-indigo-50",
-    },
-];
-
+import { createClient } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 const QUICK_ACTIONS = [
     { title: "Broadcast WA", icon: MessageCircle, color: "text-green-600", bg: "bg-green-50", hover: "hover:bg-green-100" },
     { title: "Tambah Produk", icon: PackagePlus, color: "text-orange-600", bg: "bg-orange-50", hover: "hover:bg-orange-100" },
@@ -80,8 +33,16 @@ const QUICK_ACTIONS = [
 ];
 
 export default function DashboardPage() {
+    const supabase = createClient();
     const [greeting, setGreeting] = useState("Selamat datang");
+    const [userName, setUserName] = useState("User");
     const [currentDate, setCurrentDate] = useState("");
+
+    // Data States
+    const [isLoading, setIsLoading] = useState(true);
+    const [metrics, setMetrics] = useState<any>(null);
+    const [revenueData, setRevenueData] = useState<any[]>([]);
+    const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
     useEffect(() => {
         // Dynamic Greeting based on current hour
@@ -91,10 +52,97 @@ export default function DashboardPage() {
         else if (hour < 18) setGreeting("Selamat Sore");
         else setGreeting("Selamat Malam");
 
-        // Format current date
         const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         setCurrentDate(new Date().toLocaleDateString('id-ID', options));
+
+        fetchDashboardData();
     }, []);
+
+    const fetchDashboardData = async () => {
+        setIsLoading(true);
+        try {
+            // 1. Get user and business ID
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            setUserName(session.user.user_metadata.full_name?.split(' ')[0] || session.user.email?.split('@')[0] || "User");
+
+            const { data: business } = await supabase
+                .from('businesses')
+                .select('id')
+                .eq('user_id', session.user.id)
+                .single();
+
+            if (!business) { setIsLoading(false); return; }
+            const businessId = business.id;
+
+            // 2. Fetch Recent Orders
+            const { data: orders } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('business_id', businessId)
+                .order('created_at', { ascending: false })
+                .limit(4);
+
+            setRecentOrders(orders || []);
+
+            // 3. Fake Metrics Calculation for Demo 
+            // In a real app, this would be computed via SQL aggregation or Edge Function
+            // For now, we use realistic dummy calculations or query simple counts
+            const { count: customersCount } = await supabase.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', businessId);
+            const { count: activeOrdersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', businessId).eq('status', 'menunggu');
+            const { data: totalSales } = await supabase.from('orders').select('total').eq('business_id', businessId).eq('status', 'lunas').gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
+
+            const todayRevenue = totalSales?.reduce((sum, order) => sum + order.total, 0) || 0;
+
+            setMetrics([
+                {
+                    title: "Omzet Hari Ini",
+                    value: `Rp ${todayRevenue.toLocaleString('id-ID')}`,
+                    change: "+12.5%",
+                    isPositive: true,
+                    icon: TrendingUp,
+                    color: "text-emerald-500",
+                    bg: "bg-emerald-50",
+                },
+                {
+                    title: "Pesanan Aktif",
+                    value: activeOrdersCount || 0,
+                    change: "+4",
+                    isPositive: true,
+                    icon: ShoppingBag,
+                    color: "text-blue-500",
+                    bg: "bg-blue-50",
+                },
+                {
+                    title: "Total Pelanggan",
+                    value: customersCount || 0,
+                    change: "+2 Baru",
+                    isPositive: true,
+                    icon: Users,
+                    color: "text-indigo-500",
+                    bg: "bg-indigo-50",
+                },
+            ]);
+
+            // 4. Fake Revenue Chart Data calculation
+            const revData = [
+                { name: "Sen", total: 1200000 },
+                { name: "Sel", total: 1800000 },
+                { name: "Rab", total: 1400000 },
+                { name: "Kam", total: 2200000 },
+                { name: "Jum", total: 1900000 },
+                { name: "Sab", total: 2800000 },
+                { name: "Min", total: todayRevenue > 0 ? todayRevenue : 2450000 },
+            ];
+            setRevenueData(revData);
+
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    }
 
     // Animation Variants
     const container: Variants = {
@@ -110,6 +158,17 @@ export default function DashboardPage() {
         show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex h-[60vh] items-center justify-center">
+                <div className="flex flex-col items-center gap-4 text-orange-500">
+                    <Loader2 className="animate-spin w-10 h-10" />
+                    <p className="font-bold text-slate-500 animate-pulse text-sm">Mengambil data dari Supabase...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <motion.div
             variants={container}
@@ -121,7 +180,7 @@ export default function DashboardPage() {
             <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-1">
-                        {greeting}, Andi! ☕
+                        {greeting}, {userName}! ☕
                     </h1>
                     <p className="text-sm font-medium text-slate-500">
                         {currentDate} • <span className="text-orange-600 font-bold">Penjualanmu naik 12% minggu ini!</span>
@@ -157,7 +216,7 @@ export default function DashboardPage() {
 
             {/* Metric Cards */}
             <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {METRICS.map((metric, i) => {
+                {metrics && metrics.map((metric: any, i: number) => {
                     const Icon = metric.icon;
                     return (
                         <div key={i} className="p-6 rounded-3xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-hidden group hover:border-orange-200 transition-colors">
@@ -251,31 +310,37 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex-1 space-y-4">
-                        {RECENT_ORDERS.map((order, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 -mx-3 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer">
+                        {recentOrders.length > 0 ? recentOrders.map((order, i) => (
+                            <div key={order.id || i} className="flex items-center justify-between p-3 -mx-3 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold group-hover:bg-white group-hover:shadow-sm transition-all text-xs">
-                                        {order.customer.charAt(0)}
+                                        {order.customer_name?.charAt(0) || "C"}
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-800 tracking-tight mb-0.5 group-hover:text-orange-600 transition-colors">
-                                            {order.customer}
+                                            {order.customer_name}
                                         </p>
                                         <p className="text-xs text-slate-500 font-medium truncate max-w-[120px] sm:max-w-xs md:max-w-[120px]">
-                                            {order.items}
+                                            {order.channel || "WhatsApp"}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-sm font-black text-slate-800 tracking-tight">{order.total}</p>
-                                    <p className={`text-[10px] font-black uppercase mt-1 ${order.status === 'Lunas' ? 'text-emerald-500' :
-                                        order.status === 'Kirim' ? 'text-blue-500' : 'text-amber-500'
+                                    <p className="text-sm font-black text-slate-800 tracking-tight">Rp {order.total?.toLocaleString('id-ID')}</p>
+                                    <p className={`text-[10px] font-black uppercase mt-1 ${order.status?.toLowerCase() === 'lunas' ? 'text-emerald-500' :
+                                        order.status?.toLowerCase() === 'dikirim' ? 'text-blue-500' : 'text-amber-500'
                                         }`}>
-                                        {order.status}
+                                        {order.status || "Menunggu"}
                                     </p>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="flex flex-col items-center justify-center h-40 text-center">
+                                <ShoppingBag className="w-10 h-10 text-slate-200 mb-3" />
+                                <p className="text-sm font-bold text-slate-400">Belum ada pesanan</p>
+                                <p className="text-xs font-medium text-slate-400 mt-1">Pesanan barumu akan muncul di sini</p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-slate-100">
