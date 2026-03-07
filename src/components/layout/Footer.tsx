@@ -56,7 +56,7 @@ export default function Footer() {
                         &copy; {currentYear} Kelola.ai. Hak Cipta Dilindungi.
                     </p>
                     <p className="text-sm text-white/50 flex items-center gap-1">
-                        Dibuat dengan <span className="text-primary">♥</span> di Indonesia
+                        Dibuat <span className="text-primary">oleh</span> Erlangga
                     </p>
                 </div>
             </div>

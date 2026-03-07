@@ -15,7 +15,7 @@ const INCOMING_ORDERS = [
 const AI_INSIGHTS = [
     "Es Kopi Gula Aren sangat diminati hari ini. Siapkan stok lebih!",
     "Penjualan tertinggi pukul 11.00–13.00. Tambah promo siang!",
-    "Produk terlaris minggu ini: Nasi Goreng Spesial 🏆"
+    "Produk terlaris minggu ini: Nasi Goreng Spesial"
 ];
 
 function Counter({ from, to }: { from: number; to: number }) {
@@ -155,7 +155,7 @@ export default function Hero() {
                             <div className="flex justify-between items-center border-b border-gray-100/60 pb-5 mb-5">
                                 <div>
                                     <h3 className="font-bold text-lg text-text-dark">Dashboard Omzet</h3>
-                                    <p className="text-xs text-text-muted mt-0.5">Hari ini, 24 Okt</p>
+                                    <p className="text-xs text-text-muted mt-0.5">Hari ini, 7 Maret 2026</p>
                                 </div>
                                 <motion.div
                                     animate={{ scale: [1, 1.05, 1] }}
@@ -220,7 +220,7 @@ export default function Hero() {
                                         </div>
                                         <div className="text-right shrink-0">
                                             <div className="font-bold text-sm text-text-dark">{INCOMING_ORDERS[orderIndex].price}</div>
-                                            <div className="text-[10px] text-green-500 font-bold tracking-wider mt-0.5">✅ LUNAS</div>
+                                            <div className="text-[10px] text-green-500 font-bold tracking-wider mt-0.5">LUNAS</div>
                                         </div>
                                     </motion.div>
                                 </AnimatePresence>

@@ -111,10 +111,16 @@ export default function Navbar() {
                 </nav>
 
                 {/* CTA Desktop */}
-                <div className="hidden md:flex items-center justify-end w-32 relative z-10">
+                <div className="hidden md:flex items-center justify-end gap-6 relative z-10 pr-2">
                     <Link
-                        href="#daftar"
-                        onClick={(e) => scrollToSection(e, '#daftar')}
+                        href="/login"
+                        className={`text-sm font-medium transition-colors ${isScrolled ? "text-white/60 hover:text-white" : "text-text-muted hover:text-text-dark"
+                            }`}
+                    >
+                        Masuk
+                    </Link>
+                    <Link
+                        href="/register"
                         className="group relative inline-flex items-center justify-center p-[2px] rounded-full overflow-hidden font-medium text-sm transition-transform active:scale-95"
                     >
                         {/* Animated Border Glow */}
@@ -192,13 +198,21 @@ export default function Navbar() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.4 }}
+                                className="flex flex-col gap-4 mt-8"
                             >
                                 <Link
-                                    href="#daftar"
-                                    onClick={(e) => scrollToSection(e, '#daftar')}
+                                    href="/register"
+                                    onClick={() => setMobileMenuOpen(false)}
                                     className="flex items-center justify-center w-full px-6 py-4 rounded-2xl bg-gradient-to-r from-orange-400 to-rose-400 text-white font-semibold text-lg hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] transition-shadow"
                                 >
-                                    Mulai Kelola.ai Sekarang
+                                    Daftar Sekarang
+                                </Link>
+                                <Link
+                                    href="/login"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center justify-center w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-semibold text-lg"
+                                >
+                                    Masuk ke Akun
                                 </Link>
                             </motion.div>
                         </div>
