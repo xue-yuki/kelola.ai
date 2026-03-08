@@ -57,18 +57,21 @@ export default function OnboardingPage() {
 
             if (businessError) throw businessError;
 
-            // 3. Optional: AI Auto-generate dummy products
-            // Using a simple mock logic here for immediate visual feedback, 
-            // In production, this would call a real LLM API endpoint.
+            // 3. AI Auto-generate dummy products via OpenRouter
             setLoadingMessage("AI sedang membuat katalog produk...");
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate AI delay
 
-            const dummyProducts = generateDummyProducts(formData.businessType, businessData.id);
-            if (dummyProducts.length > 0) {
-                const { error: productsError } = await supabase
-                    .from('products')
-                    .insert(dummyProducts);
-                if (productsError) console.error("Failed to insert dummy products:", productsError);
+            const aiResponse = await fetch('/api/generate-products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businessId: businessData.id,
+                    businessType: formData.businessType
+                })
+            });
+
+            if (!aiResponse.ok) {
+                console.error("AI Generation failed, falling back to basic data...");
+                // Note: We could silenty fail or show a warning, but the business is already created.
             }
 
             setLoadingMessage("Selesai! Mengarahkan ke Dashboard...");
@@ -82,6 +85,8 @@ export default function OnboardingPage() {
             setIsLoading(false);
         }
     };
+
+    // Remove the generateDummyProducts helper as it's now handled by the API
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 selection:bg-orange-500/30">
@@ -161,8 +166,8 @@ export default function OnboardingPage() {
                                                     type="button"
                                                     onClick={() => setFormData({ ...formData, businessType: type })}
                                                     className={`p-4 rounded-xl border text-left flex items-center justify-between transition-all ${formData.businessType === type
-                                                            ? 'bg-orange-500/10 border-orange-500 text-orange-400'
-                                                            : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                                                        ? 'bg-orange-500/10 border-orange-500 text-orange-400'
+                                                        : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
                                                         }`}
                                                 >
                                                     <span className="font-semibold">{type}</span>
@@ -239,35 +244,4 @@ export default function OnboardingPage() {
             </motion.div>
         </div>
     );
-}
-
-// Helper to generate mock AI catalog
-function generateDummyProducts(businessType: string, businessId: string) {
-    const products = [];
-    if (businessType === "Makanan & Minuman") {
-        products.push(
-            { business_id: businessId, name: "Kopi Susu Aren", price: 20000, cost_price: 10000, stock: 50 },
-            { business_id: businessId, name: "Americano Dingin", price: 18000, cost_price: 8000, stock: 50 },
-            { business_id: businessId, name: "Roti Bakar Coklat", price: 25000, cost_price: 12000, stock: 30 },
-            { business_id: businessId, name: "Nasi Goreng Spesial", price: 35000, cost_price: 18000, stock: 40 },
-            { business_id: businessId, name: "Teh Manis Dingin", price: 8000, cost_price: 3000, stock: 100 }
-        );
-    } else if (businessType === "Fashion & Apparel") {
-        products.push(
-            { business_id: businessId, name: "Kaos Polos Hitam", price: 75000, cost_price: 40000, stock: 100 },
-            { business_id: businessId, name: "Kemeja Flanel Kotak", price: 150000, cost_price: 80000, stock: 50 },
-            { business_id: businessId, name: "Celana Chino Cream", price: 180000, cost_price: 90000, stock: 45 },
-            { business_id: businessId, name: "Jaket Denim Basic", price: 250000, cost_price: 150000, stock: 20 },
-            { business_id: businessId, name: "Topi Baseball Hitam", price: 50000, cost_price: 25000, stock: 60 }
-        );
-    } else {
-        products.push(
-            { business_id: businessId, name: "Produk Unggulan 1", price: 100000, cost_price: 50000, stock: 10 },
-            { business_id: businessId, name: "Produk Hemat 2", price: 50000, cost_price: 25000, stock: 20 },
-            { business_id: businessId, name: "Paket Bundle 3", price: 250000, cost_price: 150000, stock: 5 },
-            { business_id: businessId, name: "Aksesoris 4", price: 25000, cost_price: 10000, stock: 50 },
-            { business_id: businessId, name: "Layanan Ekstra", price: 75000, cost_price: 0, stock: 100 }
-        );
-    }
-    return products;
 }

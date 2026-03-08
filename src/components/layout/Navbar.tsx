@@ -113,7 +113,7 @@ export default function Navbar() {
                 {/* CTA Desktop */}
                 <div className="hidden md:flex items-center justify-end gap-6 relative z-10 pr-2">
                     <Link
-                        href="/login"
+                        href="/auth/login"
                         className={`text-sm font-medium transition-colors ${isScrolled ? "text-white/60 hover:text-white" : "text-text-muted hover:text-text-dark"
                             }`}
                     >
@@ -208,7 +208,7 @@ export default function Navbar() {
                                     Daftar Sekarang
                                 </Link>
                                 <Link
-                                    href="/login"
+                                    href="/auth/login"
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="flex items-center justify-center w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-semibold text-lg"
                                 >

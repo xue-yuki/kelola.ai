@@ -29,7 +29,7 @@ const SIDEBAR_ITEMS = [
     { name: "Pesanan", href: "/dashboard/pesanan", icon: ShoppingCart },
     { name: "Pelanggan", href: "/dashboard/pelanggan", icon: Users },
     { name: "Produk", href: "/dashboard/produk", icon: Package },
-    { name: "Kasir (POS)", href: "/dashboard/pos", icon: Calculator, highlight: true },
+    { name: "Kasir (POS)", href: "/dashboard/kasir", icon: Calculator, highlight: true },
     { name: "WA Marketing", href: "/dashboard/wa-marketing", icon: MessageCircle },
     { name: "Laporan & Insight", href: "/dashboard/laporan", icon: BarChart3 },
     { name: "Pengaturan", href: "/dashboard/pengaturan", icon: Settings },

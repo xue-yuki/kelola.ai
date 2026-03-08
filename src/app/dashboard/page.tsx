@@ -56,6 +56,26 @@ export default function DashboardPage() {
         setCurrentDate(new Date().toLocaleDateString('id-ID', options));
 
         fetchDashboardData();
+
+        // 5. Enable Realtime Subscription
+        const ordersSubscription = supabase
+            .channel('orders_channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+                fetchDashboardData();
+            })
+            .subscribe();
+
+        const customersSubscription = supabase
+            .channel('customers_channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, payload => {
+                fetchDashboardData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(ordersSubscription);
+            supabase.removeChannel(customersSubscription);
+        };
     }, []);
 
     const fetchDashboardData = async () => {
@@ -86,14 +106,24 @@ export default function DashboardPage() {
 
             setRecentOrders(orders || []);
 
-            // 3. Fake Metrics Calculation for Demo 
-            // In a real app, this would be computed via SQL aggregation or Edge Function
-            // For now, we use realistic dummy calculations or query simple counts
+            // 3. True Metrics Calculation & Chart Grouping
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+            sevenDaysAgo.setHours(0, 0, 0, 0);
+
+            const { data: recentSales } = await supabase
+                .from('orders')
+                .select('total, created_at, status')
+                .eq('business_id', businessId)
+                .eq('status', 'lunas')
+                .gte('created_at', sevenDaysAgo.toISOString());
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayRevenue = recentSales?.filter(s => new Date(s.created_at) >= today).reduce((sum, order) => sum + order.total, 0) || 0;
+
             const { count: customersCount } = await supabase.from('customers').select('*', { count: 'exact', head: true }).eq('business_id', businessId);
             const { count: activeOrdersCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('business_id', businessId).eq('status', 'menunggu');
-            const { data: totalSales } = await supabase.from('orders').select('total').eq('business_id', businessId).eq('status', 'lunas').gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString());
-
-            const todayRevenue = totalSales?.reduce((sum, order) => sum + order.total, 0) || 0;
 
             setMetrics([
                 {
@@ -125,17 +155,35 @@ export default function DashboardPage() {
                 },
             ]);
 
-            // 4. Fake Revenue Chart Data calculation
-            const revData = [
-                { name: "Sen", total: 1200000 },
-                { name: "Sel", total: 1800000 },
-                { name: "Rab", total: 1400000 },
-                { name: "Kam", total: 2200000 },
-                { name: "Jum", total: 1900000 },
-                { name: "Sab", total: 2800000 },
-                { name: "Min", total: todayRevenue > 0 ? todayRevenue : 2450000 },
-            ];
-            setRevenueData(revData);
+            // 4. Revenue Chart Data grouped by date for last 7 days
+            const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            const last7DaysData = [];
+
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dayStr = days[date.getDay()];
+
+                // Set bounds for this specific day
+                const startOfDay = new Date(date);
+                startOfDay.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(date);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                const dayTotal = recentSales
+                    ?.filter(sale => {
+                        const saleDate = new Date(sale.created_at);
+                        return saleDate >= startOfDay && saleDate <= endOfDay;
+                    })
+                    .reduce((sum, sale) => sum + sale.total, 0) || 0;
+
+                last7DaysData.push({
+                    name: dayStr,
+                    total: dayTotal
+                });
+            }
+
+            setRevenueData(last7DaysData);
 
         } catch (e) {
             console.error(e);

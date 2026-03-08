@@ -202,7 +202,7 @@ export default function RegisterPage() {
                 <div className="mt-8 text-center">
                     <p className="text-white/40 text-sm font-medium tracking-tight">
                         Sudah punya akun?{" "}
-                        <Link href="/login" className="text-orange-400 font-bold hover:text-orange-300 transition-colors decoration-orange-400/20 underline underline-offset-4 ml-1">
+                        <Link href="/auth/login" className="text-orange-400 font-bold hover:text-orange-300 transition-colors decoration-orange-400/20 underline underline-offset-4 ml-1">
                             Masuk di sini
                         </Link>
                     </p>
