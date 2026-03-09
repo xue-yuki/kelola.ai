@@ -14,7 +14,11 @@ import {
     Loader2,
     CheckCircle2,
     Package,
-    ArrowRight
+    ArrowRight,
+    Tag,
+    X,
+    ChevronRight,
+    Search as SearchIcon
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -29,8 +33,8 @@ export default function KasirPage() {
     const [paymentMethod, setPaymentMethod] = useState("tunai");
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
+    const [activeCategory, setActiveCategory] = useState("Semua");
 
-    // Business Data
     const [businessId, setBusinessId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -98,14 +102,13 @@ export default function KasirPage() {
         if (cart.length === 0 || !businessId) return;
         setIsProcessing(true);
         try {
-            // 1. Create Order
             const { data: order, error: orderError } = await supabase
                 .from('orders')
                 .insert([{
                     business_id: businessId,
                     customer_name: "Walk-in Customer",
                     total: totalAmount,
-                    status: 'lunas', // Walk-in is usually paid directly
+                    status: 'lunas',
                     channel: 'offline',
                     payment_method: paymentMethod
                 }])
@@ -114,14 +117,7 @@ export default function KasirPage() {
 
             if (orderError) throw orderError;
 
-            // 2. Update stock for each product (simplified for now)
             for (const item of cart) {
-                const { error: stockError } = await supabase.rpc('decrement_stock', {
-                    product_id: item.id,
-                    amount: item.qty
-                });
-                // If RPC doesn't exist yet, we might need a direct update or a fallback
-                // For now let's use a standard update to ensure it works
                 await supabase.from('products').update({ stock: item.stock - item.qty }).eq('id', item.id);
             }
 
@@ -129,7 +125,7 @@ export default function KasirPage() {
             setCart([]);
             setTimeout(() => setOrderSuccess(false), 3000);
         } catch (error) {
-            console.error("Checkout crash:", error);
+            console.error("Checkout error:", error);
             alert("Terjadi kesalahan saat checkout.");
         } finally {
             setIsProcessing(false);
@@ -140,202 +136,249 @@ export default function KasirPage() {
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const categories = ["Semua", "Makanan", "Minuman", "Lainnya"];
+
     return (
-        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)]">
-            {/* Left Side: Product Grid */}
+        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] select-none">
+            {/* Left Side: Product Selection */}
             <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Mesin Kasir</h1>
-                        <p className="text-sm font-medium text-slate-500">Pilih produk untuk mulai transaksi.</p>
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-[28px] font-bold text-[#1A1A2E] tracking-tight">Katalog Kasir</h1>
+                            <p className="text-sm font-medium text-[#6B7280]">Pilih produk untuk ditambahkan ke keranjang.</p>
+                        </div>
                     </div>
-                    <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Cari produk..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white border border-slate-100 rounded-2xl pl-12 pr-4 py-2.5 text-sm font-medium focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500/30 transition-all outline-none shadow-sm"
-                        />
+
+                    {/* Filters & Search */}
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Cari nama produk..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-white border border-[#F0EEE9] rounded-2xl pl-12 pr-4 py-3 text-sm font-medium focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`px-6 py-2.5 rounded-full text-xs font-black transition-all whitespace-nowrap border uppercase tracking-wider ${activeCategory === cat
+                                        ? 'bg-[#1A1A2E] text-white border-[#1A1A2E] shadow-lg'
+                                        : 'bg-white text-[#94A3B8] border-[#F0EEE9] hover:border-[#FF6B2B]'
+                                        }`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
+                {/* Product Grid */}
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     {isLoading ? (
-                        <div className="flex flex-col items-center justify-center h-full gap-3 text-orange-500">
-                            <Loader2 className="animate-spin w-10 h-10" />
-                            <p className="font-bold text-slate-400">Menyiapkan produk...</p>
+                        <div className="flex flex-col items-center justify-center h-full gap-4">
+                            <Loader2 className="animate-spin w-12 h-12 text-[#FF6B2B]" />
+                            <p className="font-bold text-[#6B7280] uppercase tracking-widest text-[10px]">Menyinkronkan Stok...</p>
                         </div>
                     ) : filteredProducts.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
                             {filteredProducts.map((p) => (
                                 <motion.div
                                     key={p.id}
                                     whileHover={{ y: -4 }}
                                     onClick={() => addToCart(p)}
-                                    className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-orange-200 transition-all cursor-pointer group relative overflow-hidden"
+                                    className="bg-white p-5 rounded-2xl border border-[#F0EEE9] hover:shadow-xl hover:shadow-[#1A1A2E]/5 hover:border-[#FF6B2B]/20 transition-all cursor-pointer group relative overflow-hidden flex flex-col"
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mb-4 group-hover:bg-orange-50 group-hover:text-orange-500 transition-colors">
-                                        <Package size={24} />
+                                    <div className="w-full aspect-square rounded-xl bg-[#FAFAF8] text-[#94A3B8] flex items-center justify-center mb-4 group-hover:bg-[#FFF3EE] group-hover:text-[#FF6B2B] transition-all relative">
+                                        <Package size={32} className="group-hover:scale-110 transition-transform duration-500" />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-[#1A1A2E]/2 Transition-all" />
                                     </div>
-                                    <h3 className="font-bold text-slate-800 text-sm mb-1 group-hover:text-orange-600 transition-colors line-clamp-2">{p.name}</h3>
-                                    <p className="text-orange-600 font-black text-sm">Rp {p.price.toLocaleString('id-ID')}</p>
-                                    <div className="mt-3 flex items-center justify-between">
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${p.stock <= 5 ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-500'}`}>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-[#1A1A2E] text-sm mb-1 line-clamp-2 leading-tight">{p.name}</h3>
+                                        <p className="text-[#FF6B2B] font-black text-base">Rp {p.price.toLocaleString('id-ID')}</p>
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-50 text-rose-500' : 'bg-[#FAFAF8] text-[#94A3B8]'
+                                            }`}>
                                             Stok: {p.stock}
-                                        </span>
-                                        <div className="p-1.5 rounded-lg bg-orange-600 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Plus size={14} />
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-[#1A1A2E] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 shadow-lg">
+                                            <Plus size={16} />
                                         </div>
                                     </div>
                                 </motion.div>
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-300">
-                            <Package size={64} className="mb-4" />
-                            <p className="text-lg font-black tracking-tight text-slate-400">Produk tidak ditemukan</p>
+                        <div className="flex flex-col items-center justify-center h-full text-[#94A3B8] space-y-4">
+                            <div className="w-20 h-20 rounded-full bg-[#FAFAF8] flex items-center justify-center">
+                                <SearchIcon size={40} className="opacity-20" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-lg font-bold text-[#1A1A2E]">Produk Tidak Ada</p>
+                                <p className="text-sm font-medium">Coba gunakan kata kunci lainnya.</p>
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Right Side: Cart & Checkout */}
-            <div className="w-full lg:w-[400px] flex flex-col gap-6">
-                <div className="flex-1 bg-white rounded-[32px] border border-slate-100 shadow-2xl flex flex-col overflow-hidden">
+            {/* Right Side: Billing System */}
+            <div className="w-full lg:w-[420px] flex flex-col gap-6">
+                <div className="flex-1 bg-white rounded-3xl border border-[#F0EEE9] shadow-xl flex flex-col overflow-hidden relative">
                     {/* Cart Header */}
-                    <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="relative">
-                                <ShoppingCart size={20} className="text-slate-800" />
+                    <div className="p-6 border-b border-[#F0EEE9] flex items-center justify-between bg-[#FAFAF8]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#1A1A2E] text-white flex items-center justify-center relative">
+                                <ShoppingCart size={20} />
                                 {cart.length > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-600 text-white text-[10px] font-black flex items-center justify-center rounded-full ring-2 ring-white">
+                                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#FF6B2B] text-white text-[10px] font-black flex items-center justify-center rounded-full ring-2 ring-white animate-bounce-short">
                                         {cart.reduce((a, b) => a + b.qty, 0)}
                                     </span>
                                 )}
                             </div>
-                            <h2 className="font-black text-lg text-slate-900 tracking-tight">Keranjang Belanja</h2>
+                            <div>
+                                <h2 className="font-bold text-lg text-[#1A1A2E] tracking-tight">Tagihan Pelanggan</h2>
+                                <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Walk-in Order</p>
+                            </div>
                         </div>
                         <button
                             onClick={() => setCart([])}
-                            className="text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                            className="text-xs font-black text-[#94A3B8] hover:text-rose-500 transition-colors uppercase tracking-widest"
                         >
-                            Kosongkan
+                            Reset
                         </button>
                     </div>
 
                     {/* Cart Items */}
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
                         <AnimatePresence mode="popLayout">
                             {cart.length > 0 ? cart.map((item) => (
                                 <motion.div
                                     key={item.id}
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -20 }}
+                                    exit={{ opacity: 0, x: -20, scale: 0.95 }}
+                                    layout
                                     className="flex items-center gap-4 group"
                                 >
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center shrink-0">
-                                        <Package size={20} className="text-slate-400" />
+                                    <div className="w-12 h-12 rounded-xl bg-[#FAFAF8] text-[#94A3B8] flex items-center justify-center shrink-0 border border-[#F0EEE9] group-hover:border-[#FF6B2B]/30 group-hover:text-[#FF6B2B] transition-all">
+                                        <Package size={20} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-slate-800 text-sm truncate">{item.name}</h4>
-                                        <p className="text-xs font-black text-orange-600">Rp {item.price.toLocaleString('id-ID')}</p>
+                                        <h4 className="font-bold text-[#1A1A2E] text-sm truncate uppercase tracking-tight">{item.name}</h4>
+                                        <p className="text-xs font-black text-[#FF6B2B]">Rp {item.price.toLocaleString('id-ID')}</p>
                                     </div>
-                                    <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-2 py-1">
-                                        <button onClick={() => updateQty(item.id, -1)} className="p-1 text-slate-400 hover:text-slate-900 transition-colors">
-                                            <Minus size={14} />
+                                    <div className="flex items-center gap-1 bg-[#FAFAF8] rounded-full p-1 border border-[#F0EEE9]">
+                                        <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-full text-[#94A3B8] hover:bg-white hover:text-[#1A1A2E] transition-all">
+                                            <Minus size={12} />
                                         </button>
-                                        <span className="text-sm font-black w-6 text-center">{item.qty}</span>
-                                        <button onClick={() => updateQty(item.id, 1)} className="p-1 text-slate-400 hover:text-slate-900 transition-colors">
-                                            <Plus size={14} />
+                                        <span className="text-xs font-black w-6 text-center text-[#1A1A2E]">{item.qty}</span>
+                                        <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-full text-[#94A3B8] hover:bg-white hover:text-[#1A1A2E] transition-all">
+                                            <Plus size={12} />
                                         </button>
                                     </div>
                                     <button
                                         onClick={() => removeFromCart(item.id)}
-                                        className="p-2 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
+                                        className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors"
                                     >
                                         <Trash2 size={16} />
                                     </button>
                                 </motion.div>
                             )) : (
-                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
-                                    <ShoppingCart size={48} className="mb-4 text-slate-300" />
-                                    <p className="text-sm font-bold text-slate-400">Keranjang masih kosong</p>
+                                <div className="h-full flex flex-col items-center justify-center text-center py-20">
+                                    <div className="w-20 h-20 rounded-full bg-[#FAFAF8] flex items-center justify-center mb-4">
+                                        <ShoppingCart size={32} className="text-[#F0EEE9]" />
+                                    </div>
+                                    <p className="text-sm font-bold text-[#94A3B8] uppercase tracking-widest">Belum Ada Item</p>
                                 </div>
                             )}
                         </AnimatePresence>
                     </div>
 
-                    {/* Checkout Info */}
-                    <div className="p-6 bg-slate-50/50 border-t border-slate-100 space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Metode Pembayaran</label>
-                            <div className="grid grid-cols-3 gap-2">
+                    {/* Checkout Panel */}
+                    <div className="p-8 bg-[#FAFAF8] border-t border-[#F0EEE9] space-y-6">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#94A3B8] pl-1">Pilih Metode Pembayaran</label>
+                            <div className="grid grid-cols-3 gap-3">
                                 {[
                                     { id: 'tunai', icon: Banknote, label: 'Tunai' },
-                                    { id: 'transfer', icon: CreditCard, label: 'TF Bank' },
+                                    { id: 'transfer', icon: CreditCard, label: 'Bank' },
                                     { id: 'qris', icon: QrCode, label: 'QRIS' },
                                 ].map((method) => (
                                     <button
                                         key={method.id}
                                         onClick={() => setPaymentMethod(method.id)}
-                                        className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all ${paymentMethod === method.id
-                                                ? 'bg-white border-orange-500 text-orange-600 shadow-md ring-2 ring-orange-500/10'
-                                                : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
+                                        className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${paymentMethod === method.id
+                                            ? 'bg-white border-[#FF6B2B] text-[#FF6B2B] shadow-lg shadow-[#FF6B2B]/10 ring-2 ring-[#FF6B2B]/5'
+                                            : 'bg-white border-[#F0EEE9] text-[#94A3B8] hover:border-[#1A1A2E]'
                                             }`}
                                     >
-                                        <method.icon size={18} />
-                                        <span className="text-[9px] font-black uppercase tracking-tight">{method.label}</span>
+                                        <method.icon size={20} />
+                                        <span className="text-[10px] font-black uppercase tracking-tighter">{method.label}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2">
-                            <span className="text-slate-500 font-bold">Total Pembayaran</span>
-                            <span className="text-2xl font-black text-slate-900">Rp {totalAmount.toLocaleString('id-ID')}</span>
+                        <div className="py-4 border-y border-[#F0EEE9] flex items-center justify-between">
+                            <div className="text-xs font-black text-[#94A3B8] uppercase tracking-widest">Total Tagihan</div>
+                            <div className="text-3xl font-black text-[#1A1A2E]">Rp {totalAmount.toLocaleString('id-ID')}</div>
                         </div>
 
                         <button
                             onClick={handleCheckout}
                             disabled={cart.length === 0 || isProcessing}
-                            className={`w-full py-4 rounded-2xl font-black text-lg tracking-tight transition-all flex items-center justify-center gap-3 shadow-xl ${orderSuccess
-                                    ? 'bg-emerald-500 text-white'
-                                    : 'bg-orange-600 hover:bg-orange-700 text-white shadow-orange-500/20 active:scale-95 disabled:opacity-50 disabled:bg-slate-200 disabled:shadow-none'
+                            className={`w-full py-5 rounded-full font-black text-lg tracking-tight transition-all flex items-center justify-center gap-3 shadow-2xl relative overflow-hidden ${orderSuccess
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-[#FF6B2B] hover:bg-[#E85A1D] text-white shadow-[#FF6B2B]/20 active:scale-95 disabled:opacity-50 disabled:bg-slate-200'
                                 }`}
                         >
                             {isProcessing ? (
                                 <Loader2 className="animate-spin" size={24} />
                             ) : orderSuccess ? (
-                                <><CheckCircle2 size={24} /> Selesai!</>
+                                <><CheckCircle2 size={24} /> Berhasil Terbayar!</>
                             ) : (
-                                <><ShoppingCart size={20} /> Proses Checkout <ArrowRight size={20} /></>
+                                <><ShoppingCart size={22} className="opacity-50" /> Selesaikan Pembayaran <ChevronRight size={22} /></>
                             )}
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Success Animation Backdrop */}
+            {/* Success Animation */}
             <AnimatePresence>
                 {orderSuccess && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-white/60 backdrop-blur-xl flex flex-col items-center justify-center text-emerald-500"
+                        className="fixed inset-0 z-[100] bg-[#1A1A2E]/60 backdrop-blur-md flex flex-col items-center justify-center"
                     >
                         <motion.div
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-emerald-500 text-white w-24 h-24 rounded-full flex items-center justify-center shadow-2xl mb-6 shadow-emerald-500/40"
+                            initial={{ scale: 0.8, opacity: 0, rotate: -10 }}
+                            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                            className="bg-white p-12 rounded-[40px] flex flex-col items-center shadow-2xl"
                         >
-                            <CheckCircle2 size={48} />
+                            <div className="bg-[#FF6B2B] text-white w-24 h-24 rounded-full flex items-center justify-center shadow-2xl mb-8 shadow-[#FF6B2B]/30">
+                                <CheckCircle2 size={56} />
+                            </div>
+                            <h2 className="text-3xl font-black text-[#1A1A2E] tracking-tight text-center">Checkout Selesai!</h2>
+                            <p className="text-[#6B7280] font-bold mt-2 uppercase tracking-widest text-xs">Pesanan baru telah dicatat</p>
+
+                            <button
+                                onClick={() => setOrderSuccess(false)}
+                                className="mt-10 px-10 py-4 bg-[#1A1A2E] text-white rounded-full font-bold hover:bg-[#FF6B2B] transition-all shadow-xl"
+                            >
+                                Tutup Halaman
+                            </button>
                         </motion.div>
-                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Transaksi Berhasil!</h2>
-                        <p className="text-slate-500 font-medium">Data pesanan telah disimpan ke sistem.</p>
                     </motion.div>
                 )}
             </AnimatePresence>

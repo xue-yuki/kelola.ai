@@ -96,73 +96,90 @@ export default function PesananPage() {
     );
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 pb-10">
+        <div className="max-w-7xl mx-auto space-y-8 pb-10">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Manajemen Pesanan</h1>
-                    <p className="text-slate-500 font-medium">Pantau dan kelola semua transaksi bisnismu di sini.</p>
+                    <h1 className="text-[28px] font-bold text-[#1A1A2E] tracking-tight mb-2">Manajemen Pesanan</h1>
+                    <p className="text-sm font-medium text-[#6B7280]">Pantau dan kelola semua transaksi bisnismu di sini.</p>
                 </div>
-                <button className="flex items-center justify-center gap-2 bg-white border border-slate-200 px-5 py-2.5 rounded-2xl text-slate-700 font-bold hover:bg-slate-50 transition-all shadow-sm">
+                <button className="flex items-center justify-center gap-2 bg-white border border-[#F0EEE9] px-6 py-2.5 rounded-full text-[#1A1A2E] font-bold hover:bg-[#FAFAF8] transition-all shadow-sm">
                     <Download size={18} />
                     Export Laporan
                 </button>
             </div>
 
-            {/* Filters Bar */}
-            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Cari nama pelanggan..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none"
-                    />
+            {/* Pill Filters Bar */}
+            <div className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-6">
+                    {/* Search bar */}
+                    <div className="flex-1 relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF6B2B] transition-colors" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Cari nama pelanggan..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-white border border-[#F0EEE9] rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none"
+                        />
+                    </div>
+
+                    {/* Channel Pill Filter */}
+                    <div className="flex flex-wrap items-center gap-2 p-1 bg-white border border-[#F0EEE9] rounded-2xl w-fit">
+                        {CHANNEL_OPTIONS.map(opt => (
+                            <button
+                                key={opt.value}
+                                onClick={() => setChannelFilter(opt.value)}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${channelFilter === opt.value
+                                        ? "bg-[#1A1A2E] text-white shadow-md"
+                                        : "text-[#94A3B8] hover:text-[#1A1A2E] hover:bg-[#FAFAF8]"
+                                    }`}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="flex gap-3">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-orange-500/20 transition-all appearance-none cursor-pointer"
-                    >
-                        {STATUS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
-
-                    <select
-                        value={channelFilter}
-                        onChange={(e) => setChannelFilter(e.target.value)}
-                        className="bg-slate-50 border-none rounded-2xl px-4 py-3 text-sm font-bold text-slate-600 outline-none focus:ring-2 focus:ring-orange-500/20 transition-all appearance-none cursor-pointer"
-                    >
-                        {CHANNEL_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                    </select>
+                {/* Status Pill Filter */}
+                <div className="flex flex-wrap items-center gap-2 p-1 bg-[#FAFAF8] rounded-2xl border border-[#F0EEE9] w-fit">
+                    {STATUS_OPTIONS.map(opt => (
+                        <button
+                            key={opt.value}
+                            onClick={() => setStatusFilter(opt.value)}
+                            className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${statusFilter === opt.value
+                                    ? "bg-[#FF6B2B] text-white shadow-lg shadow-[#FF6B2B]/20"
+                                    : "text-[#6B7280] hover:text-[#1A1A2E] hover:bg-white"
+                                }`}
+                        >
+                            {opt.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Orders Table/List */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
+            {/* Orders Table */}
+            <div className="bg-white rounded-2xl border border-[#F0EEE9] shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b border-slate-50">
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Pelanggan</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Saluran</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Waktu</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Total</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Aksi</th>
+                            <tr className="bg-[#FAFAF8] border-b border-[#F0EEE9]">
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Pelanggan</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Saluran</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Waktu Transaksi</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-right">Total Tagihan</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-center">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <AnimatePresence mode="popLayout">
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-3 text-orange-500">
-                                                <Loader2 className="animate-spin w-8 h-8" />
-                                                <p className="text-sm font-bold text-slate-500">Memuat pesanan...</p>
+                                        <td colSpan={6} className="px-6 py-24 text-center">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <Loader2 className="animate-spin w-10 h-10 text-[#FF6B2B]" />
+                                                <p className="text-sm font-bold text-[#6B7280]">Sinkronisasi data...</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -172,69 +189,77 @@ export default function PesananPage() {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group"
+                                        className="border-b border-[#F0EEE9] hover:bg-[#FFF8F5] transition-colors group cursor-pointer"
                                     >
                                         <td className="px-6 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-xs font-black text-slate-500 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-11 h-11 rounded-full bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center text-xs font-black text-[#1A1A2E] group-hover:bg-white group-hover:text-[#FF6B2B] group-hover:border-[#FF6B2B]/20 transition-all">
                                                     {order.customer_name?.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-800 text-sm tracking-tight">{order.customer_name}</p>
-                                                    <p className="text-[10px] font-medium text-slate-400">#{order.id.slice(0, 8)}</p>
+                                                    <p className="font-bold text-[#1A1A2E] text-sm tracking-tight mb-1">{order.customer_name}</p>
+                                                    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-tighter">ID: #{order.id.slice(0, 8)}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-2">
                                                 {order.channel === "whatsapp" ? (
-                                                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">
                                                         <MessageCircle size={12} /> WhatsApp
                                                     </span>
                                                 ) : order.channel === "telegram" ? (
-                                                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">
                                                         <Zap size={12} /> Telegram
                                                     </span>
                                                 ) : (
-                                                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider">
+                                                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider">
                                                         <Globe size={12} /> Offline
                                                     </span>
                                                 )}
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
-                                            <div className="flex items-center gap-2 text-slate-500 font-medium text-xs">
-                                                <Calendar size={14} className="text-slate-300" />
-                                                {new Date(order.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                            <div className="flex items-center gap-2 text-[#6B7280] font-bold text-[11px] uppercase tracking-tight">
+                                                <Calendar size={14} className="text-[#94A3B8]" />
+                                                {new Date(order.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                <span className="text-slate-300">•</span>
+                                                {new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-right font-black text-slate-900 text-sm">
+                                        <td className="px-6 py-5 text-right font-black text-[#1A1A2E] text-sm">
                                             Rp {order.total?.toLocaleString('id-ID')}
                                         </td>
                                         <td className="px-6 py-5 text-center">
-                                            <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${order.status === 'lunas' ? 'bg-emerald-500 text-white' :
-                                                    order.status === 'menunggu' ? 'bg-amber-400 text-white' : 'bg-rose-500 text-white'
+                                            <span className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${order.status === 'lunas' ? 'bg-emerald-500 text-white shadow-emerald-500/20' :
+                                                    order.status === 'menunggu' ? 'bg-[#FF6B2B] text-white shadow-[#FF6B2B]/20' : 'bg-rose-500 text-white shadow-rose-500/20'
                                                 }`}>
                                                 {order.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-right">
-                                            <button className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all">
-                                                <MoreHorizontal size={20} />
+                                            <button className="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-[#FF6B2B] hover:bg-white rounded-full border border-transparent hover:border-[#F0EEE9] transition-all">
+                                                <MoreHorizontal size={18} />
                                             </button>
                                         </td>
                                     </motion.tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-32 text-center">
-                                            <div className="flex flex-col items-center gap-4 text-slate-300">
-                                                <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
-                                                    <ShoppingBag size={32} />
+                                        <td colSpan={6} className="px-6 py-40 text-center">
+                                            <div className="flex flex-col items-center gap-5">
+                                                <div className="w-20 h-20 rounded-full bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center text-slate-200">
+                                                    <ShoppingBag size={40} />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-lg font-black text-slate-400 tracking-tight">Belum ada pesanan</p>
-                                                    <p className="text-sm font-medium text-slate-400">Pesanan akan muncul di sini setelah transaksi dilakukan.</p>
+                                                    <p className="text-lg font-bold text-[#1A1A2E] tracking-tight text-center">Tidak ada pesanan ditemukan</p>
+                                                    <p className="text-sm font-medium text-[#6B7280] text-center">Coba ubah filter atau kata kunci pencarian Anda.</p>
                                                 </div>
+                                                <button
+                                                    onClick={() => { setStatusFilter("all"); setChannelFilter("all"); setSearchTerm(""); }}
+                                                    className="mt-2 px-6 py-2.5 rounded-full bg-[#1A1A2E] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#FF6B2B] transition-all"
+                                                >
+                                                    Reset Filter
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

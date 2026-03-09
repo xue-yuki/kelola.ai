@@ -135,7 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-orange-500/30">
+        <div className="min-h-screen bg-[#FAFAF8] font-sans selection:bg-orange-500/30">
             {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
@@ -144,42 +144,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
+                        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
                     />
                 )}
             </AnimatePresence>
 
             {/* Sidebar */}
             <motion.aside
-                className={`fixed top-0 left-0 z-50 h-full w-72 bg-white border-r border-slate-100 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+                className={`fixed top-0 left-0 z-50 h-full w-64 bg-[#1A1A2E] flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
             >
                 <div className="p-6 flex items-center justify-between">
                     <Link href="/dashboard" className="flex items-center gap-1.5 group">
-                        <span className="font-display font-bold text-2xl tracking-tighter text-[#111]">kelola</span>
-                        <span className="text-orange-600 font-bold text-2xl">.ai</span>
+                        <span className="font-display font-bold text-2xl tracking-tighter text-white">kelola</span>
+                        <span className="text-[#FF6B2B] font-bold text-2xl">.ai</span>
                     </Link>
-                    <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
                         <Menu size={20} />
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
+                <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
                     {SIDEBAR_ITEMS.map((item) => {
                         const isActive = pathname === item.href;
                         const Icon = item.icon;
                         return (
                             <Link key={item.name} href={item.href}>
-                                <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group relative ${isActive ? "bg-orange-50/50 text-orange-600 font-bold" : "text-slate-500 font-medium hover:bg-slate-50 hover:text-slate-900"
+                                <div className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative ${isActive
+                                    ? "bg-[#FF6B2B]/10 text-[#FF6B2B] font-semibold"
+                                    : "text-[#94A3B8] font-medium hover:bg-white/5 hover:text-white"
                                     }`}>
                                     {isActive && (
-                                        <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-6 bg-orange-500 rounded-r-full" />
+                                        <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-[#FF6B2B] rounded-r-full" />
                                     )}
-                                    <Icon size={20} className={isActive ? "text-orange-500" : "text-slate-400 group-hover:text-slate-600 transition-colors"} />
-                                    <span className="flex-1">{item.name}</span>
+                                    <Icon size={18} className={isActive ? "text-[#FF6B2B]" : "text-[#94A3B8] group-hover:text-white transition-colors"} />
+                                    <span className="flex-1 text-sm">{item.name}</span>
                                     {item.highlight && (
-                                        <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[9px] font-black uppercase tracking-wider">
-                                            Utama
+                                        <span className="px-2 py-0.5 rounded-full bg-[#FF6B2B] text-white text-[9px] font-black uppercase tracking-wider">
+                                            POS
                                         </span>
                                     )}
                                 </div>
@@ -188,47 +190,84 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     })}
                 </div>
 
-                <div className="p-4 border-t border-slate-100">
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 text-white relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-orange-500/20 transition-colors duration-500" />
-                        <div className="relative z-10 flex items-start gap-3">
-                            <div className="p-2 rounded-xl bg-white/10 text-orange-400">
-                                <Sparkles size={16} />
+                {/* User Profile Card at Bottom */}
+                <div className="p-4 mt-auto border-t border-white/5">
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group cursor-pointer relative" onClick={(e) => {
+                        e.stopPropagation();
+                        setIsProfileOpen(!isProfileOpen);
+                    }}>
+                        <div className="flex items-center gap-3">
+                            {isLoadingAuth ? (
+                                <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
+                            ) : userAvatar ? (
+                                <img src={userAvatar} alt="Profile" className="w-8 h-8 rounded-full object-cover ring-2 ring-white/10" />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-[#FF6B2B] text-white flex items-center justify-center font-bold text-xs shadow-lg">
+                                    {userName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-white truncate">{userName}</p>
+                                <p className="text-[10px] text-[#94A3B8] truncate">{businessName}</p>
                             </div>
-                            <div>
-                                <p className="text-xs font-bold text-white mb-1 tracking-tight">Pro Plan Aktif</p>
-                                <p className="text-[10px] text-white/50 font-medium leading-relaxed">Nikmati semua fitur premium tanpa batas.</p>
-                            </div>
+                            <ChevronDown size={14} className={`text-slate-500 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
                         </div>
+
+                        {/* Profile Context Menu */}
+                        <AnimatePresence>
+                            {isProfileOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: -20, scale: 1 }}
+                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    className="absolute bottom-full left-0 right-0 mb-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-2xl p-1.5 z-[60]"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Link href="/dashboard/pengaturan" className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-[#94A3B8] hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                        <Settings size={14} /> Pengaturan
+                                    </Link>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLogout();
+                                        }}
+                                        className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all mt-1"
+                                    >
+                                        <LogOut size={14} /> Keluar
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </motion.aside>
 
             {/* Main Content Area */}
-            <div className="lg:pl-72 flex flex-col min-h-screen">
+            <div className="lg:pl-64 flex flex-col min-h-screen">
                 {/* Top Header */}
-                <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm" : "bg-transparent"
+                <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-white/80 backdrop-blur-md border-b border-[#F0EEE9] shadow-sm" : "bg-transparent"
                     }`}>
                     <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-xl bg-white shadow-sm border border-slate-100 transition-colors">
+                            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg bg-white shadow-sm border border-[#F0EEE9] transition-colors">
                                 <Menu size={20} />
                             </button>
-                            {/* Search Bar (Hidden on mobile) */}
-                            <div className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full bg-white shadow-sm border border-slate-100 w-80 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500/30 transition-all">
+
+                            {/* Search Bar */}
+                            <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white shadow-sm border border-[#F0EEE9] w-64 focus-within:ring-2 focus-within:ring-[#FF6B2B]/10 focus-within:border-[#FF6B2B]/20 transition-all">
                                 <Search size={18} className="text-slate-400" />
                                 <input
                                     type="text"
                                     placeholder="Cari pesanan, pelanggan..."
-                                    className="bg-transparent border-none outline-none text-sm text-slate-700 placeholder:text-slate-400 w-full"
+                                    className="bg-transparent border-none outline-none text-sm text-[#1A1A2E] placeholder:text-slate-400 w-full font-medium"
                                 />
-                                <div className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 text-[10px] font-bold tracking-widest uppercase">
+                                <div className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[10px] font-black tracking-widest uppercase border border-slate-100">
                                     ⌘K
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3 sm:gap-5">
+                        <div className="flex items-center gap-4">
                             {/* Notifications Dropdown */}
                             <div className="relative" onClick={(e) => e.stopPropagation()}>
                                 <button
@@ -236,10 +275,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         setIsNotificationOpen(!isNotificationOpen);
                                         setIsProfileOpen(false);
                                     }}
-                                    className="relative p-2.5 text-slate-400 hover:text-slate-600 rounded-xl bg-white shadow-sm border border-slate-100 transition-colors group"
+                                    className={`relative p-2 rounded-lg transition-all border ${isNotificationOpen
+                                        ? "bg-[#FF6B2B]/5 border-[#FF6B2B]/20 text-[#FF6B2B]"
+                                        : "bg-white border-[#F0EEE9] text-slate-400 hover:text-slate-600 shadow-sm"
+                                        }`}
                                 >
-                                    <Bell size={18} className="group-hover:scale-110 transition-transform" />
-                                    <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse" />
+                                    <Bell size={18} />
+                                    <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#FF6B2B] ring-2 ring-white" />
                                 </button>
 
                                 <AnimatePresence>
@@ -249,113 +291,60 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute right-0 mt-3 w-80 bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden"
+                                            className="absolute right-0 mt-4 w-80 bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(26,26,46,0.12)] border border-[#F0EEE9] overflow-hidden"
                                         >
-                                            <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
-                                                <h3 className="font-bold text-slate-800 tracking-tight">Notifikasi</h3>
-                                                <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-full">3 Baru</span>
+                                            <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
+                                                <h3 className="font-bold text-[#1A1A2E] tracking-tight">Notifikasi</h3>
+                                                <span className="text-[10px] font-bold text-[#FF6B2B] bg-[#FFF3EE] px-2.5 py-1 rounded-full uppercase tracking-wider">3 Baru</span>
                                             </div>
                                             <div className="py-2">
                                                 {NOTIFICATIONS.map((notif) => {
                                                     const Icon = notif.icon;
                                                     return (
-                                                        <div key={notif.id} className="flex items-start gap-4 px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer group">
-                                                            <div className={`mt-0.5 w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${notif.bg} ${notif.color} group-hover:scale-105 transition-transform`}>
+                                                        <div key={notif.id} className="flex items-start gap-4 px-6 py-4 hover:bg-[#FAFAF8] transition-colors cursor-pointer group">
+                                                            <div className={`mt-0.5 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${notif.bg} ${notif.color} group-hover:scale-105 transition-transform`}>
                                                                 <Icon size={18} />
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm font-semibold text-slate-800 mb-0.5 tracking-tight group-hover:text-orange-600 transition-colors">{notif.title}</p>
-                                                                <p className="text-xs text-slate-400 font-medium">{notif.time}</p>
+                                                                <p className="text-sm font-bold text-[#1A1A2E] mb-0.5 tracking-tight group-hover:text-[#FF6B2B] transition-colors">{notif.title}</p>
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{notif.time}</p>
                                                             </div>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
-                                            <div className="px-5 py-3 border-t border-slate-50 text-center">
-                                                <Link href="#" className="text-xs font-bold text-slate-500 hover:text-orange-600 transition-colors">
-                                                    Lihat semua notifikasi
-                                                </Link>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Divider */}
-                            <div className="w-px h-6 bg-slate-200" />
-
-                            {/* Profile Dropdown */}
-                            <div className="relative" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                    onClick={() => {
-                                        setIsProfileOpen(!isProfileOpen);
-                                        setIsNotificationOpen(false);
-                                    }}
-                                    className="flex items-center gap-3 p-1.5 pr-3 rounded-full bg-white shadow-sm border border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        {isLoadingAuth ? (
-                                            <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
-                                        ) : userAvatar ? (
-                                            <img src={userAvatar} alt="Profile" className="w-10 h-10 rounded-full object-cover ring-2 ring-white" />
-                                        ) : (
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-rose-500 text-white flex items-center justify-center font-bold shadow-md ring-2 ring-white">
-                                                {userName.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                        <div className="hidden md:block text-left">
-                                            {isLoadingAuth ? (
-                                                <div className="h-4 w-24 bg-slate-200 animate-pulse rounded mb-1" />
-                                            ) : (
-                                                <p className="text-sm font-bold text-slate-900 leading-none">{userName}</p>
-                                            )}
-                                            {isLoadingAuth ? (
-                                                <div className="h-3 w-16 bg-slate-200 animate-pulse rounded" />
-                                            ) : (
-                                                <p className="text-xs font-medium text-slate-500 mt-1 truncate max-w-[120px]">{businessName}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
-                                </button>
-
-                                <AnimatePresence>
-                                    {isProfileOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden"
-                                        >
-                                            <div className="px-5 py-4 border-b border-slate-50">
-                                                <p className="text-sm font-bold text-slate-800">{userName}</p>
-                                                <p className="text-xs text-slate-500 font-medium">{businessName}</p>
-                                            </div>
-                                            <div className="py-2">
-                                                <Link href="/dashboard/pengaturan" className="flex items-center gap-3 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-orange-600 transition-colors">
-                                                    <Settings size={16} />
-                                                    Pengaturan Akun
-                                                </Link>
-                                            </div>
-                                            <div className="py-2 border-t border-slate-50">
-                                                <div className="h-[1px] bg-slate-100 my-1" />
-                                                <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm font-bold text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-colors flex items-center justify-between group">
-                                                    Keluar
-                                                    <LogOut size={16} className="text-rose-400 group-hover:text-rose-600 transition-colors" />
+                                            <div className="p-4 border-t border-slate-50">
+                                                <button className="w-full py-3 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-[#FF6B2B] transition-colors bg-[#FAFAF8] rounded-xl">
+                                                    Lihat semua
                                                 </button>
                                             </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
                             </div>
+
+                            {/* Divider and Plan Badge */}
+                            <div className="hidden md:flex items-center gap-3">
+                                <div className="w-px h-6 bg-slate-200" />
+                                <div className="px-3 py-1.5 rounded-full bg-[#1A1A2E] text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                    <Sparkles size={12} className="text-orange-400" />
+                                    Pro Plan
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </header>
 
-                {/* Page Content */}
-                <main className="flex-1 p-6 lg:p-8">
-                    {children}
+                {/* Page Content with Global Transition */}
+                <main className="flex-1 p-8">
+                    <motion.div
+                        key={pathname}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                    >
+                        {children}
+                    </motion.div>
                 </main>
             </div>
         </div>

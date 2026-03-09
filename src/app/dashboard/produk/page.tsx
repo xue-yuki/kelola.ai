@@ -11,7 +11,9 @@ import {
     AlertCircle,
     Loader2,
     X,
-    Check
+    Check,
+    LayoutGrid,
+    List
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -23,14 +25,23 @@ export default function ProdukPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<any>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    // Form State
-    const [formData, setFormData] = useState({
-        name: "",
-        price: "",
-        cost_price: "",
-        stock: ""
-    });
+    // ... (rest of logic: fetchProducts, handleOpenModal, handleSubmit, handleDelete)
+    // Keep logic identical to original but wrap in new UI
+
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+        }
+    };
+
+    const item = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0 }
+    };
 
     useEffect(() => {
         fetchProducts();
@@ -80,6 +91,13 @@ export default function ProdukPage() {
         }
         setIsModalOpen(true);
     };
+
+    const [formData, setFormData] = useState({
+        name: "",
+        price: "",
+        cost_price: "",
+        stock: ""
+    });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -146,16 +164,16 @@ export default function ProdukPage() {
     );
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 pb-10">
+        <div className="max-w-7xl mx-auto space-y-8 pb-10">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Katalog Produk</h1>
-                    <p className="text-slate-500 font-medium">Atur stok, harga, dan semua item jualanmu.</p>
+                    <h1 className="text-[28px] font-bold text-[#1A1A2E] tracking-tight mb-2">Katalog Produk</h1>
+                    <p className="text-sm font-medium text-[#6B7280]">Atur stok, harga, dan semua item jualanmu.</p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
-                    className="flex items-center justify-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-orange-700 transition-all shadow-[0_8px_20px_-6px_rgba(234,88,12,0.4)] active:scale-95"
+                    className="flex items-center justify-center gap-2 bg-[#FF6B2B] text-white px-8 py-3 rounded-full font-bold hover:bg-[#E85A1D] transition-all shadow-lg shadow-[#FF6B2B]/20 active:scale-95"
                 >
                     <Plus size={20} />
                     Tambah Produk
@@ -163,104 +181,179 @@ export default function ProdukPage() {
             </div>
 
             {/* Toolbar */}
-            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-orange-500 transition-colors" size={20} />
+            <div className="flex flex-col md:flex-row gap-6 items-center">
+                <div className="flex-1 w-full relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF6B2B] transition-colors" size={20} />
                     <input
                         type="text"
                         placeholder="Cari nama produk..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-4 py-3 text-sm font-medium focus:ring-2 focus:ring-orange-500/20 focus:bg-white transition-all outline-none"
+                        className="w-full bg-white border border-[#F0EEE9] rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none"
                     />
+                </div>
+
+                <div className="flex items-center p-1 bg-white border border-[#F0EEE9] rounded-2xl">
+                    <button
+                        onClick={() => setViewMode('grid')}
+                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-[#1A1A2E] text-white shadow-md' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
+                    >
+                        <LayoutGrid size={20} />
+                    </button>
+                    <button
+                        onClick={() => setViewMode('list')}
+                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-[#1A1A2E] text-white shadow-md' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
+                    >
+                        <List size={20} />
+                    </button>
                 </div>
             </div>
 
-            {/* Products Grid/Table */}
-            <div className="bg-white rounded-3xl border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-slate-50">
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Produk</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Harga Beli (HPP)</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Harga Jual</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Stok</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <AnimatePresence mode="popLayout">
-                                {isLoading ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-20 text-center">
-                                            <Loader2 className="animate-spin w-8 h-8 text-orange-500 mx-auto" />
-                                        </td>
-                                    </tr>
-                                ) : filteredProducts.length > 0 ? filteredProducts.map((p, idx) => (
-                                    <motion.tr
-                                        key={p.id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                        className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group"
-                                    >
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold">
-                                                    <Package size={20} />
-                                                </div>
-                                                <p className="font-bold text-slate-800 text-sm">{p.name}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5 font-medium text-slate-500 text-sm italic">
-                                            Rp {p.cost_price?.toLocaleString('id-ID')}
-                                        </td>
-                                        <td className="px-6 py-5 font-black text-slate-900 text-sm">
-                                            Rp {p.price?.toLocaleString('id-ID')}
-                                        </td>
-                                        <td className="px-6 py-5 text-center">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-black ${p.stock <= 5 ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'
+            {/* Content Area */}
+            <AnimatePresence mode="wait">
+                {isLoading ? (
+                    <motion.div
+                        key="loading"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex flex-col items-center justify-center py-32"
+                    >
+                        <Loader2 className="animate-spin w-12 h-12 text-[#FF6B2B] mb-4" />
+                        <p className="text-[#6B7280] font-bold">Menyiapkan katalog...</p>
+                    </motion.div>
+                ) : filteredProducts.length > 0 ? (
+                    viewMode === 'grid' ? (
+                        <motion.div
+                            key="grid"
+                            variants={container}
+                            initial="hidden"
+                            animate="show"
+                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+                        >
+                            {filteredProducts.map((p) => (
+                                <motion.div
+                                    key={p.id}
+                                    variants={item}
+                                    className="bg-white rounded-2xl border border-[#F0EEE9] p-5 group hover:shadow-xl hover:shadow-[#1A1A2E]/5 transition-all relative"
+                                >
+                                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleOpenModal(p)} className="p-2 bg-white border border-[#F0EEE9] rounded-full text-blue-500 hover:bg-blue-50 shadow-sm">
+                                            <Edit2 size={14} />
+                                        </button>
+                                        <button onClick={() => handleDelete(p.id)} className="p-2 bg-white border border-[#F0EEE9] rounded-full text-rose-500 hover:bg-rose-50 shadow-sm">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+
+                                    <div className="w-full aspect-square rounded-xl bg-[#FAFAF8] border border-[#F0EEE9] mb-5 flex items-center justify-center group-hover:bg-[#FFF3EE] transition-colors overflow-hidden">
+                                        <Package size={48} className="text-[#94A3B8] group-hover:text-[#FF6B2B] group-hover:scale-110 transition-all duration-500" />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <h3 className="font-bold text-[#1A1A2E] group-hover:text-[#FF6B2B] transition-colors line-clamp-1">{p.name}</h3>
+                                            <p className="text-xs font-bold text-[#94A3B8] mt-0.5 capitalize">Produk Fisik</p>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-[#F0EEE9]">
+                                            <p className="font-black text-[#1A1A2E]">Rp {p.price?.toLocaleString('id-ID')}</p>
+                                            <div className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-50 text-rose-600' : 'bg-[#FAFAF8] text-[#6B7280]'
                                                 }`}>
-                                                {p.stock} pcs
-                                            </span>
-                                            {p.stock <= 5 && (
-                                                <div className="flex justify-center items-center gap-1 mt-1 text-[9px] font-bold text-rose-500 uppercase tracking-tight">
-                                                    <AlertCircle size={10} /> Stok Rendah
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleOpenModal(p)}
-                                                    className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
-                                                >
-                                                    <Edit2 size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(p.id)}
-                                                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                Stok: {p.stock}
                                             </div>
-                                        </td>
-                                    </motion.tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={5} className="px-6 py-32 text-center text-slate-300">
-                                            <Package size={48} className="mx-auto mb-4" />
-                                            <p className="font-black text-lg">Belum ada produk</p>
-                                            <button onClick={() => handleOpenModal()} className="text-orange-600 font-bold mt-2">Tambah produk pertama kamu</button>
-                                        </td>
+                                        </div>
+                                    </div>
+
+                                    {p.stock <= 5 && (
+                                        <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-rose-500 bg-rose-50/50 p-1.5 rounded-lg justify-center uppercase tracking-widest">
+                                            <AlertCircle size={10} /> Hampir Habis
+                                        </div>
+                                    )}
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="list"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="bg-white rounded-2xl border border-[#F0EEE9] overflow-hidden"
+                        >
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-[#FAFAF8] border-b border-[#F0EEE9]">
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Produk</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Harga Beli (HPP)</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Harga Jual</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-center">Stok</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-right">Aksi</th>
                                     </tr>
-                                )}
-                            </AnimatePresence>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                </thead>
+                                <tbody>
+                                    {filteredProducts.map((p) => (
+                                        <tr key={p.id} className="border-b border-[#F0EEE9] hover:bg-[#FFF8F5] transition-colors group">
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-11 h-11 rounded-xl bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center text-[#94A3B8] group-hover:bg-white group-hover:text-[#FF6B2B] group-hover:border-[#FF6B2B]/20 transition-all">
+                                                        <Package size={20} />
+                                                    </div>
+                                                    <p className="font-bold text-[#1A1A2E] text-sm tracking-tight">{p.name}</p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 font-bold text-[#6B7280] text-[11px] uppercase tracking-wider">
+                                                Rp {p.cost_price?.toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-5 font-black text-[#1A1A2E] text-sm">
+                                                Rp {p.price?.toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-5 text-center">
+                                                <div className="inline-flex flex-col items-center">
+                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${p.stock <= 5 ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'
+                                                        }`}>
+                                                        {p.stock} Unit
+                                                    </span>
+                                                    {p.stock <= 5 && (
+                                                        <p className="text-[9px] font-black text-rose-500 uppercase mt-1 tracking-tighter">Stok Rendah</p>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button onClick={() => handleOpenModal(p)} className="p-2.5 text-blue-500 hover:bg-white border border-transparent hover:border-[#F0EEE9] rounded-xl transition-all">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDelete(p.id)} className="p-2.5 text-rose-500 hover:bg-white border border-transparent hover:border-[#F0EEE9] rounded-xl transition-all">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </motion.div>
+                    )
+                ) : (
+                    <motion.div
+                        key="empty"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-3xl border-2 border-dashed border-[#F0EEE9] py-32 text-center"
+                    >
+                        <div className="w-24 h-24 rounded-full bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center mx-auto mb-6 text-slate-200">
+                            <Package size={48} />
+                        </div>
+                        <h2 className="text-xl font-bold text-[#1A1A2E] tracking-tight">Katalog Anda Masih Kosong</h2>
+                        <p className="text-[#6B7280] mt-2 mb-8 max-w-sm mx-auto font-medium">Mulai tambahkan produk pertama Anda untuk bisa mulai berjualan di Kelola.ai.</p>
+                        <button
+                            onClick={() => handleOpenModal()}
+                            className="bg-[#1A1A2E] text-white px-8 py-3 rounded-full font-bold hover:bg-[#FF6B2B] transition-all"
+                        >
+                            Tambah Produk Sekarang
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Modal */}
             <AnimatePresence>
@@ -271,7 +364,7 @@ export default function ProdukPage() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsModalOpen(false)}
-                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            className="absolute inset-0 bg-[#1A1A2E]/40 backdrop-blur-sm"
                         />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -279,82 +372,82 @@ export default function ProdukPage() {
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
                             className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
                         >
-                            <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
-                                <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                                    {editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}
+                            <div className="px-8 py-6 border-b border-[#F0EEE9] flex items-center justify-between bg-[#FAFAF8]">
+                                <h2 className="text-xl font-bold text-[#1A1A2E] tracking-tight">
+                                    {editingProduct ? '📝 Edit Produk' : '✨ Produk Baru'}
                                 </h2>
-                                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400">
-                                    <X size={20} />
+                                <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-full transition-colors text-slate-400 border border-transparent hover:border-[#F0EEE9]">
+                                    <X size={18} />
                                 </button>
                             </div>
 
                             <form onSubmit={handleSubmit} className="p-8 space-y-6">
                                 <div className="space-y-4">
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Nama Produk</label>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Nama Produk</label>
                                         <input
                                             required
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="Masukan nama produk..."
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500/30 transition-all outline-none"
+                                            placeholder="Masukan nama lengkap produk..."
+                                            className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Harga Beli (HPP)</label>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Harga HPP</label>
                                             <input
                                                 required
                                                 type="number"
                                                 value={formData.cost_price}
                                                 onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                                                placeholder="Contoh: 10000"
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500/30 transition-all outline-none"
+                                                placeholder="Harga beli"
+                                                className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
                                             />
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Harga Jual</label>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Harga Jual</label>
                                             <input
                                                 required
                                                 type="number"
                                                 value={formData.price}
                                                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                placeholder="Contoh: 25000"
-                                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500/30 transition-all outline-none"
+                                                placeholder="Harga jual"
+                                                className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Stok Awal</label>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Stok Inventaris</label>
                                         <input
                                             required
                                             type="number"
                                             value={formData.stock}
                                             onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                            placeholder="Contoh: 50"
-                                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500/30 transition-all outline-none"
+                                            placeholder="Jumlah stok saat ini..."
+                                            className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="flex gap-3 pt-4">
+                                <div className="flex gap-3 pt-6">
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 px-6 py-4 rounded-2xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 transition-all"
+                                        className="flex-1 px-6 py-4 rounded-full bg-[#FAFAF8] text-[#6B7280] font-bold hover:bg-[#F0EEE9] transition-all border border-[#F0EEE9]"
                                     >
                                         Batal
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSaving}
-                                        className="flex-[2] bg-orange-600 text-white rounded-2xl font-bold hover:bg-orange-700 transition-all shadow-[0_8px_20px_-6px_rgba(234,88,12,0.4)] disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="flex-[2] bg-[#FF6B2B] text-white rounded-full font-bold hover:bg-[#E85A1D] transition-all shadow-lg shadow-[#FF6B2B]/20 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
-                                        {isSaving ? 'Menyimpan...' : 'Simpan Produk'}
+                                        {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
                                     </button>
                                 </div>
                             </form>
@@ -365,3 +458,6 @@ export default function ProdukPage() {
         </div>
     );
 }
+
+// Helper (Optional - I'll put it back in if needed, but I kept the logic in the main component to avoid breaking imports)
+

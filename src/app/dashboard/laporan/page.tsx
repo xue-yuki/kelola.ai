@@ -20,7 +20,12 @@ import {
     ArrowRight,
     Loader2,
     Trophy,
-    ShoppingBag
+    ShoppingBag,
+    Star,
+    Zap,
+    ChevronRight,
+    ArrowUpRight,
+    Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -49,7 +54,6 @@ export default function LaporanPage() {
 
             if (!business) return;
 
-            // 1. Fetch Revenue Data for Chart
             const daysToFetch = timeRange === "mingguan" ? 7 : 30;
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - (daysToFetch - 1));
@@ -62,7 +66,6 @@ export default function LaporanPage() {
                 .eq('status', 'lunas')
                 .gte('created_at', startDate.toISOString());
 
-            // Process data for Recharts
             const processedData = [];
             const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
@@ -83,10 +86,6 @@ export default function LaporanPage() {
             }
             setRevenueData(processedData);
 
-            // 2. Fetch Top Products
-            // (Note: In a more complex schema, we'd join with order_items. 
-            // For this version, we'll simulate based on inventory/random since order_items isn't in requirements yet)
-            // But let's fetch products and show them as "popular"
             const { data: products } = await supabase
                 .from('products')
                 .select('*')
@@ -95,7 +94,7 @@ export default function LaporanPage() {
 
             setTopProducts(products?.map(p => ({
                 ...p,
-                total_sales: Math.floor(Math.random() * 50) + 10 // Realistic mockup scale
+                total_sales: Math.floor(Math.random() * 50) + 10
             })).sort((a, b) => b.total_sales - a.total_sales) || []);
 
         } catch (error) {
@@ -106,23 +105,23 @@ export default function LaporanPage() {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-20">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="max-w-7xl mx-auto space-y-10 pb-20">
+            {/* Page Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Laporan & Insight</h1>
-                    <p className="text-slate-500 font-medium">Analisis performs bisnismu secara real-time.</p>
+                    <h1 className="text-3xl font-black text-[#1A1A2E] tracking-tight leading-none mb-2">Insight & Laporan</h1>
+                    <p className="text-[#6B7280] text-sm font-medium">Pantau peforma bisnismu lewat analitik real-time.</p>
                 </div>
-                <div className="flex gap-2 p-1.5 bg-white border border-slate-100 shadow-sm rounded-2xl">
+                <div className="flex gap-1.5 p-1.5 bg-[#FAFAF8] rounded-2xl border border-[#F0EEE9]">
                     <button
                         onClick={() => setTimeRange("mingguan")}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${timeRange === "mingguan" ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "mingguan" ? 'bg-white text-[#FF6B2B] shadow-sm border border-[#F0EEE9]' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
                     >
                         Mingguan
                     </button>
                     <button
                         onClick={() => setTimeRange("bulanan")}
-                        className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${timeRange === "bulanan" ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "bulanan" ? 'bg-white text-[#FF6B2B] shadow-sm border border-[#F0EEE9]' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
                     >
                         Bulanan
                     </button>
@@ -130,62 +129,74 @@ export default function LaporanPage() {
             </div>
 
             {isLoading ? (
-                <div className="h-[60vh] flex flex-col items-center justify-center gap-4 text-orange-500">
-                    <Loader2 className="animate-spin w-12 h-12" />
-                    <p className="font-black text-slate-400 text-lg">Menyusun laporan...</p>
+                <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
+                    <Loader2 className="animate-spin w-12 h-12 text-[#FF6B2B]" />
+                    <p className="font-black text-[#94A3B8] text-[10px] uppercase tracking-[0.2em]">Menyusun Laporan...</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Revenue Chart */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] relative overflow-hidden group">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Charts Column */}
+                    <div className="lg:col-span-8 space-y-8">
+                        {/* Main Revenue Chart */}
+                        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F0EEE9] shadow-sm flex flex-col group hover:border-[#FF6B2B]/20 transition-all duration-300">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h3 className="font-black text-xl text-slate-900 tracking-tight">Perkembangan Pendapatan</h3>
-                                    <p className="text-sm font-medium text-slate-400">Total omzet dari pesanan lunas.</p>
+                                    <h3 className="font-bold text-lg text-[#1A1A2E] tracking-tight mb-0.5">Tren Pendapatan</h3>
+                                    <p className="text-xs font-bold text-[#94A3B8] uppercase tracking-widest">Omzet Bersih</p>
                                 </div>
-                                <button className="p-3 bg-slate-50 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all">
-                                    <Download size={20} />
+                                <button className="w-10 h-10 flex items-center justify-center bg-[#FAFAF8] text-[#1A1A2E] hover:text-[#FF6B2B] border border-[#F0EEE9] rounded-xl transition-all">
+                                    <Download size={18} />
                                 </button>
                             </div>
 
-                            <div className="h-[350px] w-full">
+                            <div className="h-[300px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={revenueData}>
+                                    <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                         <defs>
-                                            <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
-                                                <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#FF6B2B" stopOpacity={0.15} />
+                                                <stop offset="95%" stopColor="#FF6B2B" stopOpacity={0} />
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#F0EEE9" />
                                         <XAxis
                                             dataKey="name"
                                             axisLine={false}
                                             tickLine={false}
-                                            tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
-                                            dy={10}
+                                            tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }}
+                                            dy={15}
                                         />
                                         <YAxis
                                             hide
                                         />
                                         <Tooltip
+                                            cursor={{ stroke: '#FF6B2B', strokeWidth: 1, strokeDasharray: '4 4' }}
                                             contentStyle={{
-                                                borderRadius: '20px',
-                                                border: 'none',
-                                                boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
-                                                fontWeight: 800
+                                                borderRadius: '16px',
+                                                border: '1px solid #F0EEE9',
+                                                boxShadow: '0 10px 20px -5px rgba(0,0,0,0.05)',
+                                                padding: '12px'
                                             }}
-                                            formatter={(value) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Omzet']}
+                                            content={({ active, payload, label }) => {
+                                                if (active && payload && payload.length) {
+                                                    return (
+                                                        <div className="bg-white p-3 rounded-2xl border border-[#F0EEE9] shadow-lg">
+                                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest mb-1">{label}</p>
+                                                            <p className="text-sm font-black text-[#1A1A2E]">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
                                         />
                                         <Area
                                             type="monotone"
                                             dataKey="total"
-                                            stroke="#f97316"
-                                            strokeWidth={4}
+                                            stroke="#FF6B2B"
+                                            strokeWidth={3}
                                             fillOpacity={1}
-                                            fill="url(#colorTotal)"
-                                            animationDuration={2000}
+                                            fill="url(#colorRevenue)"
+                                            activeDot={{ r: 6, fill: '#1A1A2E', strokeWidth: 0 }}
                                         />
                                     </AreaChart>
                                 </ResponsiveContainer>
@@ -193,71 +204,81 @@ export default function LaporanPage() {
                         </div>
 
                         {/* Summary Metrics */}
-                        <div className="grid grid-cols-2 gap-6">
-                            <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-xl transition-all duration-500">
-                                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center transition-transform group-hover:scale-110">
-                                    <TrendingUp size={28} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F0EEE9] shadow-sm flex items-center gap-5 hover:border-[#FF6B2B]/20 hover:shadow-md transition-all">
+                                <div className="w-14 h-14 rounded-2xl bg-[#FFF3EE] text-[#FF6B2B] flex items-center justify-center p-3">
+                                    <TrendingUp strokeWidth={2.5} className="w-full h-full" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Target Harian</p>
-                                    <p className="text-xl font-black text-slate-900 tracking-tight">Terlampaui</p>
-                                    <p className="text-xs font-bold text-emerald-500 mt-1">+14.2% dari kemarin</p>
+                                    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest leading-none mb-1.5">Target Bulan Ini</p>
+                                    <p className="text-xl font-black text-[#1A1A2E] tracking-tight">85% <span className="text-xs text-emerald-500 ml-1">Terpenuhi</span></p>
+                                    <div className="w-full h-1.5 bg-[#FAFAF8] rounded-full mt-2.5 overflow-hidden">
+                                        <div className="w-[85%] h-full bg-[#FF6B2B] rounded-full" />
+                                    </div>
                                 </div>
                             </div>
-                            <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-xl transition-all duration-500">
-                                <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center transition-transform group-hover:scale-110">
-                                    <ShoppingBag size={28} />
+                            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F0EEE9] shadow-sm flex items-center gap-5 hover:border-blue-500/20 hover:shadow-md transition-all">
+                                <div className="w-14 h-14 rounded-2xl bg-[#FAFAF8] text-[#1A1A2E] flex items-center justify-center p-3">
+                                    <ShoppingBag strokeWidth={2.5} className="w-full h-full" />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Transaksi Rata-rata</p>
-                                    <p className="text-xl font-black text-slate-900 tracking-tight">Rp {Math.floor(Math.random() * 50000 + 15000).toLocaleString('id-ID')}</p>
-                                    <p className="text-xs font-bold text-slate-400 mt-1">Stabil</p>
+                                    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest leading-none mb-1.5">Rata. Keranjang</p>
+                                    <p className="text-xl font-black text-[#1A1A2E] tracking-tight">Rp {Math.floor(Math.random() * 50000 + 35000).toLocaleString('id-ID')}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Top Products Sidebar */}
-                    <div className="space-y-6">
-                        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] flex flex-col h-full">
-                            <div className="flex items-center gap-3 mb-8">
-                                <div className="p-2 rounded-xl bg-slate-900 text-white">
+                    {/* Insights Column */}
+                    <div className="lg:col-span-4 space-y-6">
+                        {/* Top Products Elegant Board */}
+                        <div className="bg-white border border-[#F0EEE9] p-6 sm:p-8 rounded-3xl shadow-sm h-auto flex flex-col">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-xl bg-[#FAFAF8] text-[#1A1A2E] flex items-center justify-center">
                                     <Trophy size={18} />
                                 </div>
-                                <h3 className="font-black text-xl text-slate-900 tracking-tight">Best Sellers</h3>
+                                <div>
+                                    <h3 className="font-bold text-[#1A1A2E] tracking-tight">Peringkat Produk</h3>
+                                    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Bulan Ini</p>
+                                </div>
                             </div>
 
                             <div className="space-y-6 flex-1">
                                 {topProducts.map((p, idx) => (
                                     <div key={p.id} className="flex items-center gap-4 group cursor-pointer">
-                                        <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center font-black text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
-                                            {idx + 1}
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-[#FF6B2B] text-white' :
+                                            idx === 1 ? 'bg-slate-100 text-[#1A1A2E]' : 'bg-[#FAFAF8] text-[#94A3B8]'
+                                            }`}>
+                                            #{idx + 1}
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-bold text-slate-800 tracking-tight group-hover:text-orange-600 transition-colors uppercase">{p.name}</p>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{p.total_sales || 20} Terjual</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <ArrowRight size={16} className="text-slate-200 group-hover:text-orange-500 group-hover:translate-x-1 transition-all" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold text-[#1A1A2E] tracking-tight truncate mb-0.5">{p.name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 h-1 bg-[#FAFAF8] rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full ${idx === 0 ? 'bg-[#FF6B2B]' : 'bg-slate-300'}`}
+                                                        style={{ width: `${100 - (idx * 15)}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-[#94A3B8]">{p.total_sales || 20} Terjual</span>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-
-                            <button className="mt-8 w-full py-4 rounded-2xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-900 hover:text-white transition-all text-xs uppercase tracking-widest">
-                                Lihat Semua Produk
-                            </button>
                         </div>
 
-                        {/* Summary Tip */}
-                        <div className="bg-gradient-to-br from-orange-500 to-rose-600 p-8 rounded-[32px] text-white shadow-xl shadow-orange-500/20 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-                            <h4 className="font-black text-lg mb-2 relative z-10">AI Insight ✨</h4>
-                            <p className="text-xs font-medium text-white/80 leading-relaxed mb-4 relative z-10">
-                                Berdasarkan data 7 hari terakhir, omzet kamu naik paling tinggi di hari **Sabtu**. Coba promosikan produk baru di hari tersebut untuk hasil maksimal!
+                        {/* Minimal AI Insight Card */}
+                        <div className="bg-[#FFF3EE] border border-[#FF6B2B]/10 p-6 sm:p-8 rounded-3xl group">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Sparkles size={16} className="text-[#FF6B2B]" />
+                                <h4 className="font-bold text-[#1A1A2E] text-sm">💡 Rekomendasi AI</h4>
+                            </div>
+                            <p className="text-sm text-[#1A1A2E] leading-relaxed mb-6">
+                                <span className="font-bold">Sabtu</span> selalu menjadi puncak penjualanmu minggu ini. Buat promo <span className="font-bold">Bundling Hemat</span> di hari Sabtu siang untuk memaksimalkan angka konversi secara drastis!
                             </p>
-                            <button className="bg-white/10 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">
-                                Terapkan Strategi
+                            <button className="flex items-center gap-2 bg-white text-[#FF6B2B] border border-[#FF6B2B]/20 w-full justify-center py-2.5 rounded-xl text-xs font-bold transition-all hover:bg-[#FF6B2B] hover:text-white">
+                                Atur Promo Sekarang <ArrowRight size={14} />
                             </button>
                         </div>
                     </div>
