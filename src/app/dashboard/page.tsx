@@ -375,8 +375,12 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-black text-slate-800 tracking-tight">Rp {order.total?.toLocaleString('id-ID')}</p>
-                                    <p className={`text-[10px] font-black uppercase mt-1 ${order.status?.toLowerCase() === 'lunas' ? 'text-emerald-500' :
-                                        order.status?.toLowerCase() === 'dikirim' ? 'text-blue-500' : 'text-amber-500'
+                                    <p className={`text-[10px] font-black uppercase mt-1 ${
+                                            order.status?.toLowerCase() === 'lunas' ? 'text-emerald-500' :
+                                            order.status?.toLowerCase() === 'dikirim' ? 'text-blue-500' :
+                                            order.status?.toLowerCase() === 'diproses' ? 'text-amber-500' :
+                                            order.status?.toLowerCase() === 'dibatalkan' ? 'text-rose-500' :
+                                            'text-amber-500'
                                         }`}>
                                         {order.status || "Menunggu"}
                                     </p>
