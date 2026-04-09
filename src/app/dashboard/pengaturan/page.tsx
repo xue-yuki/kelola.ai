@@ -14,7 +14,9 @@ import {
     User,
     CreditCard,
     ChevronRight,
-    LogOut
+    LogOut,
+    Smartphone,
+    QrCode
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,6 +36,10 @@ export default function PengaturanPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [activeTab, setActiveTab] = useState("profil");
+
+    const [waStatus, setWaStatus] = useState("disconnected");
+    const [waConnectedAt, setWaConnectedAt] = useState<string | null>(null);
+    const [qrCode, setQrCode] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         businessName: "",
@@ -66,11 +72,91 @@ export default function PengaturanPage() {
                     businessType: business.business_type,
                     waNumber: business.wa_number
                 });
+                if (business.wa_status) setWaStatus(business.wa_status);
+                if (business.wa_connected_at) setWaConnectedAt(business.wa_connected_at);
             }
         } catch (error) {
             console.error("Error fetching business:", error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (waStatus === 'connecting') {
+            interval = setInterval(() => {
+                checkWaStatus();
+            }, 3000);
+        }
+        return () => clearInterval(interval);
+    }, [waStatus, businessId]);
+
+    const checkWaStatus = async () => {
+        if (!businessId) return;
+        try {
+            const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:3001";
+            const response = await fetch(`${agentUrl}/api/status/${businessId}`, { cache: 'no-store' });
+            const data = await response.json();
+            
+            setWaStatus(prevStatus => {
+                if (data.status !== prevStatus) {
+                    if (data.status === 'connected') {
+                        const now = new Date().toISOString();
+                        setWaConnectedAt(now);
+                        supabase.from('businesses').update({ wa_status: 'connected', wa_connected_at: now }).eq('id', businessId).then();
+                    } else if (data.status === 'disconnected') {
+                        setWaConnectedAt(null);
+                        supabase.from('businesses').update({ wa_status: 'disconnected', wa_connected_at: null }).eq('id', businessId).then();
+                    }
+                    return data.status;
+                }
+                return prevStatus;
+            });
+
+            if (data.status === 'connecting') {
+                const qrRes = await fetch(`${agentUrl}/api/qr/${businessId}`, { cache: 'no-store' });
+                const qrData = await qrRes.json();
+                if (qrData.qr) setQrCode(qrData.qr);
+            } else {
+                setQrCode(null);
+            }
+        } catch (error) {
+            console.error("Error polling WA status:", error);
+        }
+    };
+
+    const handleConnectClick = async () => {
+        setWaStatus('connecting');
+        checkWaStatus();
+    };
+
+    const handleDisconnectClick = async () => {
+        try {
+            const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:3001";
+            const response = await fetch(`${agentUrl}/api/disconnect/${businessId}`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Immediate UI update
+            setWaStatus('disconnected');
+            setQrCode(null);
+            setWaConnectedAt(null);
+            
+            // Update Supabase
+            await supabase.from('businesses').update({ 
+                wa_status: 'disconnected', 
+                wa_connected_at: null 
+            }).eq('id', businessId);
+            
+        } catch (error) {
+            console.error("Error disconnecting WA:", error);
+            alert("Gagal memutuskan koneksi WhatsApp. Pastikan Agent aktif. Error: " + (error as any).message);
         }
     };
 
@@ -226,6 +312,94 @@ export default function PengaturanPage() {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+
+                        {/* WhatsApp Connection */}
+                        <div className="bg-[#161616]/90 backdrop-blur-2xl rounded-[32px] border border-white/5 shadow-2xl overflow-hidden p-10">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <Smartphone className="text-orange-400" size={24} />
+                                        <h2 className="font-bold text-xl text-white/90 tracking-tight">Koneksi WhatsApp</h2>
+                                        
+                                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/5 ${
+                                            waStatus === 'connected' ? 'bg-emerald-500/10 text-emerald-400' : 
+                                            waStatus === 'connecting' ? 'bg-amber-500/10 text-amber-400' :
+                                            'bg-rose-500/10 text-rose-400'
+                                        }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                waStatus === 'connected' ? 'bg-emerald-500' : 
+                                                waStatus === 'connecting' ? 'bg-amber-500 animate-pulse' :
+                                                'bg-rose-500'
+                                            }`} />
+                                            {waStatus === 'connected' ? 'Terhubung' : 
+                                             waStatus === 'connecting' ? 'Menghubungkan...' : 
+                                             'Belum Terhubung'}
+                                        </div>
+                                    </div>
+                                    <p className="text-xs font-medium text-white/40">Hubungkan nomor WhatsApp untuk fitur balasan otomatis dan broadcast.</p>
+                                </div>
+                            </div>
+
+                            <div className="bg-[#111] border border-white/5 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row gap-8 items-center sm:items-start justify-between">
+                                {waStatus === 'disconnected' && (
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between w-full gap-6">
+                                        <div className="space-y-4">
+                                            <p className="text-sm font-medium text-white/50 text-center sm:text-left max-w-md">
+                                                Kamu belum menghubungkan sesi perangkat WhatsApp. Klik tombol di samping untuk mulai memindai kode QR.
+                                            </p>
+                                        </div>
+                                        <button 
+                                            onClick={handleConnectClick}
+                                            className="px-6 py-3 rounded-xl bg-orange-500 text-white font-bold text-sm tracking-tight hover:bg-orange-600 transition-all flex-[0_0_auto]"
+                                        >
+                                            Hubungkan WhatsApp
+                                        </button>
+                                    </div>
+                                )}
+
+                                {waStatus === 'connecting' && (
+                                    <div className="flex flex-col items-center justify-center w-full space-y-6 py-4">
+                                        {qrCode ? (
+                                            <div className="p-2 bg-white rounded-xl">
+                                                <img src={qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
+                                            </div>
+                                        ) : (
+                                            <div className="w-48 h-48 border border-white/10 rounded-xl flex items-center justify-center bg-white/5">
+                                                <Loader2 className="animate-spin text-orange-400 w-8 h-8" />
+                                            </div>
+                                        )}
+                                        <div className="text-center space-y-2">
+                                            <div className="flex items-center justify-center gap-2 text-amber-400">
+                                                <Loader2 className="animate-spin w-4 h-4" />
+                                                <span className="font-bold text-sm">Menunggu scan...</span>
+                                            </div>
+                                            <p className="text-xs font-medium text-white/50 max-w-xs mx-auto">
+                                                Buka WhatsApp &rarr; Linked Devices &rarr; Link a Device &rarr; Scan
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {waStatus === 'connected' && (
+                                    <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between w-full gap-6">
+                                        <div className="space-y-2 text-center sm:text-left">
+                                            <p className="text-lg font-black tracking-tight text-white/90">
+                                                {formData.waNumber || "Nomor Terhubung"}
+                                            </p>
+                                            <p className="text-xs font-bold text-white/30 uppercase tracking-widest">
+                                                Terakhir terhubung: {waConnectedAt ? new Date(waConnectedAt).toLocaleString('id-ID') : '-'}
+                                            </p>
+                                        </div>
+                                        <button 
+                                            onClick={handleDisconnectClick}
+                                            className="px-6 py-3 rounded-xl border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 font-bold text-sm tracking-tight transition-all flex-[0_0_auto]"
+                                        >
+                                            Putuskan Koneksi
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Danger Zone */}

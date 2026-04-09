@@ -21,7 +21,8 @@ import {
     LogOut,
     Sparkles,
     AlertTriangle,
-    MessageSquare
+    MessageSquare,
+    Bot
 } from "lucide-react";
 
 const SIDEBAR_ITEMS = [
@@ -31,6 +32,7 @@ const SIDEBAR_ITEMS = [
     { name: "Produk", href: "/dashboard/produk", icon: Package },
     { name: "Kasir (POS)", href: "/dashboard/kasir", icon: Calculator, highlight: true },
     { name: "WA Marketing", href: "/dashboard/wa-marketing", icon: MessageCircle },
+    { name: "Asisten AI", href: "/dashboard/asisten-ai", icon: Bot },
     { name: "Laporan & Insight", href: "/dashboard/laporan", icon: BarChart3 },
     { name: "Pengaturan", href: "/dashboard/pengaturan", icon: Settings },
 ];
