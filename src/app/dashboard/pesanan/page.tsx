@@ -93,12 +93,12 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
             initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 60 }}
-            className="flex items-center gap-3 bg-white border border-slate-100 shadow-xl rounded-2xl px-5 py-3.5 min-w-[280px] max-w-sm"
+            className="flex items-center gap-3 bg-[#161616] border border-white/10 shadow-2xl rounded-2xl px-5 py-3.5 min-w-[280px] max-w-sm"
         >
             {icons[toast.type]}
-            <p className="text-sm font-bold text-slate-800 flex-1">{toast.message}</p>
+            <p className="text-sm font-semibold text-white/90 flex-1">{toast.message}</p>
             {toast.type !== "loading" && (
-                <button onClick={() => onDismiss(toast.id)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <button onClick={() => onDismiss(toast.id)} className="text-white/40 hover:text-white/80 transition-colors">
                     <X size={14} />
                 </button>
             )}
@@ -142,16 +142,16 @@ function ConfirmModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.92, y: 20 }}
                         transition={{ type: "spring", stiffness: 400, damping: 28 }}
-                        className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm"
+                        className="bg-[#161616]/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-8 w-full max-w-sm"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <h3 className="text-lg font-black text-slate-900 mb-2">{title}</h3>
-                        <p className="text-sm text-slate-500 font-medium mb-7">{description}</p>
+                        <h3 className="text-lg font-black text-white/90 mb-2">{title}</h3>
+                        <p className="text-sm text-white/50 font-medium mb-7">{description}</p>
                         <div className="flex gap-3">
                             <button
                                 onClick={onClose}
                                 disabled={isLoading}
-                                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-all disabled:opacity-50"
+                                className="flex-1 py-3 rounded-xl border border-white/10 text-white/60 font-semibold text-sm hover:bg-white/5 transition-all disabled:opacity-50"
                             >
                                 Batal
                             </button>
@@ -353,26 +353,26 @@ export default function PesananPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-[28px] font-bold text-[#1A1A2E] tracking-tight mb-2">Manajemen Pesanan</h1>
-                    <p className="text-sm font-medium text-[#6B7280]">
+                    <h1 className="text-[28px] font-black text-white/90 tracking-tight mb-2">Manajemen Pesanan</h1>
+                    <p className="text-sm font-medium text-white/40">
                         Pantau dan kelola semua transaksi bisnismu di sini.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Legend */}
-                    <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-[#1a1a1a] rounded-xl border border-white/5">
                         {[
-                            { label: "Proses", color: "bg-amber-500" },
-                            { label: "Kirim", color: "bg-blue-500" },
-                            { label: "Selesai", color: "bg-emerald-500" },
+                            { label: "Proses", color: "bg-amber-400" },
+                            { label: "Kirim", color: "bg-blue-400" },
+                            { label: "Selesai", color: "bg-emerald-400" },
                         ].map((s) => (
                             <div key={s.label} className="flex items-center gap-1.5">
                                 <div className={`w-2 h-2 rounded-full ${s.color}`} />
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{s.label}</span>
+                                <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider">{s.label}</span>
                             </div>
                         ))}
                     </div>
-                    <button className="flex items-center justify-center gap-2 bg-white border border-[#F0EEE9] px-6 py-2.5 rounded-full text-[#1A1A2E] font-bold hover:bg-[#FAFAF8] transition-all shadow-sm">
+                    <button className="flex items-center justify-center gap-2 bg-white/5 border border-white/10 px-6 py-2.5 rounded-full text-white/90 font-bold hover:bg-white/10 transition-all shadow-sm">
                         <Download size={18} />
                         Export Laporan
                     </button>
@@ -385,7 +385,7 @@ export default function PesananPage() {
                     {/* Search bar */}
                     <div className="flex-1 relative group">
                         <Search
-                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF6B2B] transition-colors"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-orange-400 transition-colors"
                             size={20}
                         />
                         <input
@@ -393,20 +393,20 @@ export default function PesananPage() {
                             placeholder="Cari nama pelanggan..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white border border-[#F0EEE9] rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none"
+                            className="w-full bg-[#161616]/90 backdrop-blur-xl border border-white/5 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-white/90 placeholder:text-white/30 focus:ring-1 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all outline-none"
                         />
                     </div>
 
                     {/* Channel Pill Filter */}
-                    <div className="flex flex-wrap items-center gap-2 p-1 bg-white border border-[#F0EEE9] rounded-2xl w-fit">
+                    <div className="flex flex-wrap items-center gap-2 p-1 bg-[#161616]/90 backdrop-blur-xl border border-white/5 rounded-2xl w-fit">
                         {CHANNEL_OPTIONS.map((opt) => (
                             <button
                                 key={opt.value}
                                 onClick={() => setChannelFilter(opt.value)}
                                 className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
                                     channelFilter === opt.value
-                                        ? "bg-[#1A1A2E] text-white shadow-md"
-                                        : "text-[#94A3B8] hover:text-[#1A1A2E] hover:bg-[#FAFAF8]"
+                                        ? "bg-white/10 text-white shadow-md border border-white/5"
+                                        : "text-white/40 hover:text-white/90 hover:bg-white/5 border border-transparent"
                                 }`}
                             >
                                 {opt.label}
@@ -416,15 +416,15 @@ export default function PesananPage() {
                 </div>
 
                 {/* Status Pill Filter */}
-                <div className="flex flex-wrap items-center gap-2 p-1 bg-[#FAFAF8] rounded-2xl border border-[#F0EEE9] w-fit">
+                <div className="flex flex-wrap items-center gap-2 p-1 bg-[#161616]/90 backdrop-blur-xl rounded-2xl border border-white/5 w-fit">
                     {STATUS_OPTIONS.map((opt) => (
                         <button
                             key={opt.value}
                             onClick={() => setStatusFilter(opt.value)}
                             className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
                                 statusFilter === opt.value
-                                    ? "bg-[#FF6B2B] text-white shadow-lg shadow-[#FF6B2B]/20"
-                                    : "text-[#6B7280] hover:text-[#1A1A2E] hover:bg-white"
+                                    ? "bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-lg shadow-orange-500/10"
+                                    : "text-white/40 hover:text-white/90 hover:bg-white/5 border border-transparent"
                             }`}
                         >
                             {opt.label}
@@ -434,18 +434,18 @@ export default function PesananPage() {
             </div>
 
             {/* Orders Table */}
-            <div className="bg-white rounded-2xl border border-[#F0EEE9] shadow-sm overflow-hidden">
+            <div className="bg-[#161616]/90 backdrop-blur-2xl rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-[#FAFAF8] border-b border-[#F0EEE9]">
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Pelanggan</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Saluran</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Detail Pesanan</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Waktu Transaksi</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-right">Total Tagihan</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-center">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-center">Aksi</th>
+                            <tr className="bg-[#111] border-b border-white/5">
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Pelanggan</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Saluran</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Detail Pesanan</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Waktu Transaksi</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-right">Total Tagihan</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-center">Status</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -454,8 +454,8 @@ export default function PesananPage() {
                                     <tr>
                                         <td colSpan={7} className="px-6 py-24 text-center">
                                             <div className="flex flex-col items-center gap-4">
-                                                <Loader2 className="animate-spin w-10 h-10 text-[#FF6B2B]" />
-                                                <p className="text-sm font-bold text-[#6B7280]">Sinkronisasi data...</p>
+                                                <Loader2 className="animate-spin w-10 h-10 text-orange-400" />
+                                                <p className="text-sm font-bold text-white/30">Sinkronisasi data...</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -471,17 +471,17 @@ export default function PesananPage() {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: idx * 0.04 }}
-                                                className="border-b border-[#F0EEE9] hover:bg-[#FFF8F5] transition-colors group"
+                                                className="border-b border-white/5 hover:bg-[#1a1a1a]/50 transition-colors group"
                                             >
                                                 {/* Customer */}
                                                 <td className="px-6 py-5">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-11 h-11 rounded-full bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center text-xs font-black text-[#1A1A2E] group-hover:bg-white group-hover:text-[#FF6B2B] group-hover:border-[#FF6B2B]/20 transition-all">
+                                                        <div className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs font-black text-white/50 group-hover:bg-[#111] group-hover:text-orange-400 group-hover:border-orange-500/20 transition-all">
                                                             {order.customer_name?.charAt(0)}
                                                         </div>
                                                         <div>
-                                                            <p className="font-bold text-[#1A1A2E] text-sm tracking-tight mb-1">{order.customer_name}</p>
-                                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-tighter">
+                                                            <p className="font-bold text-white/90 text-sm tracking-tight mb-1">{order.customer_name}</p>
+                                                            <p className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">
                                                                 ID: #{order.id.slice(0, 8)}
                                                             </p>
                                                         </div>
@@ -492,15 +492,15 @@ export default function PesananPage() {
                                                 <td className="px-6 py-5">
                                                     <div className="flex items-center gap-2">
                                                         {order.channel === "whatsapp" ? (
-                                                            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">
+                                                            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
                                                                 <MessageCircle size={12} /> WhatsApp
                                                             </span>
                                                         ) : order.channel === "telegram" ? (
-                                                            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase tracking-wider">
+                                                            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider">
                                                                 <Zap size={12} /> Telegram
                                                             </span>
                                                         ) : (
-                                                            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider">
+                                                            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/50 text-[10px] font-bold uppercase tracking-wider">
                                                                 <Globe size={12} /> Offline
                                                             </span>
                                                         )}
@@ -514,12 +514,12 @@ export default function PesananPage() {
                                                             let items = order.items;
                                                             if (typeof items === 'string') { try { items = JSON.parse(items); } catch { items = null; } }
                                                             if (!Array.isArray(items) || items.length === 0) {
-                                                                return <p className="text-[11px] text-slate-400 italic">Tidak ada detail</p>;
+                                                                return <p className="text-[11px] text-white/30 italic">Tidak ada detail</p>;
                                                             }
                                                             return items.slice(0, 3).map((item: any, i: number) => (
                                                                 <div key={i} className="flex items-center justify-between gap-2">
-                                                                    <span className="text-[11px] font-semibold text-[#1A1A2E] truncate max-w-[130px]">{item.name}</span>
-                                                                    <span className="text-[10px] font-black text-white bg-[#FF6B2B] rounded-full px-2 py-0.5 shrink-0">x{item.qty}</span>
+                                                                    <span className="text-[11px] font-medium text-white/80 truncate max-w-[130px]">{item.name}</span>
+                                                                    <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 rounded-full px-2 py-0.5 shrink-0">x{item.qty}</span>
                                                                 </div>
                                                             ));
                                                         })()}
@@ -527,7 +527,7 @@ export default function PesananPage() {
                                                             let items = order.items;
                                                             if (typeof items === 'string') { try { items = JSON.parse(items); } catch { items = null; } }
                                                             if (Array.isArray(items) && items.length > 3) {
-                                                                return <p className="text-[10px] text-slate-400 font-bold">+{items.length - 3} item lainnya</p>;
+                                                                return <p className="text-[10px] text-white/40 font-medium">+{items.length - 3} item lainnya</p>;
                                                             }
                                                             return null;
                                                         })()}
@@ -536,14 +536,14 @@ export default function PesananPage() {
 
                                                 {/* Date */}
                                                 <td className="px-6 py-5">
-                                                    <div className="flex items-center gap-2 text-[#6B7280] font-bold text-[11px] uppercase tracking-tight">
-                                                        <Calendar size={14} className="text-[#94A3B8]" />
+                                                    <div className="flex items-center gap-2 text-white/40 font-medium text-[11px] uppercase tracking-tight">
+                                                        <Calendar size={14} className="text-white/30" />
                                                         {new Date(order.created_at).toLocaleDateString("id-ID", {
                                                             day: "numeric",
                                                             month: "short",
                                                             year: "numeric",
                                                         })}
-                                                        <span className="text-slate-300">•</span>
+                                                        <span className="text-white/20">•</span>
                                                         {new Date(order.created_at).toLocaleTimeString("id-ID", {
                                                             hour: "2-digit",
                                                             minute: "2-digit",
@@ -552,14 +552,14 @@ export default function PesananPage() {
                                                 </td>
 
                                                 {/* Total */}
-                                                <td className="px-6 py-5 text-right font-black text-[#1A1A2E] text-sm">
+                                                <td className="px-6 py-5 text-right font-black text-white/90 text-sm">
                                                     Rp {order.total?.toLocaleString("id-ID")}
                                                 </td>
 
                                                 {/* Status */}
                                                 <td className="px-6 py-5 text-center">
                                                     <span
-                                                        className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${statusCfg.bg} ${statusCfg.text}`}
+                                                        className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-sm ${statusCfg.bg.replace("500", "500/10")} ${statusCfg.text.replace("white", statusCfg.bg.split("-")[1] + "-400")} border border-${statusCfg.bg.split("-")[1]}-500/20`}
                                                     >
                                                         <StatusIcon size={11} />
                                                         {statusCfg.label}
@@ -570,12 +570,12 @@ export default function PesananPage() {
                                                 <td className="px-6 py-5">
                                                     <div className="flex items-center justify-center gap-2">
                                                         {isProcessing ? (
-                                                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100">
-                                                                <Loader2 size={14} className="animate-spin text-slate-400" />
-                                                                <span className="text-xs font-bold text-slate-400">Memproses...</span>
+                                                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                                                                <Loader2 size={14} className="animate-spin text-white/40" />
+                                                                <span className="text-xs font-bold text-white/40">Memproses...</span>
                                                             </div>
                                                         ) : isTerminal(order.status) ? (
-                                                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 py-2">
+                                                            <span className="flex items-center gap-1.5 text-[10px] font-bold text-white/30 uppercase tracking-wider px-3 py-2">
                                                                 <PackageCheck size={14} />
                                                                 {order.status === "lunas" ? "Selesai" : "Dibatalkan"}
                                                             </span>
@@ -587,7 +587,7 @@ export default function PesananPage() {
                                                                         whileHover={{ scale: 1.05 }}
                                                                         whileTap={{ scale: 0.97 }}
                                                                         onClick={() => openModal(order.id, order.customer_name, "diproses")}
-                                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 text-amber-700 text-[11px] font-black uppercase tracking-wider hover:bg-amber-100 transition-all border border-amber-100 hover:border-amber-200 shadow-sm"
+                                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-400 text-[11px] font-bold uppercase tracking-wider hover:bg-amber-500/20 transition-all border border-amber-500/20 shadow-sm"
                                                                     >
                                                                         <Settings2 size={13} />
                                                                         Proses
@@ -600,7 +600,7 @@ export default function PesananPage() {
                                                                         whileHover={{ scale: 1.05 }}
                                                                         whileTap={{ scale: 0.97 }}
                                                                         onClick={() => openModal(order.id, order.customer_name, "dikirim")}
-                                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-wider hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/20"
+                                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 text-white text-[11px] font-bold uppercase tracking-wider hover:bg-blue-700 transition-all shadow-sm shadow-blue-500/20"
                                                                     >
                                                                         <Truck size={13} />
                                                                         Kirim
@@ -613,7 +613,7 @@ export default function PesananPage() {
                                                                         whileHover={{ scale: 1.05 }}
                                                                         whileTap={{ scale: 0.97 }}
                                                                         onClick={() => openModal(order.id, order.customer_name, "lunas")}
-                                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-500/20"
+                                                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-[11px] font-bold uppercase tracking-wider hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-500/20"
                                                                     >
                                                                         <CheckCircle2 size={13} />
                                                                         Selesai
@@ -630,14 +630,14 @@ export default function PesananPage() {
                                     <tr>
                                         <td colSpan={7} className="px-6 py-40 text-center">
                                             <div className="flex flex-col items-center gap-5">
-                                                <div className="w-20 h-20 rounded-full bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center text-slate-200">
+                                                <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/20">
                                                     <ShoppingBag size={40} />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-lg font-bold text-[#1A1A2E] tracking-tight text-center">
+                                                    <p className="text-lg font-bold text-white/90 tracking-tight text-center">
                                                         Tidak ada pesanan ditemukan
                                                     </p>
-                                                    <p className="text-sm font-medium text-[#6B7280] text-center">
+                                                    <p className="text-sm font-medium text-white/40 text-center">
                                                         Coba ubah filter atau kata kunci pencarian Anda.
                                                     </p>
                                                 </div>
@@ -647,7 +647,7 @@ export default function PesananPage() {
                                                         setChannelFilter("all");
                                                         setSearchTerm("");
                                                     }}
-                                                    className="mt-2 px-6 py-2.5 rounded-full bg-[#1A1A2E] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#FF6B2B] transition-all"
+                                                    className="mt-2 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 text-white/90 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:border-white/20 transition-all"
                                                 >
                                                     Reset Filter
                                                 </button>

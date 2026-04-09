@@ -145,21 +145,21 @@ export default function KasirPage() {
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-[28px] font-bold text-[#1A1A2E] tracking-tight">Katalog Kasir</h1>
-                            <p className="text-sm font-medium text-[#6B7280]">Pilih produk untuk ditambahkan ke keranjang.</p>
+                            <h1 className="text-[28px] font-black text-white/90 tracking-tight">Katalog Kasir</h1>
+                            <p className="text-sm font-medium text-white/40">Pilih produk untuk ditambahkan ke keranjang.</p>
                         </div>
                     </div>
 
                     {/* Filters & Search */}
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={18} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
                             <input
                                 type="text"
                                 placeholder="Cari nama produk..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white border border-[#F0EEE9] rounded-2xl pl-12 pr-4 py-3 text-sm font-medium focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none"
+                                className="w-full bg-[#161616]/90 backdrop-blur-xl border border-white/5 rounded-2xl pl-12 pr-4 py-3 text-sm font-medium text-white/90 placeholder:text-white/30 focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none"
                             />
                         </div>
                         <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -168,8 +168,8 @@ export default function KasirPage() {
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
                                     className={`px-6 py-2.5 rounded-full text-xs font-black transition-all whitespace-nowrap border uppercase tracking-wider ${activeCategory === cat
-                                        ? 'bg-[#1A1A2E] text-white border-[#1A1A2E] shadow-lg'
-                                        : 'bg-white text-[#94A3B8] border-[#F0EEE9] hover:border-[#FF6B2B]'
+                                        ? 'bg-white/10 text-white border-white/10 shadow-lg backdrop-blur-xl'
+                                        : 'bg-[#161616]/60 text-white/40 border-white/5 hover:border-orange-500/50 backdrop-blur-xl hover:text-white'
                                         }`}
                                 >
                                     {cat}
@@ -183,8 +183,8 @@ export default function KasirPage() {
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center h-full gap-4">
-                            <Loader2 className="animate-spin w-12 h-12 text-[#FF6B2B]" />
-                            <p className="font-bold text-[#6B7280] uppercase tracking-widest text-[10px]">Menyinkronkan Stok...</p>
+                            <Loader2 className="animate-spin w-12 h-12 text-orange-400" />
+                            <p className="font-bold text-white/30 uppercase tracking-widest text-[10px]">Menyinkronkan Stok...</p>
                         </div>
                     ) : filteredProducts.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -193,22 +193,22 @@ export default function KasirPage() {
                                     key={p.id}
                                     whileHover={{ y: -4 }}
                                     onClick={() => addToCart(p)}
-                                    className="bg-white p-5 rounded-2xl border border-[#F0EEE9] hover:shadow-xl hover:shadow-[#1A1A2E]/5 hover:border-[#FF6B2B]/20 transition-all cursor-pointer group relative overflow-hidden flex flex-col"
+                                    className="bg-[#161616]/80 backdrop-blur-xl p-5 rounded-2xl border border-white/5 hover:shadow-2xl hover:border-orange-500/30 transition-all cursor-pointer group relative overflow-hidden flex flex-col"
                                 >
-                                    <div className="w-full aspect-square rounded-xl bg-[#FAFAF8] text-[#94A3B8] flex items-center justify-center mb-4 group-hover:bg-[#FFF3EE] group-hover:text-[#FF6B2B] transition-all relative">
+                                    <div className="w-full aspect-square rounded-xl bg-white/5 text-white/30 flex items-center justify-center mb-4 group-hover:bg-orange-500/10 group-hover:text-orange-400 transition-all relative border border-white/5 group-hover:border-orange-500/20">
                                         <Package size={32} className="group-hover:scale-110 transition-transform duration-500" />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-[#1A1A2E]/2 Transition-all" />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="font-bold text-[#1A1A2E] text-sm mb-1 line-clamp-2 leading-tight">{p.name}</h3>
-                                        <p className="text-[#FF6B2B] font-black text-base">Rp {p.price.toLocaleString('id-ID')}</p>
+                                        <h3 className="font-bold text-white/90 text-sm mb-1 line-clamp-2 leading-tight group-hover:text-white transition-colors">{p.name}</h3>
+                                        <p className="text-orange-400 font-black text-base">Rp {p.price.toLocaleString('id-ID')}</p>
                                     </div>
                                     <div className="mt-4 flex items-center justify-between">
-                                        <div className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-50 text-rose-500' : 'bg-[#FAFAF8] text-[#94A3B8]'
+                                        <div className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400' : 'bg-white/5 border border-white/5 text-white/40'
                                             }`}>
                                             Stok: {p.stock}
                                         </div>
-                                        <div className="w-8 h-8 rounded-full bg-[#1A1A2E] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 shadow-lg">
+                                        <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 duration-300 shadow-lg group-hover:bg-orange-500">
                                             <Plus size={16} />
                                         </div>
                                     </div>
@@ -216,12 +216,12 @@ export default function KasirPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-[#94A3B8] space-y-4">
-                            <div className="w-20 h-20 rounded-full bg-[#FAFAF8] flex items-center justify-center">
+                        <div className="flex flex-col items-center justify-center h-full text-white/30 space-y-4 bg-[#161616]/50 rounded-2xl border border-white/5 border-dashed">
+                            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
                                 <SearchIcon size={40} className="opacity-20" />
                             </div>
                             <div className="text-center">
-                                <p className="text-lg font-bold text-[#1A1A2E]">Produk Tidak Ada</p>
+                                <p className="text-lg font-bold text-white/90">Produk Tidak Ada</p>
                                 <p className="text-sm font-medium">Coba gunakan kata kunci lainnya.</p>
                             </div>
                         </div>
@@ -231,26 +231,26 @@ export default function KasirPage() {
 
             {/* Right Side: Billing System */}
             <div className="w-full lg:w-[420px] flex flex-col gap-6">
-                <div className="flex-1 bg-white rounded-3xl border border-[#F0EEE9] shadow-xl flex flex-col overflow-hidden relative">
+                <div className="flex-1 bg-[#161616]/90 backdrop-blur-2xl rounded-3xl border border-white/5 shadow-2xl flex flex-col overflow-hidden relative">
                     {/* Cart Header */}
-                    <div className="p-6 border-b border-[#F0EEE9] flex items-center justify-between bg-[#FAFAF8]">
+                    <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#111]">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-[#1A1A2E] text-white flex items-center justify-center relative">
+                            <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center relative shadow-[0_0_20px_rgba(255,107,43,0.1)]">
                                 <ShoppingCart size={20} />
                                 {cart.length > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#FF6B2B] text-white text-[10px] font-black flex items-center justify-center rounded-full ring-2 ring-white animate-bounce-short">
+                                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-orange-500 text-white text-[10px] font-black flex items-center justify-center rounded-full ring-2 ring-[#111] animate-bounce-short">
                                         {cart.reduce((a, b) => a + b.qty, 0)}
                                     </span>
                                 )}
                             </div>
                             <div>
-                                <h2 className="font-bold text-lg text-[#1A1A2E] tracking-tight">Tagihan Pelanggan</h2>
-                                <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Walk-in Order</p>
+                                <h2 className="font-bold text-lg text-white/90 tracking-tight">Tagihan Pelanggan</h2>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Walk-in Order</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setCart([])}
-                            className="text-xs font-black text-[#94A3B8] hover:text-rose-500 transition-colors uppercase tracking-widest"
+                            className="text-xs font-black text-rose-500/50 hover:text-rose-400 transition-colors uppercase tracking-widest"
                         >
                             Reset
                         </button>
@@ -268,44 +268,44 @@ export default function KasirPage() {
                                     layout
                                     className="flex items-center gap-4 group"
                                 >
-                                    <div className="w-12 h-12 rounded-xl bg-[#FAFAF8] text-[#94A3B8] flex items-center justify-center shrink-0 border border-[#F0EEE9] group-hover:border-[#FF6B2B]/30 group-hover:text-[#FF6B2B] transition-all">
+                                    <div className="w-12 h-12 rounded-xl bg-white/5 text-white/40 flex items-center justify-center shrink-0 border border-white/5 group-hover:border-orange-500/30 group-hover:text-orange-400 group-hover:bg-orange-500/10 transition-all">
                                         <Package size={20} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-[#1A1A2E] text-sm truncate uppercase tracking-tight">{item.name}</h4>
-                                        <p className="text-xs font-black text-[#FF6B2B]">Rp {item.price.toLocaleString('id-ID')}</p>
+                                        <h4 className="font-bold text-white/90 text-sm truncate uppercase tracking-tight">{item.name}</h4>
+                                        <p className="text-xs font-black text-orange-400">Rp {item.price.toLocaleString('id-ID')}</p>
                                     </div>
-                                    <div className="flex items-center gap-1 bg-[#FAFAF8] rounded-full p-1 border border-[#F0EEE9]">
-                                        <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-full text-[#94A3B8] hover:bg-white hover:text-[#1A1A2E] transition-all">
+                                    <div className="flex items-center gap-1 bg-[#111] rounded-full p-1 border border-white/5">
+                                        <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white transition-all">
                                             <Minus size={12} />
                                         </button>
-                                        <span className="text-xs font-black w-6 text-center text-[#1A1A2E]">{item.qty}</span>
-                                        <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-full text-[#94A3B8] hover:bg-white hover:text-[#1A1A2E] transition-all">
+                                        <span className="text-xs font-black w-6 text-center text-white/90">{item.qty}</span>
+                                        <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white transition-all">
                                             <Plus size={12} />
                                         </button>
                                     </div>
                                     <button
                                         onClick={() => removeFromCart(item.id)}
-                                        className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors"
+                                        className="w-8 h-8 flex items-center justify-center text-white/20 hover:text-rose-400 transition-colors"
                                     >
                                         <Trash2 size={16} />
                                     </button>
                                 </motion.div>
                             )) : (
                                 <div className="h-full flex flex-col items-center justify-center text-center py-20">
-                                    <div className="w-20 h-20 rounded-full bg-[#FAFAF8] flex items-center justify-center mb-4">
-                                        <ShoppingCart size={32} className="text-[#F0EEE9]" />
+                                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                                        <ShoppingCart size={32} className="text-white/20" />
                                     </div>
-                                    <p className="text-sm font-bold text-[#94A3B8] uppercase tracking-widest">Belum Ada Item</p>
+                                    <p className="text-sm font-bold text-white/30 uppercase tracking-widest">Belum Ada Item</p>
                                 </div>
                             )}
                         </AnimatePresence>
                     </div>
 
                     {/* Checkout Panel */}
-                    <div className="p-8 bg-[#FAFAF8] border-t border-[#F0EEE9] space-y-6">
+                    <div className="p-8 bg-[#111] border-t border-white/5 space-y-6">
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#94A3B8] pl-1">Pilih Metode Pembayaran</label>
+                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 pl-1">Pilih Metode Pembayaran</label>
                             <div className="grid grid-cols-3 gap-3">
                                 {[
                                     { id: 'tunai', icon: Banknote, label: 'Tunai' },
@@ -316,8 +316,8 @@ export default function KasirPage() {
                                         key={method.id}
                                         onClick={() => setPaymentMethod(method.id)}
                                         className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${paymentMethod === method.id
-                                            ? 'bg-white border-[#FF6B2B] text-[#FF6B2B] shadow-lg shadow-[#FF6B2B]/10 ring-2 ring-[#FF6B2B]/5'
-                                            : 'bg-white border-[#F0EEE9] text-[#94A3B8] hover:border-[#1A1A2E]'
+                                            ? 'bg-orange-500/10 border-orange-500/50 text-orange-400 shadow-[0_0_15px_rgba(255,107,43,0.15)] ring-1 ring-orange-500/20'
+                                            : 'bg-white/5 border-white/5 text-white/40 hover:border-white/20 hover:text-white/60'
                                             }`}
                                     >
                                         <method.icon size={20} />
@@ -327,21 +327,21 @@ export default function KasirPage() {
                             </div>
                         </div>
 
-                        <div className="py-4 border-y border-[#F0EEE9] flex items-center justify-between">
-                            <div className="text-xs font-black text-[#94A3B8] uppercase tracking-widest">Total Tagihan</div>
-                            <div className="text-3xl font-black text-[#1A1A2E]">Rp {totalAmount.toLocaleString('id-ID')}</div>
+                        <div className="py-4 border-y border-white/5 flex items-center justify-between">
+                            <div className="text-xs font-black text-white/40 uppercase tracking-widest">Total Tagihan</div>
+                            <div className="text-3xl font-black text-white/90">Rp {totalAmount.toLocaleString('id-ID')}</div>
                         </div>
 
                         <button
                             onClick={handleCheckout}
                             disabled={cart.length === 0 || isProcessing}
                             className={`w-full py-5 rounded-full font-black text-lg tracking-tight transition-all flex items-center justify-center gap-3 shadow-2xl relative overflow-hidden ${orderSuccess
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-[#FF6B2B] hover:bg-[#E85A1D] text-white shadow-[#FF6B2B]/20 active:scale-95 disabled:opacity-50 disabled:bg-slate-200'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
+                                : 'bg-orange-500 hover:bg-orange-600 text-white shadow-[0_0_30px_rgba(255,107,43,0.3)] active:scale-95 disabled:opacity-50 disabled:bg-white/10 disabled:text-white/40 disabled:border disabled:border-white/5 disabled:shadow-none'
                                 }`}
                         >
                             {isProcessing ? (
-                                <Loader2 className="animate-spin" size={24} />
+                                <Loader2 className="animate-spin text-white" size={24} />
                             ) : orderSuccess ? (
                                 <><CheckCircle2 size={24} /> Berhasil Terbayar!</>
                             ) : (
@@ -359,22 +359,22 @@ export default function KasirPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] bg-[#1A1A2E]/60 backdrop-blur-md flex flex-col items-center justify-center"
+                        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex flex-col items-center justify-center"
                     >
                         <motion.div
                             initial={{ scale: 0.8, opacity: 0, rotate: -10 }}
                             animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                            className="bg-white p-12 rounded-[40px] flex flex-col items-center shadow-2xl"
+                            className="bg-[#161616] border border-white/5 p-12 rounded-[40px] flex flex-col items-center shadow-2xl"
                         >
-                            <div className="bg-[#FF6B2B] text-white w-24 h-24 rounded-full flex items-center justify-center shadow-2xl mb-8 shadow-[#FF6B2B]/30">
+                            <div className="bg-orange-500 text-white w-24 h-24 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(255,107,43,0.4)] mb-8">
                                 <CheckCircle2 size={56} />
                             </div>
-                            <h2 className="text-3xl font-black text-[#1A1A2E] tracking-tight text-center">Checkout Selesai!</h2>
-                            <p className="text-[#6B7280] font-bold mt-2 uppercase tracking-widest text-xs">Pesanan baru telah dicatat</p>
+                            <h2 className="text-3xl font-black text-white/90 tracking-tight text-center">Checkout Selesai!</h2>
+                            <p className="text-white/40 font-bold mt-2 uppercase tracking-widest text-xs">Pesanan baru telah dicatat</p>
 
                             <button
                                 onClick={() => setOrderSuccess(false)}
-                                className="mt-10 px-10 py-4 bg-[#1A1A2E] text-white rounded-full font-bold hover:bg-[#FF6B2B] transition-all shadow-xl"
+                                className="mt-10 px-10 py-4 bg-white/10 border border-white/10 text-white rounded-full font-bold hover:bg-white/20 transition-all shadow-xl"
                             >
                                 Tutup Halaman
                             </button>

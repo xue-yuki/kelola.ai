@@ -67,17 +67,17 @@ export default function WAMarketingPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">WhatsApp Marketing</h1>
-                    <p className="text-slate-500 font-medium">Kirim promosi dan sapa pelangganmu secara massal.</p>
+                    <h1 className="text-3xl font-black text-white/90 tracking-tight mb-2">WhatsApp Marketing</h1>
+                    <p className="text-white/40 font-medium">Kirim promosi dan sapa pelangganmu secara massal.</p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Composer (Left) */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.032)] flex flex-col gap-6">
+                    <div className="bg-[#161616]/90 backdrop-blur-2xl p-8 rounded-[32px] border border-white/5 shadow-2xl flex flex-col gap-6">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Target Audiens</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-white/40 pl-1">Target Audiens</label>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 {SEGMENTS.map((seg) => {
                                     const Icon = seg.icon;
@@ -86,14 +86,14 @@ export default function WAMarketingPage() {
                                             key={seg.id}
                                             onClick={() => setSelectedSegment(seg)}
                                             className={`p-4 rounded-2xl border text-left flex flex-col gap-2 transition-all ${selectedSegment.id === seg.id
-                                                    ? 'bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-600/20'
-                                                    : 'bg-slate-50 border-slate-100 text-slate-600 hover:border-slate-300'
+                                                    ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20'
+                                                    : 'bg-white/5 border-white/5 text-white/50 hover:border-white/10 hover:text-white/80'
                                                 }`}
                                         >
                                             <Icon size={18} />
                                             <div>
                                                 <p className="text-xs font-black tracking-tight">{seg.name}</p>
-                                                <p className={`text-[10px] font-bold ${selectedSegment.id === seg.id ? 'text-white/60' : 'text-slate-400'}`}>{seg.count} Pelanggan</p>
+                                                <p className={`text-[10px] font-bold ${selectedSegment.id === seg.id ? 'text-white/60' : 'text-white/30'}`}>{seg.count} Pelanggan</p>
                                             </div>
                                         </button>
                                     );
@@ -103,26 +103,26 @@ export default function WAMarketingPage() {
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 pl-1">Isi Pesan Broadcast</label>
-                                <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">Gunakan [Nama] untuk personalisasi</span>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-white/40 pl-1">Isi Pesan Broadcast</label>
+                                <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">Gunakan [Nama] untuk personalisasi</span>
                             </div>
                             <textarea
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 placeholder="Tulis pesan promosi kamu di sini..."
-                                className="w-full h-48 bg-slate-50 border border-slate-100 rounded-[24px] p-6 text-sm font-medium focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500/30 transition-all outline-none resize-none"
+                                className="w-full h-48 bg-[#111] border border-white/5 rounded-[24px] p-6 text-sm font-medium text-white/90 placeholder:text-white/30 focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none resize-none"
                             />
                         </div>
 
                         <div className="flex flex-col md:flex-row items-center gap-4">
-                            <div className="flex-1 text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                            <div className="flex-1 text-[10px] font-bold text-white/40 flex items-center gap-2">
                                 <AlertCircle size={14} className="text-amber-500" />
                                 Pastikan nomor WhatsApp kamu sudah aktif untuk menghindari banned.
                             </div>
                             <button
                                 onClick={handleSend}
                                 disabled={isSending || !message.trim()}
-                                className={`w-full md:w-auto px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-xl ${isSending ? 'bg-slate-900 text-white' : 'bg-orange-600 text-white hover:bg-orange-700 active:scale-95 disabled:opacity-50'
+                                className={`w-full md:w-auto px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-xl ${isSending ? 'bg-white/5 text-white/50' : 'bg-orange-500 text-white hover:bg-orange-600 active:scale-95 disabled:opacity-50 disabled:bg-white/5 disabled:text-white/30 shadow-orange-500/20'
                                     }`}
                             >
                                 {isSending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
@@ -132,23 +132,23 @@ export default function WAMarketingPage() {
                     </div>
 
                     {/* Quick Templates */}
-                    <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
+                    <div className="bg-[#161616]/90 backdrop-blur-2xl p-8 rounded-[32px] border border-white/5 shadow-2xl space-y-6">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-orange-50 text-orange-600">
+                            <div className="p-2 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
                                 <Copy size={18} />
                             </div>
-                            <h3 className="font-black text-slate-800 tracking-tight">Template Cepat</h3>
+                            <h3 className="font-black text-white/90 tracking-tight">Template Cepat</h3>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {TEMPLATES.map((t) => (
                                 <button
                                     key={t.id}
                                     onClick={() => applyTemplate(t.text)}
-                                    className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-left hover:border-orange-500/30 hover:bg-white hover:shadow-lg transition-all group"
+                                    className="p-4 rounded-2xl bg-white/5 border border-white/5 text-left hover:border-orange-500/30 hover:bg-white/10 hover:shadow-2xl transition-all group"
                                 >
-                                    <p className="font-black text-xs text-slate-900 mb-2 truncate uppercase tracking-widest">{t.name}</p>
-                                    <p className="text-[10px] text-slate-400 font-medium line-clamp-3 leading-relaxed mb-4 group-hover:text-slate-600 transition-colors">{t.text}</p>
-                                    <p className="text-[9px] font-black text-orange-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">Gunakan <ArrowRight size={10} /></p>
+                                    <p className="font-black text-xs text-white/90 mb-2 truncate uppercase tracking-widest">{t.name}</p>
+                                    <p className="text-[10px] text-white/40 font-medium line-clamp-3 leading-relaxed mb-4 group-hover:text-white/60 transition-colors">{t.text}</p>
+                                    <p className="text-[9px] font-black text-orange-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">Gunakan <ArrowRight size={10} /></p>
                                 </button>
                             ))}
                         </div>
@@ -157,42 +157,42 @@ export default function WAMarketingPage() {
 
                 {/* Preview (Right) */}
                 <div className="space-y-6">
-                    <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm flex flex-col items-center">
+                    <div className="bg-[#161616]/90 backdrop-blur-2xl p-8 rounded-[32px] border border-white/5 shadow-2xl flex flex-col items-center">
                         <div className="w-full flex items-center justify-between mb-8">
-                            <h3 className="font-black text-xs uppercase tracking-widest text-slate-400">Preview Pesan</h3>
+                            <h3 className="font-black text-xs uppercase tracking-widest text-white/40">Preview Pesan</h3>
                             <div className="flex gap-1.5">
-                                <div className="w-2.5 h-2.5 rounded-full bg-slate-100" />
-                                <div className="w-2.5 h-2.5 rounded-full bg-slate-100" />
-                                <div className="w-2.5 h-2.5 rounded-full bg-slate-100" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
                             </div>
                         </div>
 
                         {/* Phone Mockup */}
-                        <div className="relative w-64 h-[440px] bg-slate-900 rounded-[40px] border-[6px] border-slate-800 shadow-2xl p-2">
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-5 bg-slate-800 rounded-b-[20px]" />
-                            <div className="h-full bg-[#E5DDD5] rounded-[30px] overflow-hidden flex flex-col">
-                                <div className="bg-[#075E54] p-3 pt-6 flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-white/20" />
-                                    <div className="w-20 h-2 bg-white/30 rounded" />
+                        <div className="relative w-64 h-[440px] bg-black rounded-[40px] border-[6px] border-[#111] shadow-2xl p-2">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-5 bg-[#111] rounded-b-[20px]" />
+                            <div className="h-full bg-[#111b21] rounded-[30px] overflow-hidden flex flex-col border border-white/5">
+                                <div className="bg-[#202c33] p-3 pt-6 flex items-center gap-2 border-b border-white/5">
+                                    <div className="w-6 h-6 rounded-full bg-white/10" />
+                                    <div className="w-20 h-2 bg-white/20 rounded" />
                                 </div>
-                                <div className="flex-1 p-3 space-y-3 relative overflow-y-auto">
+                                <div className="flex-1 p-3 space-y-3 relative overflow-y-auto bg-[#0b141a]">
                                     {message && (
                                         <motion.div
                                             initial={{ scale: 0.9, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
-                                            className="bg-[#DCF8C6] p-3 rounded-2xl rounded-tr-none shadow-sm ml-4"
+                                            className="bg-[#005c4b] p-3 rounded-2xl rounded-tr-none shadow-sm ml-4"
                                         >
-                                            <p className="text-[10px] text-slate-700 font-medium leading-[1.4] whitespace-pre-wrap">
+                                            <p className="text-[10px] text-white/90 font-medium leading-[1.4] whitespace-pre-wrap">
                                                 {message.replace("[Nama]", "Budi")}
                                             </p>
-                                            <p className="text-[8px] text-slate-400 text-right mt-1">11:08</p>
+                                            <p className="text-[8px] text-white/50 text-right mt-1">11:08</p>
                                         </motion.div>
                                     )}
                                 </div>
-                                <div className="bg-white p-3 flex items-center gap-2">
-                                    <div className="w-full h-6 bg-slate-100 rounded-full" />
-                                    <div className="w-6 h-6 rounded-full bg-[#128C7E] flex items-center justify-center">
-                                        <Send size={10} className="text-white" />
+                                <div className="bg-[#202c33] p-3 flex items-center gap-2 border-t border-white/5">
+                                    <div className="w-full h-8 bg-[#2a3942] rounded-full" />
+                                    <div className="w-8 h-8 rounded-full bg-[#00a884] flex items-center justify-center shrink-0">
+                                        <Send size={12} className="text-[#111b21]" fill="currentColor" />
                                     </div>
                                 </div>
                             </div>
@@ -200,21 +200,21 @@ export default function WAMarketingPage() {
                     </div>
 
                     {/* Analytics Summary */}
-                    <div className="bg-slate-900 p-8 rounded-[32px] text-white overflow-hidden relative group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+                    <div className="bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20 p-8 rounded-[32px] text-white/90 overflow-hidden relative group backdrop-blur-xl">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/20 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
                         <div className="relative z-10 space-y-6">
                             <div className="flex items-center gap-3">
-                                <MessageSquare className="text-orange-500" size={20} />
+                                <MessageSquare className="text-orange-400" size={20} />
                                 <h4 className="font-black tracking-tight">Estimasi Jangkauan</h4>
                             </div>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs text-white/50 font-bold uppercase tracking-widest">Terkirim</span>
-                                    <span className="font-black text-xl">{selectedSegment.count}</span>
+                                    <span className="font-black text-xl text-white">{selectedSegment.count}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs text-white/50 font-bold uppercase tracking-widest">Rate Dibaca</span>
-                                    <span className="font-black text-xl">~85%</span>
+                                    <span className="font-black text-xl text-white">~85%</span>
                                 </div>
                                 <div className="pt-4 border-t border-white/10">
                                     <p className="text-[10px] font-bold text-white/40 leading-relaxed">
@@ -234,24 +234,24 @@ export default function WAMarketingPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center p-6"
+                        className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6"
                     >
                         <motion.div
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl relative overflow-hidden"
+                            className="bg-[#161616] border border-white/10 rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-500 to-rose-500" />
-                            <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
                                 <CheckCircle2 size={40} />
                             </div>
-                            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Pesan Terkirim!</h2>
-                            <p className="text-sm font-medium text-slate-500 mb-8 leading-relaxed">
-                                Broadcast kamu sedang diproses dan dikirim ke <strong>{selectedSegment.count}</strong> pelanggan.
+                            <h2 className="text-2xl font-black text-white/90 tracking-tight mb-2">Pesan Terkirim!</h2>
+                            <p className="text-sm font-medium text-white/40 mb-8 leading-relaxed">
+                                Broadcast kamu sedang diproses dan dikirim ke <strong className="text-white/90">{selectedSegment.count}</strong> pelanggan.
                             </p>
                             <button
                                 onClick={() => setIsSent(false)}
-                                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all"
+                                className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10 transition-all"
                             >
                                 Kembali ke Menu
                             </button>

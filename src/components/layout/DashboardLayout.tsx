@@ -36,9 +36,9 @@ const SIDEBAR_ITEMS = [
 ];
 
 const NOTIFICATIONS = [
-    { id: 1, title: "Pesanan masuk via WA", time: "Baru saja", icon: MessageSquare, color: "text-green-500", bg: "bg-green-50" },
-    { id: 2, title: "Stok menipis: Kopi Arabika", time: "10 mnt lalu", icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-50" },
-    { id: 3, title: "Insight mingguan tersedia!", time: "2 jam lalu", icon: Sparkles, color: "text-orange-500", bg: "bg-orange-50" },
+    { id: 1, title: "Pesanan masuk via WA", time: "Baru saja", icon: MessageSquare, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+    { id: 2, title: "Stok menipis: Kopi Arabika", time: "10 mnt lalu", icon: AlertTriangle, color: "text-amber-400", bg: "bg-amber-500/10" },
+    { id: 3, title: "Insight mingguan tersedia!", time: "2 jam lalu", icon: Sparkles, color: "text-orange-400", bg: "bg-orange-500/10" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -135,7 +135,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#FAFAF8] font-sans selection:bg-orange-500/30">
+        <div className="min-h-screen bg-[#0a0a0a] font-sans selection:bg-orange-500/30 text-white">
+            <style jsx global>{`
+                body {
+                    background-color: #0a0a0a !important;
+                }
+            `}</style>
             {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
                 {isMobileMenuOpen && (
@@ -151,15 +156,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Sidebar */}
             <motion.aside
-                className={`fixed top-0 left-0 z-50 h-full w-64 bg-[#1A1A2E] flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+                className={`fixed top-0 left-0 z-50 h-full w-64 bg-[#0a0a0a] border-r border-white/5 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
             >
                 <div className="p-6 flex items-center justify-between">
                     <Link href="/dashboard" className="flex items-center gap-1.5 group">
                         <span className="font-display font-bold text-2xl tracking-tighter text-white">kelola</span>
-                        <span className="text-[#FF6B2B] font-bold text-2xl">.ai</span>
+                        <span className="text-orange-400 font-bold text-2xl">.ai</span>
                     </Link>
-                    <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                    <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden p-2 text-white/40 hover:text-white rounded-lg hover:bg-white/5 transition-colors">
                         <Menu size={20} />
                     </button>
                 </div>
@@ -171,16 +176,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         return (
                             <Link key={item.name} href={item.href}>
                                 <div className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 group relative ${isActive
-                                    ? "bg-[#FF6B2B]/10 text-[#FF6B2B] font-semibold"
-                                    : "text-[#94A3B8] font-medium hover:bg-white/5 hover:text-white"
+                                    ? "bg-orange-500/10 text-orange-400 font-medium border border-orange-500/10"
+                                    : "text-white/60 font-medium hover:bg-white/5 hover:text-white/90 border border-transparent"
                                     }`}>
                                     {isActive && (
-                                        <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-[#FF6B2B] rounded-r-full" />
+                                        <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-orange-400 rounded-r-full" />
                                     )}
-                                    <Icon size={18} className={isActive ? "text-[#FF6B2B]" : "text-[#94A3B8] group-hover:text-white transition-colors"} />
+                                    <Icon size={18} className={isActive ? "text-orange-400" : "text-white/40 group-hover:text-white/80 transition-colors"} />
                                     <span className="flex-1 text-sm">{item.name}</span>
                                     {item.highlight && (
-                                        <span className="px-2 py-0.5 rounded-full bg-[#FF6B2B] text-white text-[9px] font-black uppercase tracking-wider">
+                                        <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[9px] font-black uppercase tracking-wider">
                                             POS
                                         </span>
                                     )}
@@ -202,15 +207,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             ) : userAvatar ? (
                                 <img src={userAvatar} alt="Profile" className="w-8 h-8 rounded-full object-cover ring-2 ring-white/10" />
                             ) : (
-                                <div className="w-8 h-8 rounded-full bg-[#FF6B2B] text-white flex items-center justify-center font-bold text-xs shadow-lg">
+                                <div className="w-8 h-8 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold text-xs shadow-lg">
                                     {userName.charAt(0).toUpperCase()}
                                 </div>
                             )}
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-white truncate">{userName}</p>
-                                <p className="text-[10px] text-[#94A3B8] truncate">{businessName}</p>
+                                <p className="text-sm font-medium text-white/90 truncate">{userName}</p>
+                                <p className="text-[10px] text-white/40 truncate">{businessName}</p>
                             </div>
-                            <ChevronDown size={14} className={`text-slate-500 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+                            <ChevronDown size={14} className={`text-white/40 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
                         </div>
 
                         {/* Profile Context Menu */}
@@ -220,10 +225,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: -20, scale: 1 }}
                                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                    className="absolute bottom-full left-0 right-0 mb-2 bg-[#1A1A2E] border border-white/10 rounded-xl shadow-2xl p-1.5 z-[60]"
+                                    className="absolute bottom-full left-0 right-0 mb-2 bg-[#161616]/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] p-1.5 z-[60]"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <Link href="/dashboard/pengaturan" className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-[#94A3B8] hover:text-white hover:bg-white/5 rounded-lg transition-all">
+                                    <Link href="/dashboard/pengaturan" className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-white/60 hover:text-white/90 hover:bg-white/5 rounded-lg transition-all">
                                         <Settings size={14} /> Pengaturan
                                     </Link>
                                     <button
@@ -245,23 +250,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Main Content Area */}
             <div className="lg:pl-64 flex flex-col min-h-screen">
                 {/* Top Header */}
-                <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-white/80 backdrop-blur-md border-b border-[#F0EEE9] shadow-sm" : "bg-transparent"
+                <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5 shadow-md shadow-black/20" : "bg-transparent"
                     }`}>
                     <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 text-slate-400 hover:text-slate-600 rounded-lg bg-white shadow-sm border border-[#F0EEE9] transition-colors">
+                            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 text-white/60 hover:text-white rounded-lg bg-[#161616] shadow-sm border border-white/5 transition-colors">
                                 <Menu size={20} />
                             </button>
 
                             {/* Search Bar */}
-                            <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white shadow-sm border border-[#F0EEE9] w-64 focus-within:ring-2 focus-within:ring-[#FF6B2B]/10 focus-within:border-[#FF6B2B]/20 transition-all">
-                                <Search size={18} className="text-slate-400" />
+                            <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#161616]/80 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] border border-white/5 w-64 focus-within:border-orange-500/30 focus-within:ring-1 focus-within:ring-orange-500/20 transition-all">
+                                <Search size={18} className="text-white/30" />
                                 <input
                                     type="text"
                                     placeholder="Cari pesanan, pelanggan..."
-                                    className="bg-transparent border-none outline-none text-sm text-[#1A1A2E] placeholder:text-slate-400 w-full font-medium"
+                                    className="bg-transparent border-none outline-none text-sm text-white/90 placeholder:text-white/30 w-full font-light"
                                 />
-                                <div className="px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[10px] font-black tracking-widest uppercase border border-slate-100">
+                                <div className="px-2 py-0.5 rounded-md bg-white/5 text-white/40 text-[10px] font-black tracking-widest uppercase border border-white/5">
                                     ⌘K
                                 </div>
                             </div>
@@ -276,12 +281,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         setIsProfileOpen(false);
                                     }}
                                     className={`relative p-2 rounded-lg transition-all border ${isNotificationOpen
-                                        ? "bg-[#FF6B2B]/5 border-[#FF6B2B]/20 text-[#FF6B2B]"
-                                        : "bg-white border-[#F0EEE9] text-slate-400 hover:text-slate-600 shadow-sm"
+                                        ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                                        : "bg-[#161616] border-white/5 text-white/60 hover:text-white shadow-sm"
                                         }`}
                                 >
                                     <Bell size={18} />
-                                    <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#FF6B2B] ring-2 ring-white" />
+                                    <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-orange-500 ring-2 ring-[#0a0a0a]" />
                                 </button>
 
                                 <AnimatePresence>
@@ -291,30 +296,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute right-0 mt-4 w-80 bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(26,26,46,0.12)] border border-[#F0EEE9] overflow-hidden"
+                                            className="absolute right-0 mt-4 w-80 bg-[#161616]/95 backdrop-blur-3xl rounded-3xl shadow-2xl border border-white/10 overflow-hidden"
                                         >
-                                            <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
-                                                <h3 className="font-bold text-[#1A1A2E] tracking-tight">Notifikasi</h3>
-                                                <span className="text-[10px] font-bold text-[#FF6B2B] bg-[#FFF3EE] px-2.5 py-1 rounded-full uppercase tracking-wider">3 Baru</span>
+                                            <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
+                                                <h3 className="font-medium text-white/90 tracking-tight">Notifikasi</h3>
+                                                <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider">3 Baru</span>
                                             </div>
                                             <div className="py-2">
                                                 {NOTIFICATIONS.map((notif) => {
                                                     const Icon = notif.icon;
                                                     return (
-                                                        <div key={notif.id} className="flex items-start gap-4 px-6 py-4 hover:bg-[#FAFAF8] transition-colors cursor-pointer group">
-                                                            <div className={`mt-0.5 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${notif.bg} ${notif.color} group-hover:scale-105 transition-transform`}>
+                                                        <div key={notif.id} className="flex items-start gap-4 px-6 py-4 hover:bg-[#1a1a1a] transition-colors cursor-pointer group">
+                                                            <div className={`mt-0.5 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${notif.bg} ${notif.color} group-hover:scale-105 transition-transform`}>
                                                                 <Icon size={18} />
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm font-bold text-[#1A1A2E] mb-0.5 tracking-tight group-hover:text-[#FF6B2B] transition-colors">{notif.title}</p>
-                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{notif.time}</p>
+                                                                <p className="text-sm font-medium text-white/90 mb-0.5 tracking-tight group-hover:text-orange-400 transition-colors">{notif.title}</p>
+                                                                <p className="text-[10px] text-white/40 font-medium uppercase tracking-widest">{notif.time}</p>
                                                             </div>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
-                                            <div className="p-4 border-t border-slate-50">
-                                                <button className="w-full py-3 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-[#FF6B2B] transition-colors bg-[#FAFAF8] rounded-xl">
+                                            <div className="p-4 border-t border-white/5">
+                                                <button className="w-full py-3 text-xs font-semibold text-white/40 uppercase tracking-widest hover:text-orange-400 hover:bg-[#1a1a1a]/50 transition-colors bg-[#111] rounded-xl border border-transparent hover:border-white/5">
                                                     Lihat semua
                                                 </button>
                                             </div>
@@ -325,8 +330,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                             {/* Divider and Plan Badge */}
                             <div className="hidden md:flex items-center gap-3">
-                                <div className="w-px h-6 bg-slate-200" />
-                                <div className="px-3 py-1.5 rounded-full bg-[#1A1A2E] text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                <div className="w-px h-6 bg-white/10" />
+                                <div className="px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-semibold uppercase tracking-widest flex items-center gap-2">
                                     <Sparkles size={12} className="text-orange-400" />
                                     Pro Plan
                                 </div>

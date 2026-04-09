@@ -27,9 +27,9 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 const QUICK_ACTIONS = [
-    { title: "Broadcast WA", icon: MessageCircle, color: "text-green-600", bg: "bg-green-50", hover: "hover:bg-green-100" },
-    { title: "Tambah Produk", icon: PackagePlus, color: "text-orange-600", bg: "bg-orange-50", hover: "hover:bg-orange-100" },
-    { title: "Buat Laporan", icon: FileText, color: "text-blue-600", bg: "bg-blue-50", hover: "hover:bg-blue-100" },
+    { title: "Broadcast WA", icon: MessageCircle, color: "text-emerald-400", bg: "bg-emerald-500/10 border border-emerald-500/20", hover: "hover:bg-emerald-500/20" },
+    { title: "Tambah Produk", icon: PackagePlus, color: "text-orange-400", bg: "bg-orange-500/10 border border-orange-500/20", hover: "hover:bg-orange-500/20" },
+    { title: "Buat Laporan", icon: FileText, color: "text-blue-400", bg: "bg-blue-500/10 border border-blue-500/20", hover: "hover:bg-blue-500/20" },
 ];
 
 export default function DashboardPage() {
@@ -132,8 +132,8 @@ export default function DashboardPage() {
                     change: "+12.5%",
                     isPositive: true,
                     icon: TrendingUp,
-                    color: "text-emerald-500",
-                    bg: "bg-emerald-50",
+                    color: "text-emerald-400",
+                    bg: "bg-emerald-500/10",
                 },
                 {
                     title: "Pesanan Aktif",
@@ -141,8 +141,8 @@ export default function DashboardPage() {
                     change: "+4",
                     isPositive: true,
                     icon: ShoppingBag,
-                    color: "text-blue-500",
-                    bg: "bg-blue-50",
+                    color: "text-blue-400",
+                    bg: "bg-blue-500/10",
                 },
                 {
                     title: "Total Pelanggan",
@@ -150,8 +150,8 @@ export default function DashboardPage() {
                     change: "+2 Baru",
                     isPositive: true,
                     icon: Users,
-                    color: "text-indigo-500",
-                    bg: "bg-indigo-50",
+                    color: "text-indigo-400",
+                    bg: "bg-indigo-500/10",
                 },
             ]);
 
@@ -211,7 +211,7 @@ export default function DashboardPage() {
             <div className="flex h-[60vh] items-center justify-center">
                 <div className="flex flex-col items-center gap-4 text-orange-500">
                     <Loader2 className="animate-spin w-10 h-10" />
-                    <p className="font-bold text-slate-500 animate-pulse text-sm">Mengambil data dari Supabase...</p>
+                    <p className="font-bold text-white/50 animate-pulse text-sm">Mengambil data dari Supabase...</p>
                 </div>
             </div>
         )
@@ -222,30 +222,42 @@ export default function DashboardPage() {
             variants={container}
             initial="hidden"
             animate="show"
-            className="max-w-7xl mx-auto space-y-8 pb-10"
+            className="max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-6"
         >
             {/* Header Section */}
-            <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-1">
-                        {greeting}, {userName}! ☕
-                    </h1>
-                    <p className="text-sm font-medium text-slate-500">
-                        {currentDate} • <span className="text-orange-600 font-bold">Penjualanmu naik 12% minggu ini!</span>
-                    </p>
-                </div>
+            {/* Immersive Header Banner */}
+            <motion.div variants={item} className="relative overflow-hidden rounded-[2rem] bg-[#161616]/60 backdrop-blur-3xl border border-white/5 shadow-2xl p-5 sm:px-8 sm:py-6 group flex flex-col justify-center">
+                {/* Dynamic Lighting Effects */}
+                <div className="absolute -top-[50%] -left-[10%] w-[60%] h-[150%] bg-orange-500/10 rounded-full blur-[100px] group-hover:bg-orange-500/20 transition-all duration-1000" />
+                <div className="absolute -bottom-[50%] -right-[10%] w-[60%] h-[150%] bg-emerald-500/10 rounded-full blur-[100px] group-hover:bg-emerald-500/20 transition-all duration-1000" />
+                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
 
-                {/* Quick Actions Desktop */}
-                <div className="hidden md:flex items-center gap-3">
-                    {QUICK_ACTIONS.map((action, i) => {
-                        const Icon = action.icon;
-                        return (
-                            <button key={i} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${action.bg} ${action.color} ${action.hover}`}>
-                                <Icon size={16} />
-                                {action.title}
-                            </button>
-                        );
-                    })}
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50 tracking-tight">
+                                {greeting}, <span className="text-orange-400 drop-shadow-[0_0_30px_rgba(255,107,43,0.3)]">{userName}</span>
+                            </h1>
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" title="Sistem Utama Berjalan Lancar" />
+                        </div>
+                        <p className="text-sm font-medium text-white/50">
+                            {currentDate}
+                        </p>
+                    </div>
+
+                    {/* Premium Quick Actions Desktop */}
+                    <div className="hidden md:flex items-center gap-3">
+                        {QUICK_ACTIONS.map((action, i) => {
+                            const Icon = action.icon;
+                            return (
+                                <button key={i} className={`group relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 overflow-hidden bg-white/5 border border-white/10 hover:border-white/20 hover:-translate-y-0.5 hover:shadow-xl`}>
+                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-transparent to-white/5`} />
+                                    <Icon size={16} className={action.color} />
+                                    <span className="text-white/90">{action.title}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </motion.div>
 
@@ -254,34 +266,42 @@ export default function DashboardPage() {
                 {QUICK_ACTIONS.map((action, i) => {
                     const Icon = action.icon;
                     return (
-                        <button key={i} className={`flex flex-col items-center justify-center gap-2 p-3 rounded-2xl transition-all ${action.bg} ${action.color}`}>
-                            <Icon size={20} />
-                            <span className="text-[10px] sm:text-xs font-black text-center leading-tight">{action.title}</span>
+                        <button key={i} className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-3xl transition-all duration-300 bg-white/5 border border-white/10 active:scale-95 overflow-hidden`}>
+                            <div className={`absolute inset-0 opacity-10 ${action.bg.split(' ')[0]}`} />
+                            <Icon size={24} className={action.color} />
+                            <span className="text-[10px] sm:text-xs font-bold text-white/90 text-center leading-tight">{action.title}</span>
                         </button>
                     );
                 })}
             </motion.div>
 
-            {/* Metric Cards */}
-            <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* Bento Metric Cards */}
+            <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {metrics && metrics.map((metric: any, i: number) => {
                     const Icon = metric.icon;
+                    // First item spans 2 columns on large screens
+                    const isFeature = i === 0;
+
                     return (
-                        <div key={i} className="p-6 rounded-3xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] relative overflow-hidden group hover:border-orange-200 transition-colors">
-                            <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-slate-50 blur-2xl group-hover:bg-orange-50 transition-colors duration-500" />
-                            <div className="flex items-start justify-between relative z-10">
-                                <div className="space-y-4">
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${metric.bg} ${metric.color}`}>
-                                        <Icon size={24} />
+                        <div key={i} className={`p-5 sm:p-6 rounded-[1.5rem] bg-[#161616]/90 backdrop-blur-2xl border border-white/5 shadow-2xl relative overflow-hidden group hover:border-white/10 transition-all duration-500 hover:-translate-y-1 ${isFeature ? 'lg:col-span-2' : ''}`}>
+                            <div className={`absolute -right-10 -top-10 w-40 h-40 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 ${isFeature ? 'bg-orange-500' : 'bg-white/20'}`} />
+                            
+                            <div className="flex flex-col h-full justify-between relative z-10">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-sm group-hover:scale-110 transition-transform duration-500 ${metric.color}`}>
+                                        <Icon size={18} />
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-400 mb-1">{metric.title}</p>
-                                        <p className="text-3xl font-black text-slate-800 tracking-tighter">{metric.value}</p>
+                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold border backdrop-blur-md ${metric.isPositive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                                        {metric.isPositive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                                        {metric.change}
                                     </div>
                                 </div>
-                                <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${metric.isPositive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                                    {metric.isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                    {metric.change}
+
+                                <div>
+                                    <p className="text-[10px] sm:text-xs font-bold text-white/40 mb-1 uppercase tracking-widest">{metric.title}</p>
+                                    <p className={`font-display font-black tracking-tighter ${isFeature ? 'text-3xl lg:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300' : 'text-2xl lg:text-3xl text-white/90'}`}>
+                                        {metric.value}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -290,58 +310,76 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
                 {/* Revenue Chart */}
-                <motion.div variants={item} className="lg:col-span-2 p-6 rounded-3xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
-                    <div className="flex items-center justify-between mb-8">
+                <motion.div variants={item} className="lg:col-span-2 p-6 rounded-[2rem] bg-[#161616]/80 backdrop-blur-3xl border border-white/5 shadow-2xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                         <div>
-                            <h2 className="text-lg font-black text-slate-900 tracking-tight">Tren Pendapatan</h2>
-                            <p className="text-sm text-slate-500 font-medium">7 Hari Terakhir</p>
+                            <h2 className="text-lg sm:text-xl font-display font-black text-white/90 tracking-tight">Tren Pendapatan</h2>
+                            <p className="text-xs sm:text-sm text-white/40 font-medium mt-0.5">Akumulasi 7 Hari Terakhir</p>
                         </div>
-                        <select className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold text-slate-600 bg-transparent focus:outline-none focus:ring-2 focus:ring-orange-500/20">
-                            <option>Minggu Ini</option>
-                            <option>Bulan Ini</option>
-                            <option>Tahun Ini</option>
-                        </select>
+                        <div className="flex items-center bg-black/40 p-1.5 rounded-2xl border border-white/5">
+                            {['Minggu', 'Bulan', 'Tahun'].map(val => (
+                                <button key={val} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${val === 'Minggu' ? 'bg-white/10 text-white shadow-lg' : 'text-white/40 hover:text-white/80'}`}>
+                                    {val}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="h-[300px] w-full">
+                    <div className="h-[240px] sm:h-[280px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#ea580c" stopOpacity={0.2} />
+                                        <stop offset="5%" stopColor="#ea580c" stopOpacity={0.4} />
                                         <stop offset="95%" stopColor="#ea580c" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="rgba(255,255,255,0.03)" />
                                 <XAxis
                                     dataKey="name"
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }}
-                                    dy={10}
+                                    tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: 700 }}
+                                    dy={15}
                                 />
                                 <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }}
-                                    tickFormatter={(value) => `Rp${value / 1000000}M`}
-                                    dx={-10}
+                                    hide
                                 />
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
-                                    formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Omzet']}
-                                    labelStyle={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}
+                                    cursor={{ stroke: 'rgba(255,107,43,0.5)', strokeWidth: 2, strokeDasharray: '4 4' }}
+                                    contentStyle={{ 
+                                        borderRadius: '20px', 
+                                        border: '1px solid rgba(255,255,255,0.1)', 
+                                        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)', 
+                                        backgroundColor: 'rgba(15,15,15,0.9)', 
+                                        backdropFilter: 'blur(24px)',
+                                        padding: '16px 20px'
+                                    }}
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            return (
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">{label}</span>
+                                                    <span className="text-xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
+                                                        Rp {Number(payload[0].value).toLocaleString('id-ID')}
+                                                    </span>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
                                 />
                                 <Area
                                     type="monotone"
                                     dataKey="total"
                                     stroke="#ea580c"
-                                    strokeWidth={3}
+                                    strokeWidth={4}
                                     fillOpacity={1}
                                     fill="url(#colorTotal)"
+                                    activeDot={{ r: 6, fill: '#111', stroke: '#ea580c', strokeWidth: 3 }}
                                 />
                             </AreaChart>
                         </ResponsiveContainer>
@@ -349,55 +387,62 @@ export default function DashboardPage() {
                 </motion.div>
 
                 {/* Recent Orders List */}
-                <motion.div variants={item} className="p-6 rounded-3xl bg-white border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] flex flex-col">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Pesanan Terbaru</h2>
-                        <button className="p-2 text-slate-400 hover:text-orange-600 transition-colors">
-                            <MoreHorizontal size={20} />
+                <motion.div variants={item} className="p-6 rounded-[2rem] bg-[#161616]/80 backdrop-blur-3xl border border-white/5 shadow-2xl flex flex-col relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                    
+                    <div className="flex items-center justify-between mb-6 relative z-10">
+                        <h2 className="text-lg sm:text-xl font-display font-black text-white/90 tracking-tight">Pesanan Terbaru</h2>
+                        <button className="p-2 rounded-full bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+                            <MoreHorizontal size={18} />
                         </button>
                     </div>
 
-                    <div className="flex-1 space-y-4">
-                        {recentOrders.length > 0 ? recentOrders.map((order, i) => (
-                            <div key={order.id || i} className="flex items-center justify-between p-3 -mx-3 rounded-2xl hover:bg-slate-50 transition-colors group cursor-pointer">
+                    <div className="flex-1 space-y-2 relative z-10">
+                        {recentOrders.length > 0 ? recentOrders.map((order, i) => {
+                            const cleanedName = order.customer_name?.replace(/@(s\.whatsapp\.net|c\.us|lid)/g, '') || "Customer";
+                            return (
+                            <div key={order.id || i} className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 hover:-translate-y-0.5 transition-all cursor-pointer">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold group-hover:bg-white group-hover:shadow-sm transition-all text-xs">
-                                        {order.customer_name?.charAt(0) || "C"}
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center text-white/60 font-bold text-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                                        {cleanedName.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-slate-800 tracking-tight mb-0.5 group-hover:text-orange-600 transition-colors">
-                                            {order.customer_name}
+                                        <p className="text-xs sm:text-sm font-bold text-white/90 tracking-tight mb-0.5">
+                                            {cleanedName}
                                         </p>
-                                        <p className="text-xs text-slate-500 font-medium truncate max-w-[120px] sm:max-w-xs md:max-w-[120px]">
-                                            {order.channel || "WhatsApp"}
-                                        </p>
+                                        <div className="flex items-center gap-2 text-xs font-medium text-white/40">
+                                            <span>{order.channel || "WhatsApp"}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-sm font-black text-slate-800 tracking-tight">Rp {order.total?.toLocaleString('id-ID')}</p>
-                                    <p className={`text-[10px] font-black uppercase mt-1 ${
-                                            order.status?.toLowerCase() === 'lunas' ? 'text-emerald-500' :
-                                            order.status?.toLowerCase() === 'dikirim' ? 'text-blue-500' :
-                                            order.status?.toLowerCase() === 'diproses' ? 'text-amber-500' :
-                                            order.status?.toLowerCase() === 'dibatalkan' ? 'text-rose-500' :
-                                            'text-amber-500'
+                                    <p className="text-sm font-black text-white/90 tracking-tight mb-1">Rp {order.total?.toLocaleString('id-ID')}</p>
+                                    <span className={`inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-md border backdrop-blur-sm ${
+                                            order.status?.toLowerCase() === 'lunas' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                            order.status?.toLowerCase() === 'dikirim' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                            order.status?.toLowerCase() === 'diproses' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                            order.status?.toLowerCase() === 'dibatalkan' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                            'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                         }`}>
                                         {order.status || "Menunggu"}
-                                    </p>
+                                    </span>
                                 </div>
                             </div>
-                        )) : (
-                            <div className="flex flex-col items-center justify-center h-40 text-center">
-                                <ShoppingBag className="w-10 h-10 text-slate-200 mb-3" />
-                                <p className="text-sm font-bold text-slate-400">Belum ada pesanan</p>
-                                <p className="text-xs font-medium text-slate-400 mt-1">Pesanan barumu akan muncul di sini</p>
+                            );
+                        }) : (
+                            <div className="flex flex-col items-center justify-center h-48 text-center bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
+                                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                                    <ShoppingBag className="w-5 h-5 text-white/20" />
+                                </div>
+                                <p className="text-sm font-black text-white/50 tracking-tight">Belum ada pesanan</p>
+                                <p className="text-[11px] font-medium text-white/30 mt-1 uppercase tracking-widest">Pesanan barumu akan muncul di sini</p>
                             </div>
                         )}
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-slate-100">
-                        <Link href="/dashboard/pesanan" className="block text-center text-sm font-bold text-orange-600 hover:text-orange-700 transition-colors">
-                            Lihat Semua Pesanan
+                    <div className="mt-4 sm:mt-6 relative z-10">
+                        <Link href="/dashboard/pesanan" className="flex items-center justify-center gap-2 w-full py-3 text-[10px] sm:text-xs font-black uppercase tracking-widest text-orange-400 bg-orange-500/10 hover:bg-orange-500 hover:text-white rounded-xl transition-all border border-orange-500/20 hover:shadow-[0_0_30px_rgba(255,107,43,0.3)]">
+                            Lebih Banyak <ArrowUpRight size={14} />
                         </Link>
                     </div>
                 </motion.div>

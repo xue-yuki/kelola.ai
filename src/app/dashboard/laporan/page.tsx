@@ -109,19 +109,19 @@ export default function LaporanPage() {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black text-[#1A1A2E] tracking-tight leading-none mb-2">Insight & Laporan</h1>
-                    <p className="text-[#6B7280] text-sm font-medium">Pantau peforma bisnismu lewat analitik real-time.</p>
+                    <h1 className="text-3xl font-black text-white/90 tracking-tight leading-none mb-2">Insight & Laporan</h1>
+                    <p className="text-white/40 text-sm font-medium">Pantau peforma bisnismu lewat analitik real-time.</p>
                 </div>
-                <div className="flex gap-1.5 p-1.5 bg-[#FAFAF8] rounded-2xl border border-[#F0EEE9]">
+                <div className="flex gap-1.5 p-1.5 bg-[#161616]/90 backdrop-blur-xl rounded-2xl border border-white/5">
                     <button
                         onClick={() => setTimeRange("mingguan")}
-                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "mingguan" ? 'bg-white text-[#FF6B2B] shadow-sm border border-[#F0EEE9]' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
+                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "mingguan" ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white/90'}`}
                     >
                         Mingguan
                     </button>
                     <button
                         onClick={() => setTimeRange("bulanan")}
-                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "bulanan" ? 'bg-white text-[#FF6B2B] shadow-sm border border-[#F0EEE9]' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
+                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "bulanan" ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white/90'}`}
                     >
                         Bulanan
                     </button>
@@ -130,21 +130,21 @@ export default function LaporanPage() {
 
             {isLoading ? (
                 <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="animate-spin w-12 h-12 text-[#FF6B2B]" />
-                    <p className="font-black text-[#94A3B8] text-[10px] uppercase tracking-[0.2em]">Menyusun Laporan...</p>
+                    <Loader2 className="animate-spin w-12 h-12 text-orange-400" />
+                    <p className="font-black text-white/30 text-[10px] uppercase tracking-[0.2em]">Menyusun Laporan...</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     {/* Charts Column */}
                     <div className="lg:col-span-8 space-y-8">
                         {/* Main Revenue Chart */}
-                        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F0EEE9] shadow-sm flex flex-col group hover:border-[#FF6B2B]/20 transition-all duration-300">
+                        <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl flex flex-col group hover:border-orange-500/20 transition-all duration-300">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h3 className="font-bold text-lg text-[#1A1A2E] tracking-tight mb-0.5">Tren Pendapatan</h3>
-                                    <p className="text-xs font-bold text-[#94A3B8] uppercase tracking-widest">Omzet Bersih</p>
+                                    <h3 className="font-bold text-lg text-white/90 tracking-tight mb-0.5">Tren Pendapatan</h3>
+                                    <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Omzet Bersih</p>
                                 </div>
-                                <button className="w-10 h-10 flex items-center justify-center bg-[#FAFAF8] text-[#1A1A2E] hover:text-[#FF6B2B] border border-[#F0EEE9] rounded-xl transition-all">
+                                <button className="w-10 h-10 flex items-center justify-center bg-white/5 text-white/40 hover:text-orange-400 border border-white/5 hover:border-orange-500/30 rounded-xl transition-all">
                                     <Download size={18} />
                                 </button>
                             </div>
@@ -180,9 +180,9 @@ export default function LaporanPage() {
                                             content={({ active, payload, label }) => {
                                                 if (active && payload && payload.length) {
                                                     return (
-                                                        <div className="bg-white p-3 rounded-2xl border border-[#F0EEE9] shadow-lg">
-                                                            <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest mb-1">{label}</p>
-                                                            <p className="text-sm font-black text-[#1A1A2E]">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
+                                                        <div className="bg-[#111] p-3 rounded-2xl border border-white/10 shadow-2xl">
+                                                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{label}</p>
+                                                            <p className="text-sm font-black text-white/90">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
                                                         </div>
                                                     );
                                                 }
@@ -205,25 +205,25 @@ export default function LaporanPage() {
 
                         {/* Summary Metrics */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F0EEE9] shadow-sm flex items-center gap-5 hover:border-[#FF6B2B]/20 hover:shadow-md transition-all">
-                                <div className="w-14 h-14 rounded-2xl bg-[#FFF3EE] text-[#FF6B2B] flex items-center justify-center p-3">
+                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-5 hover:border-orange-500/30 transition-all group">
+                                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center p-3 border border-orange-500/20 group-hover:scale-110 transition-transform">
                                     <TrendingUp strokeWidth={2.5} className="w-full h-full" />
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest leading-none mb-1.5">Target Bulan Ini</p>
-                                    <p className="text-xl font-black text-[#1A1A2E] tracking-tight">85% <span className="text-xs text-emerald-500 ml-1">Terpenuhi</span></p>
-                                    <div className="w-full h-1.5 bg-[#FAFAF8] rounded-full mt-2.5 overflow-hidden">
-                                        <div className="w-[85%] h-full bg-[#FF6B2B] rounded-full" />
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1.5">Target Bulan Ini</p>
+                                    <p className="text-xl font-black text-white/90 tracking-tight">85% <span className="text-xs text-emerald-400 ml-1">Terpenuhi</span></p>
+                                    <div className="w-full h-1.5 bg-white/5 rounded-full mt-2.5 overflow-hidden">
+                                        <div className="w-[85%] h-full bg-orange-500 rounded-full" />
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#F0EEE9] shadow-sm flex items-center gap-5 hover:border-blue-500/20 hover:shadow-md transition-all">
-                                <div className="w-14 h-14 rounded-2xl bg-[#FAFAF8] text-[#1A1A2E] flex items-center justify-center p-3">
+                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-5 hover:border-white/20 transition-all group">
+                                <div className="w-14 h-14 rounded-2xl bg-white/5 text-white/90 flex items-center justify-center p-3 border border-white/10 group-hover:scale-110 transition-transform">
                                     <ShoppingBag strokeWidth={2.5} className="w-full h-full" />
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest leading-none mb-1.5">Rata. Keranjang</p>
-                                    <p className="text-xl font-black text-[#1A1A2E] tracking-tight">Rp {Math.floor(Math.random() * 50000 + 35000).toLocaleString('id-ID')}</p>
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1.5">Rata. Keranjang</p>
+                                    <p className="text-xl font-black text-white/90 tracking-tight">Rp {Math.floor(Math.random() * 50000 + 35000).toLocaleString('id-ID')}</p>
                                 </div>
                             </div>
                         </div>
@@ -232,35 +232,35 @@ export default function LaporanPage() {
                     {/* Insights Column */}
                     <div className="lg:col-span-4 space-y-6">
                         {/* Top Products Elegant Board */}
-                        <div className="bg-white border border-[#F0EEE9] p-6 sm:p-8 rounded-3xl shadow-sm h-auto flex flex-col">
+                        <div className="bg-[#161616]/90 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-3xl shadow-2xl h-auto flex flex-col">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-[#FAFAF8] text-[#1A1A2E] flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
                                     <Trophy size={18} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-[#1A1A2E] tracking-tight">Peringkat Produk</h3>
-                                    <p className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Bulan Ini</p>
+                                    <h3 className="font-bold text-white/90 tracking-tight">Peringkat Produk</h3>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Bulan Ini</p>
                                 </div>
                             </div>
 
                             <div className="space-y-6 flex-1">
                                 {topProducts.map((p, idx) => (
                                     <div key={p.id} className="flex items-center gap-4 group cursor-pointer">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-[#FF6B2B] text-white' :
-                                            idx === 1 ? 'bg-slate-100 text-[#1A1A2E]' : 'bg-[#FAFAF8] text-[#94A3B8]'
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(255,107,43,0.3)]' :
+                                            idx === 1 ? 'bg-white/10 text-white/90 border border-white/10' : 'bg-white/5 text-white/40 border border-white/5'
                                             }`}>
                                             #{idx + 1}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-[#1A1A2E] tracking-tight truncate mb-0.5">{p.name}</p>
+                                            <p className="text-sm font-bold text-white/90 tracking-tight truncate mb-0.5 group-hover:text-orange-400 transition-colors">{p.name}</p>
                                             <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-1 bg-[#FAFAF8] rounded-full overflow-hidden">
+                                                <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                                                     <div
-                                                        className={`h-full rounded-full ${idx === 0 ? 'bg-[#FF6B2B]' : 'bg-slate-300'}`}
+                                                        className={`h-full rounded-full ${idx === 0 ? 'bg-orange-500' : 'bg-white/30'}`}
                                                         style={{ width: `${100 - (idx * 15)}%` }}
                                                     />
                                                 </div>
-                                                <span className="text-[10px] font-bold text-[#94A3B8]">{p.total_sales || 20} Terjual</span>
+                                                <span className="text-[10px] font-bold text-white/40">{p.total_sales || 20} Terjual</span>
                                             </div>
                                         </div>
                                     </div>
@@ -269,17 +269,20 @@ export default function LaporanPage() {
                         </div>
 
                         {/* Minimal AI Insight Card */}
-                        <div className="bg-[#FFF3EE] border border-[#FF6B2B]/10 p-6 sm:p-8 rounded-3xl group">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Sparkles size={16} className="text-[#FF6B2B]" />
-                                <h4 className="font-bold text-[#1A1A2E] text-sm">💡 Rekomendasi AI</h4>
+                        <div className="bg-orange-500/5 border border-orange-500/20 p-6 sm:p-8 rounded-3xl group backdrop-blur-xl relative overflow-hidden">
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl" />
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Sparkles size={16} className="text-orange-400" />
+                                    <h4 className="font-bold text-orange-400 text-sm">💡 Rekomendasi AI</h4>
+                                </div>
+                                <p className="text-sm text-white/70 leading-relaxed mb-6">
+                                    <span className="font-bold text-white/90">Sabtu</span> selalu menjadi puncak penjualanmu minggu ini. Buat promo <span className="font-bold text-white/90">Bundling Hemat</span> di hari Sabtu siang untuk memaksimalkan angka konversi secara drastis!
+                                </p>
+                                <button className="flex items-center gap-2 bg-orange-500/10 text-orange-400 border border-orange-500/20 w-full justify-center py-2.5 rounded-xl text-xs font-bold transition-all hover:bg-orange-500 hover:text-white shadow-lg hover:shadow-orange-500/20">
+                                    Atur Promo Sekarang <ArrowRight size={14} />
+                                </button>
                             </div>
-                            <p className="text-sm text-[#1A1A2E] leading-relaxed mb-6">
-                                <span className="font-bold">Sabtu</span> selalu menjadi puncak penjualanmu minggu ini. Buat promo <span className="font-bold">Bundling Hemat</span> di hari Sabtu siang untuk memaksimalkan angka konversi secara drastis!
-                            </p>
-                            <button className="flex items-center gap-2 bg-white text-[#FF6B2B] border border-[#FF6B2B]/20 w-full justify-center py-2.5 rounded-xl text-xs font-bold transition-all hover:bg-[#FF6B2B] hover:text-white">
-                                Atur Promo Sekarang <ArrowRight size={14} />
-                            </button>
                         </div>
                     </div>
                 </div>

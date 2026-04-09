@@ -168,12 +168,12 @@ export default function ProdukPage() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-[28px] font-bold text-[#1A1A2E] tracking-tight mb-2">Katalog Produk</h1>
-                    <p className="text-sm font-medium text-[#6B7280]">Atur stok, harga, dan semua item jualanmu.</p>
+                    <h1 className="text-[28px] font-black text-white/90 tracking-tight mb-2">Katalog Produk</h1>
+                    <p className="text-sm font-medium text-white/40">Atur stok, harga, dan semua item jualanmu.</p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
-                    className="flex items-center justify-center gap-2 bg-[#FF6B2B] text-white px-8 py-3 rounded-full font-bold hover:bg-[#E85A1D] transition-all shadow-lg shadow-[#FF6B2B]/20 active:scale-95"
+                    className="flex items-center justify-center gap-2 bg-orange-500 text-white px-8 py-3 rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 active:scale-95"
                 >
                     <Plus size={20} />
                     Tambah Produk
@@ -183,26 +183,26 @@ export default function ProdukPage() {
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-6 items-center">
                 <div className="flex-1 w-full relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#FF6B2B] transition-colors" size={20} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-orange-400 transition-colors" size={20} />
                     <input
                         type="text"
                         placeholder="Cari nama produk..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white border border-[#F0EEE9] rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none"
+                        className="w-full bg-[#161616]/90 backdrop-blur-xl border border-white/5 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-white/90 placeholder:text-white/30 focus:ring-1 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all outline-none"
                     />
                 </div>
 
-                <div className="flex items-center p-1 bg-white border border-[#F0EEE9] rounded-2xl">
+                <div className="flex items-center p-1 bg-[#161616]/90 backdrop-blur-xl border border-white/5 rounded-2xl">
                     <button
                         onClick={() => setViewMode('grid')}
-                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-[#1A1A2E] text-white shadow-md' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
+                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white shadow-md border border-white/5' : 'text-white/40 hover:text-white'}`}
                     >
                         <LayoutGrid size={20} />
                     </button>
                     <button
                         onClick={() => setViewMode('list')}
-                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-[#1A1A2E] text-white shadow-md' : 'text-[#94A3B8] hover:text-[#1A1A2E]'}`}
+                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-md border border-white/5' : 'text-white/40 hover:text-white'}`}
                     >
                         <List size={20} />
                     </button>
@@ -218,8 +218,8 @@ export default function ProdukPage() {
                         animate={{ opacity: 1 }}
                         className="flex flex-col items-center justify-center py-32"
                     >
-                        <Loader2 className="animate-spin w-12 h-12 text-[#FF6B2B] mb-4" />
-                        <p className="text-[#6B7280] font-bold">Menyiapkan katalog...</p>
+                        <Loader2 className="animate-spin w-12 h-12 text-orange-400 mb-4" />
+                        <p className="text-white/30 font-bold uppercase tracking-widest text-xs">Menyiapkan katalog...</p>
                     </motion.div>
                 ) : filteredProducts.length > 0 ? (
                     viewMode === 'grid' ? (
@@ -234,30 +234,30 @@ export default function ProdukPage() {
                                 <motion.div
                                     key={p.id}
                                     variants={item}
-                                    className="bg-white rounded-2xl border border-[#F0EEE9] p-5 group hover:shadow-xl hover:shadow-[#1A1A2E]/5 transition-all relative"
+                                    className="bg-[#161616]/90 backdrop-blur-2xl rounded-2xl border border-white/5 p-5 group hover:shadow-2xl hover:border-white/10 transition-all relative"
                                 >
                                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleOpenModal(p)} className="p-2 bg-white border border-[#F0EEE9] rounded-full text-blue-500 hover:bg-blue-50 shadow-sm">
+                                        <button onClick={() => handleOpenModal(p)} className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 hover:bg-blue-500/20 shadow-sm transition-all z-10 w-9 h-9 flex items-center justify-center">
                                             <Edit2 size={14} />
                                         </button>
-                                        <button onClick={() => handleDelete(p.id)} className="p-2 bg-white border border-[#F0EEE9] rounded-full text-rose-500 hover:bg-rose-50 shadow-sm">
+                                        <button onClick={() => handleDelete(p.id)} className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400 hover:bg-rose-500/20 shadow-sm transition-all z-10 w-9 h-9 flex items-center justify-center">
                                             <Trash2 size={14} />
                                         </button>
                                     </div>
 
-                                    <div className="w-full aspect-square rounded-xl bg-[#FAFAF8] border border-[#F0EEE9] mb-5 flex items-center justify-center group-hover:bg-[#FFF3EE] transition-colors overflow-hidden">
-                                        <Package size={48} className="text-[#94A3B8] group-hover:text-[#FF6B2B] group-hover:scale-110 transition-all duration-500" />
+                                    <div className="w-full aspect-square rounded-xl bg-white/5 border border-white/10 mb-5 flex items-center justify-center overflow-hidden">
+                                        <Package size={48} className="text-white/20 group-hover:text-orange-400 group-hover:scale-110 transition-all duration-500" />
                                     </div>
 
                                     <div className="space-y-3">
                                         <div>
-                                            <h3 className="font-bold text-[#1A1A2E] group-hover:text-[#FF6B2B] transition-colors line-clamp-1">{p.name}</h3>
-                                            <p className="text-xs font-bold text-[#94A3B8] mt-0.5 capitalize">Produk Fisik</p>
+                                            <h3 className="font-bold text-white/90 group-hover:text-orange-400 transition-colors line-clamp-1">{p.name}</h3>
+                                            <p className="text-xs font-bold text-white/30 mt-0.5 capitalize">Produk Fisik</p>
                                         </div>
 
-                                        <div className="flex items-center justify-between pt-2 border-t border-[#F0EEE9]">
-                                            <p className="font-black text-[#1A1A2E]">Rp {p.price?.toLocaleString('id-ID')}</p>
-                                            <div className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-50 text-rose-600' : 'bg-[#FAFAF8] text-[#6B7280]'
+                                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                            <p className="font-black text-white/90">Rp {p.price?.toLocaleString('id-ID')}</p>
+                                            <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-white/40 border border-transparent'
                                                 }`}>
                                                 Stok: {p.stock}
                                             </div>
@@ -265,7 +265,7 @@ export default function ProdukPage() {
                                     </div>
 
                                     {p.stock <= 5 && (
-                                        <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-rose-500 bg-rose-50/50 p-1.5 rounded-lg justify-center uppercase tracking-widest">
+                                        <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 p-1.5 rounded-lg justify-center uppercase tracking-widest">
                                             <AlertCircle size={10} /> Hampir Habis
                                         </div>
                                     )}
@@ -277,52 +277,52 @@ export default function ProdukPage() {
                             key="list"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="bg-white rounded-2xl border border-[#F0EEE9] overflow-hidden"
+                            className="bg-[#161616]/90 backdrop-blur-2xl rounded-2xl border border-white/5 overflow-hidden shadow-2xl"
                         >
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-[#FAFAF8] border-b border-[#F0EEE9]">
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Produk</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Harga Beli (HPP)</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Harga Jual</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-center">Stok</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[#94A3B8] text-right">Aksi</th>
+                                    <tr className="bg-[#111] border-b border-white/5">
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Produk</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Harga Beli (HPP)</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Harga Jual</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-center">Stok</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-right">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredProducts.map((p) => (
-                                        <tr key={p.id} className="border-b border-[#F0EEE9] hover:bg-[#FFF8F5] transition-colors group">
+                                        <tr key={p.id} className="border-b border-white/5 hover:bg-[#1a1a1a]/50 transition-colors group">
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-11 h-11 rounded-xl bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center text-[#94A3B8] group-hover:bg-white group-hover:text-[#FF6B2B] group-hover:border-[#FF6B2B]/20 transition-all">
+                                                    <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:bg-[#111] group-hover:text-orange-400 group-hover:border-orange-500/20 transition-all">
                                                         <Package size={20} />
                                                     </div>
-                                                    <p className="font-bold text-[#1A1A2E] text-sm tracking-tight">{p.name}</p>
+                                                    <p className="font-bold text-white/90 text-sm tracking-tight">{p.name}</p>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 font-bold text-[#6B7280] text-[11px] uppercase tracking-wider">
+                                            <td className="px-6 py-5 font-bold text-white/40 text-[11px] uppercase tracking-wider">
                                                 Rp {p.cost_price?.toLocaleString('id-ID')}
                                             </td>
-                                            <td className="px-6 py-5 font-black text-[#1A1A2E] text-sm">
+                                            <td className="px-6 py-5 font-black text-white/90 text-sm">
                                                 Rp {p.price?.toLocaleString('id-ID')}
                                             </td>
                                             <td className="px-6 py-5 text-center">
                                                 <div className="inline-flex flex-col items-center">
-                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${p.stock <= 5 ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-600'
+                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${p.stock <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-white/50 border border-transparent'
                                                         }`}>
                                                         {p.stock} Unit
                                                     </span>
                                                     {p.stock <= 5 && (
-                                                        <p className="text-[9px] font-black text-rose-500 uppercase mt-1 tracking-tighter">Stok Rendah</p>
+                                                        <p className="text-[9px] font-bold text-rose-400 uppercase mt-1 tracking-tighter">Stok Rendah</p>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-5 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <button onClick={() => handleOpenModal(p)} className="p-2.5 text-blue-500 hover:bg-white border border-transparent hover:border-[#F0EEE9] rounded-xl transition-all">
+                                                    <button onClick={() => handleOpenModal(p)} className="p-2.5 text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/20 rounded-xl transition-all">
                                                         <Edit2 size={16} />
                                                     </button>
-                                                    <button onClick={() => handleDelete(p.id)} className="p-2.5 text-rose-500 hover:bg-white border border-transparent hover:border-[#F0EEE9] rounded-xl transition-all">
+                                                    <button onClick={() => handleDelete(p.id)} className="p-2.5 text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-xl transition-all">
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
@@ -338,16 +338,16 @@ export default function ProdukPage() {
                         key="empty"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-3xl border-2 border-dashed border-[#F0EEE9] py-32 text-center"
+                        className="bg-[#161616]/90 backdrop-blur-2xl rounded-3xl border-2 border-dashed border-white/10 py-32 text-center shadow-2xl"
                     >
-                        <div className="w-24 h-24 rounded-full bg-[#FAFAF8] border border-[#F0EEE9] flex items-center justify-center mx-auto mb-6 text-slate-200">
+                        <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6 text-white/20">
                             <Package size={48} />
                         </div>
-                        <h2 className="text-xl font-bold text-[#1A1A2E] tracking-tight">Katalog Anda Masih Kosong</h2>
-                        <p className="text-[#6B7280] mt-2 mb-8 max-w-sm mx-auto font-medium">Mulai tambahkan produk pertama Anda untuk bisa mulai berjualan di Kelola.ai.</p>
+                        <h2 className="text-xl font-bold text-white/90 tracking-tight">Katalog Anda Masih Kosong</h2>
+                        <p className="text-white/40 mt-2 mb-8 max-w-sm mx-auto font-medium">Mulai tambahkan produk pertama Anda untuk bisa mulai berjualan di Kelola.ai.</p>
                         <button
                             onClick={() => handleOpenModal()}
-                            className="bg-[#1A1A2E] text-white px-8 py-3 rounded-full font-bold hover:bg-[#FF6B2B] transition-all"
+                            className="bg-orange-500 text-white px-8 py-3 rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
                         >
                             Tambah Produk Sekarang
                         </button>
@@ -370,13 +370,13 @@ export default function ProdukPage() {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-lg bg-[#161616] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
                         >
-                            <div className="px-8 py-6 border-b border-[#F0EEE9] flex items-center justify-between bg-[#FAFAF8]">
-                                <h2 className="text-xl font-bold text-[#1A1A2E] tracking-tight">
+                            <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-[#111]">
+                                <h2 className="text-xl font-bold text-white/90 tracking-tight">
                                     {editingProduct ? '📝 Edit Produk' : '✨ Produk Baru'}
                                 </h2>
-                                <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-full transition-colors text-slate-400 border border-transparent hover:border-[#F0EEE9]">
+                                <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors text-white/40 border border-transparent hover:border-white/10">
                                     <X size={18} />
                                 </button>
                             </div>
@@ -384,51 +384,51 @@ export default function ProdukPage() {
                             <form onSubmit={handleSubmit} className="p-8 space-y-6">
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Nama Produk</label>
+                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Nama Produk</label>
                                         <input
                                             required
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             placeholder="Masukan nama lengkap produk..."
-                                            className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
+                                            className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Harga HPP</label>
+                                            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Harga HPP</label>
                                             <input
                                                 required
                                                 type="number"
                                                 value={formData.cost_price}
                                                 onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
                                                 placeholder="Harga beli"
-                                                className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
+                                                className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Harga Jual</label>
+                                            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Harga Jual</label>
                                             <input
                                                 required
                                                 type="number"
                                                 value={formData.price}
                                                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                                 placeholder="Harga jual"
-                                                className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
+                                                className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.2em] pl-1">Stok Inventaris</label>
+                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Stok Inventaris</label>
                                         <input
                                             required
                                             type="number"
                                             value={formData.stock}
                                             onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                                             placeholder="Jumlah stok saat ini..."
-                                            className="w-full bg-[#FAFAF8] border border-[#F0EEE9] rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-[#FF6B2B]/5 focus:border-[#FF6B2B]/20 transition-all outline-none text-[#1A1A2E]"
+                                            className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
                                         />
                                     </div>
                                 </div>
@@ -437,14 +437,14 @@ export default function ProdukPage() {
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 px-6 py-4 rounded-full bg-[#FAFAF8] text-[#6B7280] font-bold hover:bg-[#F0EEE9] transition-all border border-[#F0EEE9]"
+                                        className="flex-1 px-6 py-4 rounded-full bg-white/5 text-white/60 font-bold hover:bg-white/10 transition-all border border-white/10"
                                     >
                                         Batal
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSaving}
-                                        className="flex-[2] bg-[#FF6B2B] text-white rounded-full font-bold hover:bg-[#E85A1D] transition-all shadow-lg shadow-[#FF6B2B]/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="flex-[2] bg-orange-500 text-white rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
                                         {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
@@ -458,6 +458,3 @@ export default function ProdukPage() {
         </div>
     );
 }
-
-// Helper (Optional - I'll put it back in if needed, but I kept the logic in the main component to avoid breaking imports)
-
