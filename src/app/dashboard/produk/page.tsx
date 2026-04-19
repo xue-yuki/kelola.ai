@@ -252,11 +252,24 @@ export default function ProdukPage() {
                                     <div className="space-y-3">
                                         <div>
                                             <h3 className="font-bold text-white/90 group-hover:text-orange-400 transition-colors line-clamp-1">{p.name}</h3>
-                                            <p className="text-xs font-bold text-white/30 mt-0.5 capitalize">Produk Fisik</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                {(() => {
+                                                    const margin = p.price && p.cost_price ? p.price - p.cost_price : 0;
+                                                    const marginPercent = p.cost_price ? Math.round((margin / p.cost_price) * 100) : 0;
+                                                    return (
+                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${marginPercent >= 20 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : marginPercent >= 10 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                                            +{marginPercent}% margin
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </div>
                                         </div>
 
                                         <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                            <p className="font-black text-white/90">Rp {p.price?.toLocaleString('id-ID')}</p>
+                                            <div>
+                                                <p className="font-black text-white/90">Rp {p.price?.toLocaleString('id-ID')}</p>
+                                                <p className="text-[10px] text-white/40">HPP: Rp {p.cost_price?.toLocaleString('id-ID')}</p>
+                                            </div>
                                             <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-white/40 border border-transparent'
                                                 }`}>
                                                 Stok: {p.stock}
@@ -285,6 +298,7 @@ export default function ProdukPage() {
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Produk</th>
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Harga Beli (HPP)</th>
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Harga Jual</th>
+                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-center">Margin</th>
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-center">Stok</th>
                                         <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-right">Aksi</th>
                                     </tr>
@@ -305,6 +319,22 @@ export default function ProdukPage() {
                                             </td>
                                             <td className="px-6 py-5 font-black text-white/90 text-sm">
                                                 Rp {p.price?.toLocaleString('id-ID')}
+                                            </td>
+                                            <td className="px-6 py-5 text-center">
+                                                {(() => {
+                                                    const margin = p.price && p.cost_price ? p.price - p.cost_price : 0;
+                                                    const marginPercent = p.cost_price ? Math.round((margin / p.cost_price) * 100) : 0;
+                                                    return (
+                                                        <div className="inline-flex flex-col items-center">
+                                                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold ${marginPercent >= 20 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : marginPercent >= 10 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                                                +Rp {margin.toLocaleString('id-ID')}
+                                                            </span>
+                                                            <p className={`text-[9px] font-bold mt-1 ${marginPercent >= 20 ? 'text-emerald-400' : marginPercent >= 10 ? 'text-amber-400' : 'text-rose-400'}`}>
+                                                                {marginPercent}%
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-6 py-5 text-center">
                                                 <div className="inline-flex flex-col items-center">

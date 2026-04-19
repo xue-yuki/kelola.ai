@@ -27,9 +27,9 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 const QUICK_ACTIONS = [
-    { title: "Broadcast WA", icon: MessageCircle, color: "text-emerald-400", bg: "bg-emerald-500/10 border border-emerald-500/20", hover: "hover:bg-emerald-500/20" },
-    { title: "Tambah Produk", icon: PackagePlus, color: "text-orange-400", bg: "bg-orange-500/10 border border-orange-500/20", hover: "hover:bg-orange-500/20" },
-    { title: "Buat Laporan", icon: FileText, color: "text-blue-400", bg: "bg-blue-500/10 border border-blue-500/20", hover: "hover:bg-blue-500/20" },
+    { title: "Broadcast WA", icon: MessageCircle, color: "text-emerald-400", bg: "bg-emerald-500/10 border border-emerald-500/20", hover: "hover:bg-emerald-500/20", href: "/dashboard/wa-marketing" },
+    { title: "Tambah Produk", icon: PackagePlus, color: "text-orange-400", bg: "bg-orange-500/10 border border-orange-500/20", hover: "hover:bg-orange-500/20", href: "/dashboard/produk" },
+    { title: "Buat Laporan", icon: FileText, color: "text-blue-400", bg: "bg-blue-500/10 border border-blue-500/20", hover: "hover:bg-blue-500/20", href: "/dashboard/laporan" },
 ];
 
 export default function DashboardPage() {
@@ -250,11 +250,11 @@ export default function DashboardPage() {
                         {QUICK_ACTIONS.map((action, i) => {
                             const Icon = action.icon;
                             return (
-                                <button key={i} className={`group relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 overflow-hidden bg-white/5 border border-white/10 hover:border-white/20 hover:-translate-y-0.5 hover:shadow-xl`}>
+                                <Link key={i} href={action.href} className={`group relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 overflow-hidden bg-white/5 border border-white/10 hover:border-white/20 hover:-translate-y-0.5 hover:shadow-xl`}>
                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-transparent to-white/5`} />
                                     <Icon size={16} className={action.color} />
                                     <span className="text-white/90">{action.title}</span>
-                                </button>
+                                </Link>
                             );
                         })}
                     </div>
@@ -266,11 +266,11 @@ export default function DashboardPage() {
                 {QUICK_ACTIONS.map((action, i) => {
                     const Icon = action.icon;
                     return (
-                        <button key={i} className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-3xl transition-all duration-300 bg-white/5 border border-white/10 active:scale-95 overflow-hidden`}>
+                        <Link key={i} href={action.href} className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-3xl transition-all duration-300 bg-white/5 border border-white/10 active:scale-95 overflow-hidden`}>
                             <div className={`absolute inset-0 opacity-10 ${action.bg.split(' ')[0]}`} />
                             <Icon size={24} className={action.color} />
                             <span className="text-[10px] sm:text-xs font-bold text-white/90 text-center leading-tight">{action.title}</span>
-                        </button>
+                        </Link>
                     );
                 })}
             </motion.div>

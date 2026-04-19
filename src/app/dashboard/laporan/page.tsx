@@ -10,7 +10,13 @@ import {
     Tooltip,
     ResponsiveContainer,
     AreaChart,
-    Area
+    Area,
+    PieChart,
+    Pie,
+    Cell,
+    LineChart,
+    Line,
+    Legend
 } from "recharts";
 import {
     Download,
@@ -35,6 +41,9 @@ export default function LaporanPage() {
     const [revenueData, setRevenueData] = useState<any[]>([]);
     const [topProducts, setTopProducts] = useState<any[]>([]);
     const [timeRange, setTimeRange] = useState("mingguan");
+    const [channelData, setChannelData] = useState<any[]>([]);
+    const [orderCountData, setOrderCountData] = useState<any[]>([]);
+    const [summaryStats, setSummaryStats] = useState({ totalRevenue: 0, totalOrders: 0, avgOrder: 0 });
 
     useEffect(() => {
         fetchReportData();
@@ -61,12 +70,13 @@ export default function LaporanPage() {
 
             const { data: orders } = await supabase
                 .from('orders')
-                .select('total, created_at, status')
+                .select('total, created_at, status, channel')
                 .eq('business_id', business.id)
                 .eq('status', 'lunas')
                 .gte('created_at', startDate.toISOString());
 
             const processedData = [];
+            const orderCountProcessed = [];
             const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
             for (let i = daysToFetch - 1; i >= 0; i--) {
@@ -75,27 +85,87 @@ export default function LaporanPage() {
                 const dayStr = days[date.getDay()];
                 const dateKey = date.toISOString().split('T')[0];
 
-                const dayTotal = orders
-                    ?.filter(o => o.created_at.startsWith(dateKey))
-                    .reduce((sum, o) => sum + o.total, 0) || 0;
+                const dayOrders = orders?.filter(o => o.created_at.startsWith(dateKey)) || [];
+                const dayTotal = dayOrders.reduce((sum, o) => sum + o.total, 0);
+                const dayCount = dayOrders.length;
 
                 processedData.push({
                     name: timeRange === "mingguan" ? dayStr : date.getDate().toString(),
                     total: dayTotal
                 });
+
+                orderCountProcessed.push({
+                    name: timeRange === "mingguan" ? dayStr : date.getDate().toString(),
+                    orders: dayCount
+                });
             }
             setRevenueData(processedData);
+            setOrderCountData(orderCountProcessed);
+
+            // Channel distribution (Pie Chart)
+            const channelCounts: Record<string, number> = {};
+            orders?.forEach(o => {
+                const ch = o.channel || 'unknown';
+                channelCounts[ch] = (channelCounts[ch] || 0) + 1;
+            });
+            const channelColors: Record<string, string> = {
+                whatsapp: '#25D366',
+                offline: '#6B7280',
+                telegram: '#0088cc',
+                unknown: '#9CA3AF'
+            };
+            const channelLabels: Record<string, string> = {
+                whatsapp: 'WhatsApp',
+                offline: 'Offline/Kasir',
+                telegram: 'Telegram',
+                unknown: 'Lainnya'
+            };
+            setChannelData(Object.entries(channelCounts).map(([key, value]) => ({
+                name: channelLabels[key] || key,
+                value,
+                color: channelColors[key] || '#9CA3AF'
+            })));
+
+            // Summary stats
+            const totalRevenue = orders?.reduce((sum, o) => sum + o.total, 0) || 0;
+            const totalOrders = orders?.length || 0;
+            const avgOrder = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+            setSummaryStats({ totalRevenue, totalOrders, avgOrder });
+
+            // Get all completed orders to calculate real sales
+            const { data: allOrders } = await supabase
+                .from('orders')
+                .select('items')
+                .eq('business_id', business.id)
+                .eq('status', 'lunas');
+
+            // Count sales per product from order items
+            const salesCount: Record<string, number> = {};
+            allOrders?.forEach(order => {
+                let items = order.items;
+                if (typeof items === 'string') {
+                    try { items = JSON.parse(items); } catch { items = []; }
+                }
+                if (Array.isArray(items)) {
+                    items.forEach((item: any) => {
+                        const name = item.name?.toLowerCase() || '';
+                        salesCount[name] = (salesCount[name] || 0) + (item.qty || 1);
+                    });
+                }
+            });
 
             const { data: products } = await supabase
                 .from('products')
                 .select('*')
-                .eq('business_id', business.id)
-                .limit(5);
+                .eq('business_id', business.id);
 
-            setTopProducts(products?.map(p => ({
+            // Map products with real sales data
+            const productsWithSales = products?.map(p => ({
                 ...p,
-                total_sales: Math.floor(Math.random() * 50) + 10
-            })).sort((a, b) => b.total_sales - a.total_sales) || []);
+                total_sales: salesCount[p.name?.toLowerCase()] || 0
+            })).sort((a, b) => b.total_sales - a.total_sales).slice(0, 5) || [];
+
+            setTopProducts(productsWithSales);
 
         } catch (error) {
             console.error("Error fetching report:", error);
@@ -204,29 +274,129 @@ export default function LaporanPage() {
                         </div>
 
                         {/* Summary Metrics */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-5 hover:border-orange-500/30 transition-all group">
-                                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center p-3 border border-orange-500/20 group-hover:scale-110 transition-transform">
-                                    <TrendingUp strokeWidth={2.5} className="w-full h-full" />
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-emerald-500/30 transition-all group">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                                    <TrendingUp strokeWidth={2.5} size={22} />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1.5">Target Bulan Ini</p>
-                                    <p className="text-xl font-black text-white/90 tracking-tight">85% <span className="text-xs text-emerald-400 ml-1">Terpenuhi</span></p>
-                                    <div className="w-full h-1.5 bg-white/5 rounded-full mt-2.5 overflow-hidden">
-                                        <div className="w-[85%] h-full bg-orange-500 rounded-full" />
-                                    </div>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Omzet</p>
+                                    <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.totalRevenue.toLocaleString('id-ID')}</p>
                                 </div>
                             </div>
-                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-5 hover:border-white/20 transition-all group">
-                                <div className="w-14 h-14 rounded-2xl bg-white/5 text-white/90 flex items-center justify-center p-3 border border-white/10 group-hover:scale-110 transition-transform">
-                                    <ShoppingBag strokeWidth={2.5} className="w-full h-full" />
+                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-blue-500/30 transition-all group">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
+                                    <ShoppingBag strokeWidth={2.5} size={22} />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1.5">Rata. Keranjang</p>
-                                    <p className="text-xl font-black text-white/90 tracking-tight">Rp {Math.floor(Math.random() * 50000 + 35000).toLocaleString('id-ID')}</p>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Pesanan</p>
+                                    <p className="text-lg font-black text-white/90 tracking-tight">{summaryStats.totalOrders} Order</p>
+                                </div>
+                            </div>
+                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-orange-500/30 transition-all group">
+                                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20 group-hover:scale-110 transition-transform">
+                                    <Zap strokeWidth={2.5} size={22} />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Rata. Keranjang</p>
+                                    <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.avgOrder.toLocaleString('id-ID')}</p>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Order Count Trend (Line Chart) */}
+                        <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl hover:border-blue-500/20 transition-all">
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="font-bold text-lg text-white/90 tracking-tight mb-0.5">Jumlah Pesanan</h3>
+                                    <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Order per Hari</p>
+                                </div>
+                            </div>
+                            <div className="h-[200px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={orderCountData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#333" />
+                                        <XAxis
+                                            dataKey="name"
+                                            axisLine={false}
+                                            tickLine={false}
+                                            tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }}
+                                            dy={10}
+                                        />
+                                        <YAxis hide />
+                                        <Tooltip
+                                            cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                                            content={({ active, payload, label }) => {
+                                                if (active && payload && payload.length) {
+                                                    return (
+                                                        <div className="bg-[#111] p-3 rounded-2xl border border-white/10 shadow-2xl">
+                                                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{label}</p>
+                                                            <p className="text-sm font-black text-blue-400">{payload[0].value} Pesanan</p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                        />
+                                        <Bar dataKey="orders" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Channel Distribution (Pie Chart) */}
+                        {channelData.length > 0 && (
+                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl hover:border-purple-500/20 transition-all">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-white/90 tracking-tight mb-0.5">Sumber Pesanan</h3>
+                                        <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Channel Distribution</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                    <div className="h-[180px] w-[180px]">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={channelData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={50}
+                                                    outerRadius={80}
+                                                    paddingAngle={3}
+                                                    dataKey="value"
+                                                >
+                                                    {channelData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip
+                                                    content={({ active, payload }) => {
+                                                        if (active && payload && payload.length) {
+                                                            return (
+                                                                <div className="bg-[#111] p-3 rounded-2xl border border-white/10 shadow-2xl">
+                                                                    <p className="text-sm font-black text-white/90">{payload[0].name}: {payload[0].value}</p>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    }}
+                                                />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="flex-1 space-y-3">
+                                        {channelData.map((ch, idx) => (
+                                            <div key={idx} className="flex items-center gap-3">
+                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ch.color }} />
+                                                <span className="text-sm font-medium text-white/70 flex-1">{ch.name}</span>
+                                                <span className="text-sm font-bold text-white/90">{ch.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Insights Column */}

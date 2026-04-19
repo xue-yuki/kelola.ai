@@ -110,7 +110,11 @@ export default function KasirPage() {
                     total: totalAmount,
                     status: 'lunas',
                     channel: 'offline',
-                    payment_method: paymentMethod
+                    items: cart.map(item => ({
+                        name: item.name,
+                        qty: item.qty,
+                        price: item.price
+                    }))
                 }])
                 .select()
                 .single();

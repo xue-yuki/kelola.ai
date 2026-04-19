@@ -16,7 +16,13 @@ import {
     ChevronRight,
     LogOut,
     Smartphone,
-    QrCode
+    QrCode,
+    Mail,
+    Lock,
+    Key,
+    History,
+    Sparkles,
+    AlertTriangle
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,6 +54,61 @@ export default function PengaturanPage() {
     });
 
     const [businessId, setBusinessId] = useState<string | null>(null);
+
+    // Tab Notifikasi States
+    const [notifSettings, setNotifSettings] = useState({
+        orderEmail: true,
+        orderWa: true,
+        lowStock: true,
+        marketing: false,
+        report: true
+    });
+    const [isSavingNotif, setIsSavingNotif] = useState(false);
+    const [saveNotifSuccess, setSaveNotifSuccess] = useState(false);
+
+    // Tab Keamanan States
+    const [securityForm, setSecurityForm] = useState({ newPassword: '', confirmPassword: '' });
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState("");
+
+    // Password Update Handler
+    const handleUpdatePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setPasswordError("");
+        if (securityForm.newPassword !== securityForm.confirmPassword) {
+            setPasswordError("Password tidak sama");
+            return;
+        }
+        if (securityForm.newPassword.length < 6) {
+            setPasswordError("Password minimal 6 karakter");
+            return;
+        }
+
+        setIsUpdatingPassword(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: securityForm.newPassword
+            });
+            if (error) throw error;
+            
+            alert("Password berhasil diperbarui!");
+            setSecurityForm({ newPassword: '', confirmPassword: '' });
+        } catch (error: any) {
+            setPasswordError(error.message || "Gagal memperbarui password");
+        } finally {
+            setIsUpdatingPassword(false);
+        }
+    };
+
+    // Notification Save Handler placeholder
+    const handleSaveNotif = () => {
+        setIsSavingNotif(true);
+        setTimeout(() => {
+            setIsSavingNotif(false);
+            setSaveNotifSuccess(true);
+            setTimeout(() => setSaveNotifSuccess(false), 3000);
+        }, 800);
+    };
 
     useEffect(() => {
         fetchBusinessData();
@@ -227,7 +288,13 @@ export default function PengaturanPage() {
                         ))}
 
                         <div className="pt-6 border-t border-white/5 mt-4">
-                            <button className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-rose-500/80 hover:text-rose-400 hover:bg-rose-500/10 transition-all font-bold text-sm">
+                            <button
+                                onClick={async () => {
+                                    await supabase.auth.signOut();
+                                    window.location.href = '/auth/login';
+                                }}
+                                className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-rose-500/80 hover:text-rose-400 hover:bg-rose-500/10 transition-all font-bold text-sm"
+                            >
                                 <LogOut size={20} />
                                 Keluar Akun
                             </button>
@@ -236,6 +303,8 @@ export default function PengaturanPage() {
 
                     {/* Main Settings Panel */}
                     <div className="lg:col-span-8 space-y-8">
+                        {activeTab === 'profil' && (
+                        <>
                         <div className="bg-[#161616]/90 backdrop-blur-2xl rounded-[32px] border border-white/5 shadow-2xl overflow-hidden">
                             <div className="px-10 py-8 border-b border-white/5 bg-[#111]">
                                 <h2 className="font-bold text-xl text-white/90 tracking-tight">Informasi Dasar Bisnis</h2>
@@ -412,6 +481,184 @@ export default function PengaturanPage() {
                                 Tutup Bisnis
                             </button>
                         </div>
+                        </>
+                        )}
+
+                        {activeTab === 'notif' && (
+                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-8">
+                                <div className="bg-[#161616]/90 backdrop-blur-2xl rounded-[32px] border border-white/5 shadow-2xl overflow-hidden">
+                                    <div className="px-10 py-8 border-b border-white/5 bg-[#111]">
+                                        <h2 className="font-bold text-xl text-white/90 tracking-tight">Preferensi Notifikasi</h2>
+                                        <p className="text-xs font-medium text-white/40 mt-1">Atur di mana dan bagaimana Kelola.ai memberikan notifikasi sistem.</p>
+                                    </div>
+                                    <div className="p-10 space-y-8">
+                                        {/* Toggles */}
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between group">
+                                                <div>
+                                                    <p className="font-bold text-sm text-white/90 flex items-center gap-2"><Smartphone size={16} className="text-orange-400" /> Notifikasi Pesanan Baru (WA)</p>
+                                                    <p className="text-xs font-medium text-white/40 mt-1">Peringatan real-time via WhatsApp agent untuk setiap invoice pesanan baru.</p>
+                                                </div>
+                                                <button onClick={() => setNotifSettings({...notifSettings, orderWa: !notifSettings.orderWa})} className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${notifSettings.orderWa ? 'bg-orange-500' : 'bg-white/10'}`}>
+                                                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${notifSettings.orderWa ? 'translate-x-6' : ''}`} />
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="w-full h-px bg-white/5" />
+
+                                            <div className="flex items-center justify-between group">
+                                                <div>
+                                                    <p className="font-bold text-sm text-white/90 flex items-center gap-2"><Mail size={16} className="text-blue-400" /> Laporan Rekap Mingguan</p>
+                                                    <p className="text-xs font-medium text-white/40 mt-1">Kirim otomatis laporan performa omzet dan insight setiap akhir pekan ke Email.</p>
+                                                </div>
+                                                <button onClick={() => setNotifSettings({...notifSettings, report: !notifSettings.report})} className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${notifSettings.report ? 'bg-orange-500' : 'bg-white/10'}`}>
+                                                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${notifSettings.report ? 'translate-x-6' : ''}`} />
+                                                </button>
+                                            </div>
+
+                                            <div className="w-full h-px bg-white/5" />
+
+                                            <div className="flex items-center justify-between group">
+                                                <div>
+                                                    <p className="font-bold text-sm text-white/90 flex items-center gap-2"><AlertTriangle size={16} className="text-amber-400" /> Peringatan Stok Menipis</p>
+                                                    <p className="text-xs font-medium text-white/40 mt-1">Berikan notifikasi jika ada produk yang stoknya kurang dari 5.</p>
+                                                </div>
+                                                <button onClick={() => setNotifSettings({...notifSettings, lowStock: !notifSettings.lowStock})} className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${notifSettings.lowStock ? 'bg-orange-500' : 'bg-white/10'}`}>
+                                                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${notifSettings.lowStock ? 'translate-x-6' : ''}`} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-white/5 flex justify-end">
+                                            <button
+                                                onClick={handleSaveNotif}
+                                                disabled={isSavingNotif}
+                                                className={`px-8 py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${saveNotifSuccess
+                                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
+                                                    : 'bg-orange-500 text-white hover:bg-orange-600'
+                                                    }`}
+                                            >
+                                                {isSavingNotif ? <Loader2 className="animate-spin" size={16} /> : saveNotifSuccess ? <CheckCircle2 size={16} /> : <Save size={16} />}
+                                                {isSavingNotif ? 'Menyimpan...' : saveNotifSuccess ? 'Tersimpan' : 'Simpan Preferensi'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'keamanan' && (
+                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-8">
+                                <div className="bg-[#161616]/90 backdrop-blur-2xl rounded-[32px] border border-white/5 shadow-2xl overflow-hidden">
+                                    <div className="px-10 py-8 border-b border-white/5 bg-[#111]">
+                                        <h2 className="font-bold text-xl text-white/90 tracking-tight flex items-center gap-2"><Lock size={20} className="text-indigo-400" /> Keamanan Akun</h2>
+                                        <p className="text-xs font-medium text-white/40 mt-1">Perbarui kata sandi dan lindungi akun bisnis Kelola kamu.</p>
+                                    </div>
+                                    <form onSubmit={handleUpdatePassword} className="p-10 space-y-6">
+                                        {passwordError && (
+                                            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-bold flex items-center gap-3">
+                                                <AlertTriangle size={16} /> {passwordError}
+                                            </div>
+                                        )}
+                                        <div className="space-y-6 max-w-lg">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Password Baru</label>
+                                                <div className="relative group">
+                                                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-indigo-500 transition-colors" size={20} />
+                                                    <input
+                                                        required
+                                                        type="password"
+                                                        value={securityForm.newPassword}
+                                                        onChange={(e) => setSecurityForm({ ...securityForm, newPassword: e.target.value })}
+                                                        className="w-full bg-[#111] border border-white/5 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold text-white/90 focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500/30 transition-all outline-none"
+                                                        placeholder="Minimal 6 karakter"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Konfirmasi Password Baru</label>
+                                                <div className="relative group">
+                                                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-indigo-500 transition-colors" size={20} />
+                                                    <input
+                                                        required
+                                                        type="password"
+                                                        value={securityForm.confirmPassword}
+                                                        onChange={(e) => setSecurityForm({ ...securityForm, confirmPassword: e.target.value })}
+                                                        className="w-full bg-[#111] border border-white/5 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold text-white/90 focus:ring-1 focus:ring-indigo-500/30 focus:border-indigo-500/30 transition-all outline-none"
+                                                        placeholder="Ulangi password"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="pt-6 border-t border-white/5 mt-8">
+                                            <button
+                                                type="submit"
+                                                disabled={isUpdatingPassword}
+                                                className="px-8 py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] bg-indigo-500 text-white hover:bg-indigo-600 transition-all flex items-center gap-3 disabled:opacity-50"
+                                            >
+                                                {isUpdatingPassword ? <Loader2 className="animate-spin" size={16} /> : <Shield size={16} />}
+                                                {isUpdatingPassword ? 'Memperbarui...' : 'Ubah Password'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'billing' && (
+                            <motion.div initial={{opacity:0, y:10}} animate={{opacity:1, y:0}} className="space-y-8">
+                                {/* Banner Berlangganan */}
+                                <div className="bg-gradient-to-br from-[#161616] to-[#1a110d] backdrop-blur-2xl rounded-[32px] border border-orange-500/10 shadow-2xl overflow-hidden relative group">
+                                    <div className="absolute top-0 right-0 p-8 pointer-events-none">
+                                        <Sparkles size={120} className="text-orange-500/5 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" />
+                                    </div>
+                                    <div className="p-10 relative z-10">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <span className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                                        <Sparkles size={10} /> Active Plan
+                                                    </span>
+                                                </div>
+                                                <h2 className="text-3xl font-black text-white/90 tracking-tight">Pro Plan</h2>
+                                                <p className="text-sm font-medium text-white/40 mt-1 max-w-sm">Membuka semua fitur premium Kelola.ai termasuk Agen AI pintar dan Notifikasi Pintar.</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Siklus Tagihan</p>
+                                                <p className="text-lg font-bold text-white/90 mt-1">Bulanan</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 pt-8 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
+                                                    <History size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Perpanjangan Berikutnya</p>
+                                                    <p className="text-sm font-bold text-white/90 mt-0.5">25 April 2026</p>
+                                                </div>
+                                            </div>
+                                            <button className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 font-bold text-sm transition-all">
+                                                Kelola Metode Pembayaran
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Danger Zone Billing */}
+                                <div className="bg-rose-500/5 rounded-[32px] border border-rose-500/10 p-10 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl backdrop-blur-xl">
+                                    <div className="text-center sm:text-left">
+                                        <h3 className="font-bold text-lg text-rose-400 tracking-tight">Batalkan Langganan</h3>
+                                        <p className="text-sm font-medium text-rose-400/60 mt-1 max-w-sm">Kamu bebas membatalkan langganan kapan pun. Bisnis akan diturunkan ke paket gratis setelah periode aktif berakhir.</p>
+                                    </div>
+                                    <button className="px-6 py-3 rounded-xl border border-rose-500/20 text-rose-400 font-bold text-sm tracking-tight hover:bg-rose-500/10 transition-all shrink-0">
+                                        Batalkan Plan
+                                    </button>
+                                </div>
+                            </motion.div>
+                        )}
                     </div>
                 </div>
             )}

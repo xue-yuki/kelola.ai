@@ -42,6 +42,7 @@ const CHANNEL_OPTIONS = [
 type Order = {
     id: string;
     customer_name: string;
+    customer_address?: string;
     customer_wa?: string;
     channel: string;
     created_at: string;
@@ -476,11 +477,18 @@ export default function PesananPage() {
                                                 {/* Customer */}
                                                 <td className="px-6 py-5">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs font-black text-white/50 group-hover:bg-[#111] group-hover:text-orange-400 group-hover:border-orange-500/20 transition-all">
-                                                            {order.customer_name?.charAt(0)}
+                                                        <div className="w-11 h-11 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-xs font-black text-white/50 group-hover:bg-[#111] group-hover:text-orange-400 group-hover:border-orange-500/20 transition-all shrink-0">
+                                                            {(order.customer_name?.charAt(0) || "?").toUpperCase()}
                                                         </div>
-                                                        <div>
-                                                            <p className="font-bold text-white/90 text-sm tracking-tight mb-1">{order.customer_name}</p>
+                                                        <div className="min-w-0 max-w-[200px]">
+                                                            <p className="font-bold text-white/90 text-sm tracking-tight mb-0.5 truncate">
+                                                                {order.customer_name ? order.customer_name.replace(/@lid/g, "").replace(/@s\.whatsapp\.net/g, "") : "Pelanggan"}
+                                                            </p>
+                                                            {order.customer_address && (
+                                                                <p className="text-xs font-medium text-white/40 truncate mb-1.5" title={order.customer_address}>
+                                                                    {order.customer_address}
+                                                                </p>
+                                                            )}
                                                             <p className="text-[10px] font-bold text-white/30 uppercase tracking-tighter">
                                                                 ID: #{order.id.slice(0, 8)}
                                                             </p>
