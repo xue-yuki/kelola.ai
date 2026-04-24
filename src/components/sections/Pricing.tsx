@@ -1,18 +1,57 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, Info } from "lucide-react";
+import { CheckCircle2, Info, Star } from "lucide-react";
 import Link from "next/link";
 
-const includedFeatures = [
-    "AI Auto-Reply WhatsApp & Telegram",
-    "Dashboard Kasir Digital (POS)",
-    "Kalkulator HPP Akurat",
-    "Laporan Omzet Real-Time",
-    "Prediksi Penjualan AI",
-    "Manajemen Produk & Kategori",
-    "Daily Insight via Chat",
-    "Customer Support Prioritas"
+const pricingTiers = [
+    {
+        name: "Starter",
+        price: "49Ribu",
+        description: "Cocok untuk UMKM pemula yang baru ingin mencoba otomatisasi.",
+        features: [
+            "Limit 1.000 Chat AI/bulan",
+            "Dashboard Kasir Digital (POS)",
+            "Manajemen Stok Otomatis",
+            "Dukungan Multibahasa Daerah",
+            "Laporan Harian + Mingguan",
+            "Support Prioritas + Onboarding"
+        ],
+        highlight: false,
+        buttonText: "Mulai Starter",
+    },
+    {
+        name: "Basic",
+        price: "79Ribu",
+        description: "Bagi bisnis menengah yang butuh insight lebih dalam.",
+        features: [
+            "Limit 3.000 Chat AI/bulan",
+            "Dashboard Kasir Digital (POS)",
+            "Manajemen Stok Otomatis",
+            "Dukungan Multibahasa Daerah",
+            "Laporan Lengkap & Grafik visual",
+            "AI Insight Mingguan",
+            "Support Prioritas + Onboarding"
+        ],
+        highlight: false,
+        buttonText: "Pilih Basic",
+    },
+    {
+        name: "Kelola Pro",
+        price: "99Ribu",
+        description: "Akses tanpa batas untuk operasional UMKM skala penuh.",
+        features: [
+            "Unlimited Chat AI/bulan",
+            "Dashboard Kasir Digital (POS)",
+            "Manajemen Stok Otomatis",
+            "Dukungan Multibahasa Daerah",
+            "Ekspor Laporan (PDF & Excel)",
+            "AI Insight Harian",
+            "Support Prioritas + Onboarding"
+        ],
+        highlight: true,
+        buttonText: "Ambil Paket Pro",
+    }
 ];
 
 export default function Pricing() {
@@ -27,79 +66,73 @@ export default function Pricing() {
                         transition={{ duration: 0.6 }}
                     >
                         <h2 className="font-display text-3xl md:text-5xl font-bold mb-4 tracking-tight text-text-dark">
-                            Harga Transparan, Tanpa Komisi
+                            Pilih Paket Sesuai Kebutuhan
                         </h2>
                         <p className="text-text-muted text-lg max-w-xl mx-auto">
-                            Satu harga untuk semua fitur canggih. Tidak ada potongan transaksi atau biaya tersembunyi.
+                            Tersedia tiga tingkatan harga yang terjangkau tanpa biaya tambahan tersembunyi.
                         </p>
                     </motion.div>
                 </div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-100px" }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="max-w-lg mx-auto"
-                >
-                    <div className="bg-white rounded-[2rem] border border-primary/20 shadow-2xl overflow-hidden relative group transform transition-transform duration-300 hover:-translate-y-2">
-
-                        {/* Glowing Accent */}
-                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-secondary" />
-                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 blur-[50px] rounded-full group-hover:bg-primary/30 transition-colors" />
-
-                        <div className="p-8 md:p-10 !pb-6 border-b border-gray-100 relative">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold text-2xl text-text-dark">Kelola Pro</h3>
-                                <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider">
-                                    Paling Laris
-                                </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                    {pricingTiers.map((tier, idx) => (
+                        <motion.div
+                            key={tier.name}
+                            initial={{ opacity: 0, y: 30 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ duration: 0.6, delay: 0.1 * idx }}
+                            className={`relative rounded-[2rem] border ${tier.highlight ? 'border-primary/50 shadow-2xl scale-100 md:scale-105 z-10' : 'border-gray-200 shadow-lg'} bg-white overflow-hidden group transform transition-transform duration-300 hover:-translate-y-2 flex flex-col`}
+                        >
+                            {tier.highlight && (
+                                <>
+                                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-rose-500" />
+                                    <div className="absolute top-4 right-4 animate-pulse">
+                                        <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                                            <Star size={12} className="fill-primary" /> Paling Laris
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                            
+                            <div className="p-8 md:p-10 !pb-6 border-b border-gray-100 relative">
+                                <h3 className={`font-bold text-2xl mb-2 ${tier.highlight ? 'text-primary' : 'text-text-dark'}`}>{tier.name}</h3>
+                                
+                                <div className="flex items-end gap-2 mb-4">
+                                    <span className="text-4xl lg:text-5xl font-bold text-text-dark tracking-tight">Rp {tier.price}</span>
+                                    <span className="text-text-muted text-sm lg:text-base pb-1 lg:pb-2">/ bulan</span>
+                                </div>
+                                <p className="text-sm text-text-muted h-10">{tier.description}</p>
                             </div>
 
-                            <div className="flex items-end gap-2 mb-4">
-                                <span className="text-5xl font-bold text-text-dark tracking-tight">Rp 99Ribu</span>
-                                <span className="text-text-muted text-lg pb-1">/ bulan</span>
-                            </div>
+                            <div className="p-8 md:p-10 !pt-6 bg-gray-50/50 flex flex-col flex-1">
+                                <ul className="flex flex-col gap-4 mb-8 flex-1">
+                                    {tier.features.map((feature, i) => (
+                                        <li key={i} className="flex items-start gap-3">
+                                            <CheckCircle2 size={20} className={`${tier.highlight ? 'text-primary' : 'text-gray-400'} shrink-0 mt-0.5`} />
+                                            <span className="text-text-dark font-medium text-sm lg:text-base leading-tight">{feature}</span>
+                                        </li>
+                                    ))}
+                                </ul>
 
-                            <p className="text-sm text-text-muted flex justify-between">
-                                Berlangganan bulanan tanpa kontrak.
-                            </p>
-                        </div>
-
-                        <div className="p-8 md:p-10 !pt-6 bg-gray-50/50">
-                            <ul className="flex flex-col gap-4 mb-8">
-                                {includedFeatures.map((feature, i) => (
-                                    <li key={i} className="flex items-start gap-3">
-                                        <CheckCircle2 size={20} className="text-primary shrink-0 mt-0.5" />
-                                        <span className="text-text-dark font-medium">{feature}</span>
-                                    </li>
-                                ))}
-                            </ul>
-
-                            <div className="flex flex-col gap-3">
-                                <Link
-                                    href="#daftar"
-                                    className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg hover:bg-secondary text-center shadow-lg hover:shadow-xl hover:shadow-primary/25 transition-all duration-300"
-                                >
-                                    Mulai Sekarang
-                                </Link>
-
-                                <div className="flex items-start gap-2 text-xs text-text-muted justify-center mt-2">
-                                    <Info size={14} className="shrink-0 mt-0.5" />
-                                    <p>+ Rp 150.000 setup fee (dikenakan sekali bayar di awal pendaftaran).</p>
+                                <div className="flex flex-col gap-3 mt-auto">
+                                    <Link
+                                        href="#daftar"
+                                        className={`w-full py-4 rounded-xl font-bold text-lg text-center shadow-lg transition-all duration-300 ${tier.highlight ? 'bg-primary text-white hover:bg-rose-500 hover:shadow-primary/25' : 'bg-gray-100 text-text-dark hover:bg-gray-200'}`}
+                                    >
+                                        {tier.buttonText}
+                                    </Link>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
+                    ))}
+                </div>
 
-                    </div>
-
-                    <div className="text-center mt-8">
-                        <p className="text-sm font-medium text-text-dark bg-white inline-block px-4 py-2 rounded-full shadow-sm border border-gray-100">
-                            💡 <span className="text-text-muted">Kompetitor lain:</span> <strong className="text-red-500 line-through">Rp 300.000+/bulan</strong> dengan fitur lebih sedikit.
-                        </p>
-                    </div>
-                </motion.div>
-
+                <div className="text-center mt-12">
+                    <p className="text-sm font-medium text-text-dark bg-white inline-block px-4 py-2 rounded-full shadow-sm border border-gray-100">
+                        💡 <span className="text-text-muted">Dibanding kompetitor lain:</span> <strong className="text-red-500 line-through">Rp 300.000+/bulan</strong> dengan fitur lebih sedikit.
+                    </p>
+                </div>
             </div>
         </section>
     );

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
     try {
-        const { businessId, businessType } = await request.json();
+        const { businessId, businessName, businessType, businessDescription } = await request.json();
 
         if (!businessId || !businessType) {
             return NextResponse.json({ error: 'Missing businessId or businessType' }, { status: 400 });
@@ -15,42 +15,56 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'AI Service configuration missing' }, { status: 500 });
         }
 
-        // 1. Call OpenRouter API
+        // 1. Call OpenRouter API with Gemini
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://kelola.ai', // Optional but recommended
-                'X-Title': 'Kelola.ai', // Optional but recommended
+                'HTTP-Referer': 'https://kelola.ai',
+                'X-Title': 'Kelola.ai',
             },
             body: JSON.stringify({
-                model: 'anthropic/claude-3.5-haiku',
+                model: 'google/gemini-2.0-flash-001',
                 messages: [
                     {
-                        role: 'system',
-                        content: 'You are a retail expert assistant. Generate 5 realistic products for a specific business type. Provide exactly 5 products in a raw JSON array format. Each product object must have: name (string), price (integer, in IDR, e.g. 50000), stock (integer, e.g. 20), and cost_price (integer, e.g. 35000). Do not include any other text or markdown, just the JSON array.'
-                    },
-                    {
                         role: 'user',
-                        content: `Generate products for a business type: ${businessType}`
+                        content: `Kamu adalah ahli retail Indonesia. Buatkan 5 produk untuk bisnis berikut:
+
+Nama Bisnis: ${businessName || 'Tidak disebutkan'}
+Kategori: ${businessType}
+Deskripsi Produk: ${businessDescription || 'Tidak ada deskripsi'}
+
+PENTING: Balas HANYA dengan JSON array, tanpa markdown atau teks lain.
+Format: [{"name":"Nama Produk","price":50000,"stock":20,"cost_price":35000}, ...]
+
+Pastikan:
+- Nama produk sesuai deskripsi yang diberikan
+- Harga realistis dalam Rupiah (integer)
+- Stock antara 10-50
+- cost_price sekitar 60-70% dari price`
                     }
                 ],
-                response_format: { type: 'json_object' }
             }),
         });
+
+        if (!response.ok) {
+            console.error('OpenRouter API error:', response.status, await response.text());
+            return NextResponse.json({ error: 'AI service unavailable' }, { status: 500 });
+        }
 
         const data = await response.json();
         let products = [];
 
         try {
-            // Some models might wrap it in a root object, let's try to extract the array
-            const content = data.choices[0].message.content;
+            let content = data.choices?.[0]?.message?.content || '';
+            // Clean markdown if present
+            content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
             const parsed = JSON.parse(content);
             products = Array.isArray(parsed) ? parsed : (parsed.products || []);
         } catch (e) {
-            console.error('Failed to parse AI response:', e);
-            return NextResponse.json({ error: 'Failed to generate products' }, { status: 500 });
+            console.error('Failed to parse AI response:', e, data);
+            return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
         }
 
         if (products.length === 0) {

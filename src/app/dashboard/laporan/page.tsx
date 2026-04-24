@@ -34,6 +34,8 @@ import {
     Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function LaporanPage() {
     const supabase = createClient();
@@ -44,6 +46,7 @@ export default function LaporanPage() {
     const [channelData, setChannelData] = useState<any[]>([]);
     const [orderCountData, setOrderCountData] = useState<any[]>([]);
     const [summaryStats, setSummaryStats] = useState({ totalRevenue: 0, totalOrders: 0, avgOrder: 0 });
+    const [comparison, setComparison] = useState({ revenue: 0, orders: 0, avgOrder: 0 });
 
     useEffect(() => {
         fetchReportData();
@@ -74,6 +77,20 @@ export default function LaporanPage() {
                 .eq('business_id', business.id)
                 .eq('status', 'lunas')
                 .gte('created_at', startDate.toISOString());
+
+            // Fetch previous period for comparison
+            const prevStartDate = new Date(startDate);
+            prevStartDate.setDate(prevStartDate.getDate() - daysToFetch);
+            const prevEndDate = new Date(startDate);
+            prevEndDate.setMilliseconds(prevEndDate.getMilliseconds() - 1);
+
+            const { data: prevOrders } = await supabase
+                .from('orders')
+                .select('total')
+                .eq('business_id', business.id)
+                .eq('status', 'lunas')
+                .gte('created_at', prevStartDate.toISOString())
+                .lt('created_at', startDate.toISOString());
 
             const processedData = [];
             const orderCountProcessed = [];
@@ -132,6 +149,22 @@ export default function LaporanPage() {
             const avgOrder = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
             setSummaryStats({ totalRevenue, totalOrders, avgOrder });
 
+            // Previous period stats for comparison
+            const prevRevenue = prevOrders?.reduce((sum, o) => sum + o.total, 0) || 0;
+            const prevOrderCount = prevOrders?.length || 0;
+            const prevAvgOrder = prevOrderCount > 0 ? Math.round(prevRevenue / prevOrderCount) : 0;
+
+            // Calculate percentage changes
+            const calcChange = (current: number, prev: number) => {
+                if (prev === 0) return current > 0 ? 100 : 0;
+                return Math.round(((current - prev) / prev) * 100);
+            };
+            setComparison({
+                revenue: calcChange(totalRevenue, prevRevenue),
+                orders: calcChange(totalOrders, prevOrderCount),
+                avgOrder: calcChange(avgOrder, prevAvgOrder)
+            });
+
             // Get all completed orders to calculate real sales
             const { data: allOrders } = await supabase
                 .from('orders')
@@ -174,6 +207,104 @@ export default function LaporanPage() {
         }
     };
 
+    const exportPDF = () => {
+        const doc = new jsPDF();
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const periodLabel = timeRange === 'mingguan' ? '7 Hari Terakhir' : '30 Hari Terakhir';
+
+        // Header
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Laporan Bisnis', 14, 20);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100);
+        doc.text(`Periode: ${periodLabel} | Dibuat: ${dateStr}`, 14, 28);
+
+        // Summary Stats
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0);
+        doc.text('Ringkasan', 14, 42);
+
+        autoTable(doc, {
+            startY: 46,
+            head: [['Metrik', 'Nilai', 'vs Periode Lalu']],
+            body: [
+                ['Total Omzet', `Rp ${summaryStats.totalRevenue.toLocaleString('id-ID')}`, `${comparison.revenue >= 0 ? '+' : ''}${comparison.revenue}%`],
+                ['Total Pesanan', `${summaryStats.totalOrders} Order`, `${comparison.orders >= 0 ? '+' : ''}${comparison.orders}%`],
+                ['Rata-rata Keranjang', `Rp ${summaryStats.avgOrder.toLocaleString('id-ID')}`, `${comparison.avgOrder >= 0 ? '+' : ''}${comparison.avgOrder}%`],
+            ],
+            theme: 'striped',
+            headStyles: { fillColor: [255, 107, 43] },
+        });
+
+        // Revenue per Day
+        const lastY = (doc as any).lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Pendapatan Harian', 14, lastY);
+
+        autoTable(doc, {
+            startY: lastY + 4,
+            head: [['Hari', 'Pendapatan', 'Jumlah Order']],
+            body: revenueData.map((r, i) => [
+                r.name,
+                `Rp ${r.total.toLocaleString('id-ID')}`,
+                orderCountData[i]?.orders || 0
+            ]),
+            theme: 'striped',
+            headStyles: { fillColor: [59, 130, 246] },
+        });
+
+        // Top Products
+        const lastY2 = (doc as any).lastAutoTable.finalY + 10;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Produk Terlaris', 14, lastY2);
+
+        autoTable(doc, {
+            startY: lastY2 + 4,
+            head: [['#', 'Nama Produk', 'Terjual']],
+            body: topProducts.map((p, i) => [
+                i + 1,
+                p.name,
+                `${p.total_sales} unit`
+            ]),
+            theme: 'striped',
+            headStyles: { fillColor: [245, 158, 11] },
+        });
+
+        // Channel Distribution
+        if (channelData.length > 0) {
+            const lastY3 = (doc as any).lastAutoTable.finalY + 10;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Sumber Pesanan', 14, lastY3);
+
+            autoTable(doc, {
+                startY: lastY3 + 4,
+                head: [['Channel', 'Jumlah Order']],
+                body: channelData.map(c => [c.name, c.value]),
+                theme: 'striped',
+                headStyles: { fillColor: [139, 92, 246] },
+            });
+        }
+
+        // Footer
+        const pageCount = doc.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('Dibuat dengan Kelola.ai', 14, doc.internal.pageSize.height - 10);
+            doc.text(`Halaman ${i} dari ${pageCount}`, doc.internal.pageSize.width - 35, doc.internal.pageSize.height - 10);
+        }
+
+        doc.save(`laporan-${timeRange}-${now.toISOString().split('T')[0]}.pdf`);
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-10 pb-20">
             {/* Page Header */}
@@ -214,7 +345,11 @@ export default function LaporanPage() {
                                     <h3 className="font-bold text-lg text-white/90 tracking-tight mb-0.5">Tren Pendapatan</h3>
                                     <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Omzet Bersih</p>
                                 </div>
-                                <button className="w-10 h-10 flex items-center justify-center bg-white/5 text-white/40 hover:text-orange-400 border border-white/5 hover:border-orange-500/30 rounded-xl transition-all">
+                                <button
+                                    onClick={exportPDF}
+                                    title="Export PDF"
+                                    className="w-10 h-10 flex items-center justify-center bg-white/5 text-white/40 hover:text-orange-400 border border-white/5 hover:border-orange-500/30 rounded-xl transition-all"
+                                >
                                     <Download size={18} />
                                 </button>
                             </div>
@@ -280,8 +415,16 @@ export default function LaporanPage() {
                                     <TrendingUp strokeWidth={2.5} size={22} />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Omzet</p>
-                                    <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.totalRevenue.toLocaleString('id-ID')}</p>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Omzet <span className="text-white/20">vs {timeRange === 'mingguan' ? 'minggu' : 'bulan'} lalu</span></p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.totalRevenue.toLocaleString('id-ID')}</p>
+                                        {comparison.revenue !== 0 && (
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${comparison.revenue > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                {comparison.revenue > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                {comparison.revenue > 0 ? '+' : ''}{comparison.revenue}%
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-blue-500/30 transition-all group">
@@ -289,8 +432,16 @@ export default function LaporanPage() {
                                     <ShoppingBag strokeWidth={2.5} size={22} />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Pesanan</p>
-                                    <p className="text-lg font-black text-white/90 tracking-tight">{summaryStats.totalOrders} Order</p>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Pesanan <span className="text-white/20">vs {timeRange === 'mingguan' ? 'minggu' : 'bulan'} lalu</span></p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-lg font-black text-white/90 tracking-tight">{summaryStats.totalOrders} Order</p>
+                                        {comparison.orders !== 0 && (
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${comparison.orders > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                {comparison.orders > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                {comparison.orders > 0 ? '+' : ''}{comparison.orders}%
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-orange-500/30 transition-all group">
@@ -298,8 +449,16 @@ export default function LaporanPage() {
                                     <Zap strokeWidth={2.5} size={22} />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Rata. Keranjang</p>
-                                    <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.avgOrder.toLocaleString('id-ID')}</p>
+                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Rata. Keranjang <span className="text-white/20">vs {timeRange === 'mingguan' ? 'minggu' : 'bulan'} lalu</span></p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.avgOrder.toLocaleString('id-ID')}</p>
+                                        {comparison.avgOrder !== 0 && (
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${comparison.avgOrder > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                {comparison.avgOrder > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                                {comparison.avgOrder > 0 ? '+' : ''}{comparison.avgOrder}%
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>

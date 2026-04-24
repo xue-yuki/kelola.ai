@@ -3,20 +3,116 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/layout/AuthLayout";
-import { User, Store, Mail, Phone, Lock, Eye, EyeOff, Loader2, Sparkles, ChevronRight } from "lucide-react";
+import { User, Store, Mail, Phone, Lock, Eye, EyeOff, Loader2, Sparkles, ChevronRight, AlertCircle, CheckCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [focusedField, setFocusedField] = useState<string | null>(null);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState(false);
+    const [formData, setFormData] = useState({
+        name: "",
+        businessName: "",
+        email: "",
+        phone: "",
+        password: ""
+    });
+    const supabase = createClient();
+    const router = useRouter();
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        setIsLoading(false);
+        setError("");
+
+        if (formData.password.length < 8) {
+            setError("Password minimal 8 karakter");
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: formData.email,
+                password: formData.password,
+                options: {
+                    data: {
+                        full_name: formData.name,
+                        business_name: formData.businessName,
+                        phone: formData.phone,
+                    },
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                }
+            });
+
+            if (authError) throw authError;
+
+            if (authData.user) {
+                const { error: bizError } = await supabase.from('businesses').insert({
+                    user_id: authData.user.id,
+                    business_name: formData.businessName,
+                    owner_name: formData.name,
+                    wa_number: formData.phone.startsWith('0')
+                        ? '62' + formData.phone.slice(1)
+                        : formData.phone,
+                });
+
+                if (bizError) {
+                    console.error('Error creating business:', bizError);
+                }
+            }
+
+            setSuccess(true);
+        } catch (error: any) {
+            console.error('Error registering:', error);
+            if (error.message.includes("already registered")) {
+                setError("Email sudah terdaftar. Silakan login.");
+            } else {
+                setError(error.message || "Gagal mendaftar");
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    if (success) {
+        return (
+            <AuthLayout
+                title="Cek Email Kamu!"
+                subtitle="Kami sudah mengirim link verifikasi ke email kamu."
+            >
+                <div className="space-y-6">
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-20 h-20 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center"
+                    >
+                        <CheckCircle size={40} className="text-emerald-400" />
+                    </motion.div>
+                    <p className="text-center text-white/60 text-sm">
+                        Klik link di email untuk mengaktifkan akun. Setelah itu kamu bisa langsung login.
+                    </p>
+                    <Link href="/auth/login">
+                        <motion.button
+                            whileHover={{ y: -1 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="w-full py-3.5 rounded-2xl bg-orange-500 text-white font-bold hover:bg-orange-600 transition-all"
+                        >
+                            Ke Halaman Login
+                        </motion.button>
+                    </Link>
+                </div>
+            </AuthLayout>
+        );
+    }
 
     return (
         <AuthLayout
@@ -24,6 +120,17 @@ export default function RegisterPage() {
             subtitle="Buat akun gratis dalam 60 detik dan mulai transformasi bisnis Anda."
         >
             <div className="space-y-8 pb-12">
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-3 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400"
+                    >
+                        <AlertCircle size={18} />
+                        <span className="text-sm font-medium">{error}</span>
+                    </motion.div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div className="space-y-2">
@@ -44,6 +151,9 @@ export default function RegisterPage() {
                                 <input
                                     required
                                     type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
                                     onFocus={() => setFocusedField('name')}
                                     onBlur={() => setFocusedField(null)}
                                     placeholder="Andi Pratama"
@@ -70,6 +180,9 @@ export default function RegisterPage() {
                                 <input
                                     required
                                     type="text"
+                                    name="businessName"
+                                    value={formData.businessName}
+                                    onChange={handleChange}
                                     onFocus={() => setFocusedField('biz')}
                                     onBlur={() => setFocusedField(null)}
                                     placeholder="Kopi Kita"
@@ -97,6 +210,9 @@ export default function RegisterPage() {
                             <input
                                 required
                                 type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
                                 onFocus={() => setFocusedField('email')}
                                 onBlur={() => setFocusedField(null)}
                                 placeholder="bisnis@email.com"
@@ -123,6 +239,9 @@ export default function RegisterPage() {
                             <input
                                 required
                                 type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
                                 onFocus={() => setFocusedField('phone')}
                                 onBlur={() => setFocusedField(null)}
                                 placeholder="0812..."
@@ -149,6 +268,9 @@ export default function RegisterPage() {
                             <input
                                 required
                                 type={showPassword ? "text" : "password"}
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
                                 onFocus={() => setFocusedField('password')}
                                 onBlur={() => setFocusedField(null)}
                                 placeholder="Minimal 8 karakter"
@@ -199,7 +321,36 @@ export default function RegisterPage() {
                     </motion.button>
                 </form>
 
-                <div className="mt-8 text-center">
+                {/* Divider */}
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-white/10"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-4 bg-[#0a0a0a] text-white/30 font-medium">atau daftar dengan</span>
+                    </div>
+                </div>
+
+                {/* Google Signup */}
+                <motion.button
+                    onClick={async () => {
+                        const { error } = await supabase.auth.signInWithOAuth({
+                            provider: 'google',
+                            options: {
+                                redirectTo: `${window.location.origin}/auth/callback`,
+                            },
+                        });
+                        if (error) console.error('Google signup error:', error);
+                    }}
+                    whileHover={{ y: -2, scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-bold text-base"
+                >
+                    <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
+                    Daftar dengan Google
+                </motion.button>
+
+                <div className="text-center">
                     <p className="text-white/40 text-sm font-medium tracking-tight">
                         Sudah punya akun?{" "}
                         <Link href="/auth/login" className="text-orange-400 font-bold hover:text-orange-300 transition-colors decoration-orange-400/20 underline underline-offset-4 ml-1">

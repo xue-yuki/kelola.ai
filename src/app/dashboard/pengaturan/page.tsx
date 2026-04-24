@@ -71,6 +71,40 @@ export default function PengaturanPage() {
     const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
     const [passwordError, setPasswordError] = useState("");
 
+    // Delete Business States
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Delete Business Handler - uses API route for proper deletion
+    const handleDeleteBusiness = async () => {
+        if (deleteConfirmText !== formData.businessName) return;
+        if (!businessId) return;
+
+        setIsDeleting(true);
+        try {
+            const response = await fetch('/api/delete-business', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ businessId })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Gagal menghapus bisnis');
+            }
+
+            // Sign out and redirect
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        } catch (error: any) {
+            console.error("Error deleting business:", error);
+            alert("Gagal menghapus bisnis: " + error.message);
+            setIsDeleting(false);
+        }
+    };
+
     // Password Update Handler
     const handleUpdatePassword = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -474,13 +508,99 @@ export default function PengaturanPage() {
                         {/* Danger Zone */}
                         <div className="bg-rose-500/5 rounded-[32px] border border-rose-500/20 p-10 flex flex-col sm:flex-row items-center justify-between gap-6 group hover:bg-rose-500/10 transition-colors backdrop-blur-xl">
                             <div className="text-center sm:text-left">
-                                <h3 className="font-bold text-lg text-rose-400 tracking-tight">Ganti Rencana atau Hapus Bisnis</h3>
-                                <p className="text-sm font-medium text-rose-400/60 mt-1">Semua data pesanan dan produk akan dihapus permanen.</p>
+                                <h3 className="font-bold text-lg text-rose-400 tracking-tight">Hapus Bisnis Permanen</h3>
+                                <p className="text-sm font-medium text-rose-400/60 mt-1">Semua data pesanan, produk, dan pelanggan akan dihapus permanen.</p>
                             </div>
-                            <button className="px-8 py-4 rounded-2xl border border-rose-500/30 text-rose-400 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all">
-                                Tutup Bisnis
+                            <button
+                                onClick={() => setShowDeleteModal(true)}
+                                className="px-8 py-4 rounded-2xl border border-rose-500/30 text-rose-400 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all"
+                            >
+                                Hapus Bisnis
                             </button>
                         </div>
+
+                        {/* Delete Confirmation Modal */}
+                        <AnimatePresence>
+                            {showDeleteModal && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                                    onClick={() => !isDeleting && setShowDeleteModal(false)}
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.9, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.9, opacity: 0 }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="bg-[#161616] border border-rose-500/20 rounded-3xl p-8 max-w-md w-full shadow-2xl"
+                                    >
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 flex items-center justify-center">
+                                                <AlertTriangle className="text-rose-400" size={24} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-white">Hapus Bisnis?</h3>
+                                                <p className="text-sm text-white/40">Tindakan ini tidak bisa dibatalkan</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 mb-6">
+                                            <p className="text-sm text-rose-400 leading-relaxed">
+                                                Semua data berikut akan <span className="font-bold">dihapus permanen</span>:
+                                            </p>
+                                            <ul className="text-sm text-rose-400/80 mt-2 space-y-1">
+                                                <li>• Semua produk dan katalog</li>
+                                                <li>• Riwayat pesanan dan transaksi</li>
+                                                <li>• Data pelanggan</li>
+                                                <li>• Riwayat percakapan WhatsApp</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="space-y-2 mb-6">
+                                            <label className="text-sm font-medium text-white/60">
+                                                Ketik <span className="font-bold text-rose-400">"{formData.businessName}"</span> untuk konfirmasi:
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={deleteConfirmText}
+                                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                                placeholder="Ketik nama bisnis..."
+                                                className="w-full bg-[#111] border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-rose-500/50"
+                                            />
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => {
+                                                    setShowDeleteModal(false);
+                                                    setDeleteConfirmText("");
+                                                }}
+                                                disabled={isDeleting}
+                                                className="flex-1 px-6 py-3 rounded-xl bg-white/5 text-white/60 font-bold hover:bg-white/10 transition-all disabled:opacity-50"
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                onClick={handleDeleteBusiness}
+                                                disabled={deleteConfirmText !== formData.businessName || isDeleting}
+                                                className="flex-1 px-6 py-3 rounded-xl bg-rose-500 text-white font-bold hover:bg-rose-600 transition-all disabled:opacity-50 disabled:bg-rose-500/30 flex items-center justify-center gap-2"
+                                            >
+                                                {isDeleting ? (
+                                                    <>
+                                                        <Loader2 className="animate-spin" size={18} />
+                                                        Menghapus...
+                                                    </>
+                                                ) : (
+                                                    "Ya, Hapus Bisnis"
+                                                )}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                         </>
                         )}
 
