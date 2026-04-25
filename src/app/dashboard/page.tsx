@@ -208,13 +208,31 @@ export default function DashboardPage() {
 
     if (isLoading) {
         return (
-            <div className="flex h-[60vh] items-center justify-center">
-                <div className="flex flex-col items-center gap-4 text-orange-500">
-                    <Loader2 className="animate-spin w-10 h-10" />
-                    <p className="font-bold text-white/50 animate-pulse text-sm">Mengambil data dari Supabase...</p>
+            <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-6 animate-pulse">
+                {/* Header Skeleton */}
+                <div className="h-32 sm:h-40 w-full rounded-[2rem] bg-white/5 border border-white/5" />
+
+                {/* Quick Actions Mobile Skeleton */}
+                <div className="grid grid-cols-3 gap-3 md:hidden">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="h-24 rounded-3xl bg-white/5 border border-white/5" />
+                    ))}
+                </div>
+
+                {/* Metrics Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="h-36 lg:col-span-2 rounded-[1.5rem] bg-white/5 border border-white/5" />
+                    <div className="h-36 rounded-[1.5rem] bg-white/5 border border-white/5 hidden md:block" />
+                    <div className="h-36 rounded-[1.5rem] bg-white/5 border border-white/5 hidden lg:block" />
+                </div>
+
+                {/* Main Grid Skeleton */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="h-[340px] lg:col-span-2 rounded-[2rem] bg-white/5 border border-white/5" />
+                    <div className="h-[340px] rounded-[2rem] bg-white/5 border border-white/5" />
                 </div>
             </div>
-        )
+        );
     }
 
     return (
@@ -225,51 +243,45 @@ export default function DashboardPage() {
             className="max-w-7xl mx-auto space-y-4 sm:space-y-6 pb-6"
         >
             {/* Header Section */}
-            {/* Immersive Header Banner */}
-            <motion.div variants={item} className="relative overflow-hidden rounded-[2rem] bg-[#161616]/60 backdrop-blur-3xl border border-white/5 shadow-2xl p-5 sm:px-8 sm:py-6 group flex flex-col justify-center">
-                {/* Dynamic Lighting Effects */}
-                <div className="absolute -top-[50%] -left-[10%] w-[60%] h-[150%] bg-orange-500/10 rounded-full blur-[100px] group-hover:bg-orange-500/20 transition-all duration-1000" />
-                <div className="absolute -bottom-[50%] -right-[10%] w-[60%] h-[150%] bg-emerald-500/10 rounded-full blur-[100px] group-hover:bg-emerald-500/20 transition-all duration-1000" />
-                <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay pointer-events-none" />
-
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
-                    <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-white/50 tracking-tight">
-                                {greeting}, <span className="text-orange-400 drop-shadow-[0_0_30px_rgba(255,107,43,0.3)]">{userName}</span>
-                            </h1>
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" title="Sistem Utama Berjalan Lancar" />
+            {/* Header Section */}
+            <motion.div variants={item} className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+                <div className="flex flex-col gap-1.5">
+                    <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-white/40">
+                        {currentDate}
+                    </p>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl sm:text-4xl font-display font-medium text-white tracking-tight">
+                            {greeting}, <span className="font-black text-orange-400">{userName}</span>
+                        </h1>
+                        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Online
                         </div>
-                        <p className="text-sm font-medium text-white/50">
-                            {currentDate}
-                        </p>
                     </div>
+                </div>
 
-                    {/* Premium Quick Actions Desktop */}
-                    <div className="hidden md:flex items-center gap-3">
-                        {QUICK_ACTIONS.map((action, i) => {
-                            const Icon = action.icon;
-                            return (
-                                <Link key={i} href={action.href} className={`group relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 overflow-hidden bg-white/5 border border-white/10 hover:border-white/20 hover:-translate-y-0.5 hover:shadow-xl`}>
-                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-transparent to-white/5`} />
-                                    <Icon size={16} className={action.color} />
-                                    <span className="text-white/90">{action.title}</span>
-                                </Link>
-                            );
-                        })}
-                    </div>
+                {/* Premium Clean Quick Actions Desktop */}
+                <div className="hidden md:flex items-center gap-3">
+                    {QUICK_ACTIONS.map((action, i) => {
+                        const Icon = action.icon;
+                        return (
+                            <Link key={i} href={action.href} className="group flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all bg-white/[0.03] border border-white/5 hover:bg-white/10 hover:border-white/10 text-white/60 hover:text-white">
+                                <Icon size={16} className={`${action.color} group-hover:scale-110 transition-transform`} />
+                                <span>{action.title}</span>
+                            </Link>
+                        );
+                    })}
                 </div>
             </motion.div>
 
-            {/* Quick Actions Mobile */}
-            <motion.div variants={item} className="grid grid-cols-3 gap-3 md:hidden">
+            {/* Quick Actions Mobile (Clean) */}
+            <motion.div variants={item} className="grid grid-cols-3 gap-3 md:hidden mb-4">
                 {QUICK_ACTIONS.map((action, i) => {
                     const Icon = action.icon;
                     return (
-                        <Link key={i} href={action.href} className={`relative flex flex-col items-center justify-center gap-3 p-4 rounded-3xl transition-all duration-300 bg-white/5 border border-white/10 active:scale-95 overflow-hidden`}>
-                            <div className={`absolute inset-0 opacity-10 ${action.bg.split(' ')[0]}`} />
-                            <Icon size={24} className={action.color} />
-                            <span className="text-[10px] sm:text-xs font-bold text-white/90 text-center leading-tight">{action.title}</span>
+                        <Link key={i} href={action.href} className="flex flex-col items-center justify-center gap-2.5 p-4 rounded-3xl transition-all bg-white/[0.02] border border-white/5 active:scale-95 text-white/60">
+                            <Icon size={22} className={action.color} />
+                            <span className="text-[10px] sm:text-xs font-bold text-center leading-tight">{action.title}</span>
                         </Link>
                     );
                 })}

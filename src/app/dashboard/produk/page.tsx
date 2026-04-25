@@ -385,7 +385,6 @@ export default function ProdukPage() {
                 )}
             </AnimatePresence>
 
-            {/* Modal */}
             <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -394,93 +393,175 @@ export default function ProdukPage() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setIsModalOpen(false)}
-                            className="absolute inset-0 bg-[#1A1A2E]/40 backdrop-blur-sm"
+                            className="absolute inset-0 bg-[#0a0a0a]/80 backdrop-blur-sm"
                         />
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-lg bg-[#161616] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-4xl bg-[#111] border border-white/10 rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row"
                         >
-                            <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-[#111]">
-                                <h2 className="text-xl font-bold text-white/90 tracking-tight">
-                                    {editingProduct ? '📝 Edit Produk' : '✨ Produk Baru'}
-                                </h2>
-                                <button onClick={() => setIsModalOpen(false)} className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-full transition-colors text-white/40 border border-transparent hover:border-white/10">
-                                    <X size={18} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Nama Produk</label>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            placeholder="Masukan nama lengkap produk..."
-                                            className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Harga HPP</label>
-                                            <input
-                                                required
-                                                type="number"
-                                                value={formData.cost_price}
-                                                onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                                                placeholder="Harga beli"
-                                                className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
-                                            />
+                            {/* Form Section */}
+                            <div className="w-full md:w-3/5 p-8 md:p-10 flex flex-col justify-between h-full">
+                                <div>
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20">
+                                            {editingProduct ? <Edit2 size={24} /> : <Plus size={24} />}
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Harga Jual</label>
-                                            <input
-                                                required
-                                                type="number"
-                                                value={formData.price}
-                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                placeholder="Harga jual"
-                                                className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
-                                            />
+                                        <div>
+                                            <h2 className="text-2xl font-black text-white tracking-tight">
+                                                {editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}
+                                            </h2>
+                                            <p className="text-sm text-white/40 font-medium">Lengkapi detail produk Anda di bawah ini.</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Stok Inventaris</label>
-                                        <input
-                                            required
-                                            type="number"
-                                            value={formData.stock}
-                                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                            placeholder="Jumlah stok saat ini..."
-                                            className="w-full bg-[#111] border border-white/5 rounded-2xl px-5 py-4 text-sm font-medium focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none text-white/90 placeholder:text-white/30"
-                                        />
-                                    </div>
+                                    <form id="productForm" onSubmit={handleSubmit} className="space-y-5">
+                                        <div className="space-y-4">
+                                            {/* Nama Produk */}
+                                            <div className="group relative">
+                                                <input
+                                                    required
+                                                    type="text"
+                                                    id="productName"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
+                                                    placeholder=" "
+                                                />
+                                                <label htmlFor="productName" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
+                                                    Nama Produk
+                                                </label>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {/* HPP */}
+                                                <div className="group relative">
+                                                    <input
+                                                        required
+                                                        type="number"
+                                                        id="costPrice"
+                                                        value={formData.cost_price}
+                                                        onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                                                        className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
+                                                        placeholder=" "
+                                                    />
+                                                    <label htmlFor="costPrice" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
+                                                        Harga Modal (HPP)
+                                                    </label>
+                                                </div>
+                                                {/* Harga Jual */}
+                                                <div className="group relative">
+                                                    <input
+                                                        required
+                                                        type="number"
+                                                        id="salePrice"
+                                                        value={formData.price}
+                                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                                        className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
+                                                        placeholder=" "
+                                                    />
+                                                    <label htmlFor="salePrice" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
+                                                        Harga Jual
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            {/* Stok */}
+                                            <div className="group relative">
+                                                <input
+                                                    required
+                                                    type="number"
+                                                    id="stock"
+                                                    value={formData.stock}
+                                                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                                                    className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
+                                                    placeholder=" "
+                                                />
+                                                <label htmlFor="stock" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
+                                                    Stok Tersedia
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </form>
                                 </div>
-
-                                <div className="flex gap-3 pt-6">
+                                
+                                {/* Form Actions */}
+                                <div className="flex gap-4 mt-8 md:mb-0 mb-4 px-8 md:px-0">
                                     <button
                                         type="button"
                                         onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 px-6 py-4 rounded-full bg-white/5 text-white/60 font-bold hover:bg-white/10 transition-all border border-white/10"
+                                        className="px-6 py-4 rounded-2xl bg-white/5 text-white/60 font-bold hover:bg-white/10 hover:text-white transition-all border border-white/5"
                                     >
                                         Batal
                                     </button>
                                     <button
                                         type="submit"
+                                        form="productForm"
                                         disabled={isSaving}
-                                        className="flex-[2] bg-orange-500 text-white rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-2xl font-bold transition-all shadow-xl shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                         {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
-                                        {isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                        {isSaving ? 'Menyimpan...' : 'Simpan Produk'}
                                     </button>
                                 </div>
-                            </form>
+                            </div>
+
+                            {/* Live Preview Section */}
+                            <div className="w-full md:w-2/5 bg-[#0a0a0a] border-l border-white/5 p-8 md:p-10 flex flex-col items-center justify-center relative hidden md:flex">
+                                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-500/10 via-transparent to-transparent opacity-50" />
+                                
+                                <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-6 relative z-10 w-full text-center">Live Preview Card</h3>
+                                
+                                <div className="w-full max-w-[280px] bg-[#161616]/90 backdrop-blur-xl rounded-[24px] border border-white/10 p-5 shadow-2xl relative z-10 group">
+                                    <div className="w-full aspect-square rounded-[16px] bg-white/5 border border-white/5 mb-5 flex items-center justify-center overflow-hidden">
+                                        <Package size={56} className="text-white/10 group-hover:text-orange-500/50 group-hover:scale-110 transition-all duration-700" />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h3 className="text-lg font-black text-white leading-tight line-clamp-2">
+                                                {formData.name || 'Nama Produk'}
+                                            </h3>
+                                            
+                                            {(() => {
+                                                const p = parseInt(formData.price) || 0;
+                                                const c = parseInt(formData.cost_price) || 0;
+                                                const margin = p - c;
+                                                const marginPercent = c > 0 ? Math.round((margin / c) * 100) : 0;
+                                                
+                                                if (p > 0 && c > 0) {
+                                                    return (
+                                                        <div className="mt-3 bg-[#0a0a0a] border border-white/5 rounded-xl p-3 flex flex-col gap-1.5">
+                                                            <div className="flex justify-between items-center text-xs">
+                                                                <span className="text-white/40 font-medium">Profit margin:</span>
+                                                                <span className="font-bold text-emerald-400">+Rp {margin.toLocaleString('id-ID')}</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center text-[10px]">
+                                                                <span className="text-white/30 font-medium">Margin Ratio:</span>
+                                                                <span className={`font-bold ${marginPercent > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{marginPercent}%</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
+                                        </div>
+
+                                        <div className="flex justify-between items-end pt-2">
+                                            <div>
+                                                <p className="text-[10px] uppercase font-bold tracking-widest text-white/30 mb-1">Harga Jual</p>
+                                                <p className="text-xl font-black text-orange-400">
+                                                    Rp {parseInt(formData.price || '0').toLocaleString('id-ID')}
+                                                </p>
+                                            </div>
+                                            <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/50">
+                                                SISA: {formData.stock || '0'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}

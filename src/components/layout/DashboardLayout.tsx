@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import { getGlobalBannerSettings } from "@/app/actions/global-settings";
 import {
     LayoutDashboard,
     ShoppingCart,
@@ -58,6 +59,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [businessName, setBusinessName] = useState("Bisnis");
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
+    // Global Banner State
+    const [globalBanner, setGlobalBanner] = useState<{ message: string, active: boolean, dismissed: boolean }>({ message: "", active: false, dismissed: false });
+
     // Handle scroll for header styling
     useEffect(() => {
         const handleScroll = () => {
@@ -107,10 +111,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }
         }
 
+        async function fetchGlobalBanner() {
+            try {
+                const data = await getGlobalBannerSettings();
+                
+                if (isMounted && data) {
+                    // Cek di local storage jika user sudah pernah dismiss banner ini
+                    const isDismissed = localStorage.getItem(`dismissed_banner_${data.value}`) === 'true';
+                    setGlobalBanner({
+                        message: data.value,
+                        active: data.is_active && !isDismissed,
+                        dismissed: isDismissed
+                    });
+                }
+            } catch (error) {
+                console.log("No global banner found or error fetching.");
+            }
+        }
+
         loadProfile();
+        fetchGlobalBanner();
 
         return () => { isMounted = false };
     }, [supabase, router]);
+
+    const dismissBanner = () => {
+        setGlobalBanner(prev => ({ ...prev, active: false, dismissed: true }));
+        localStorage.setItem(`dismissed_banner_${globalBanner.message}`, 'true');
+    };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -251,9 +279,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Main Content Area */}
             <div className="lg:pl-64 flex flex-col min-h-screen">
+                
+                {/* Global Broadcast Banner */}
+                <AnimatePresence>
+                    {globalBanner.active && globalBanner.message && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0, overflow: "hidden" }}
+                            className="bg-gradient-to-r from-orange-600 to-rose-600 relative z-40 shadow-[0_4px_20px_rgba(234,88,12,0.3)]"
+                        >
+                            <div className="px-6 py-3 flex items-center justify-between sm:justify-center gap-4 relative">
+                                <span className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay pointer-events-none" />
+                                
+                                <div className="flex items-center gap-3">
+                                    <span className="relative flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                    </span>
+                                    <p className="text-sm font-bold text-white tracking-wide relative z-10 pr-8 sm:pr-0">
+                                        {globalBanner.message}
+                                    </p>
+                                </div>
+                                
+                                <button 
+                                    onClick={dismissBanner}
+                                    className="sm:absolute right-4 p-1.5 rounded-full bg-black/10 hover:bg-black/20 text-white/90 hover:text-white transition-colors z-10"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* Top Header */}
                 <header className={`sticky top-0 z-30 transition-all duration-200 ${scrolled ? "bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/5 shadow-md shadow-black/20" : "bg-transparent"
                     }`}>
+
                     <div className="flex items-center justify-between px-6 py-4">
                         <div className="flex items-center gap-4">
                             <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 text-white/60 hover:text-white rounded-lg bg-[#161616] shadow-sm border border-white/5 transition-colors">

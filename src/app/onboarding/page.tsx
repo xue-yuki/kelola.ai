@@ -154,9 +154,7 @@ export default function OnboardingPage() {
                 {/* Left Content */}
                 <div className="relative z-20 flex-1 flex flex-col">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-orange-500 to-rose-500 flex items-center justify-center">
-                            <Sparkles size={16} className="text-white" />
-                        </div>
+                       
                         <span className="font-bold text-white tracking-widest text-sm xl:text-base">
                             kelola<span className="text-orange-500">.ai</span>
                         </span>
