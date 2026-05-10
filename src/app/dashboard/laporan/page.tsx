@@ -66,10 +66,20 @@ export default function LaporanPage() {
 
             if (!business) return;
 
-            const daysToFetch = timeRange === "mingguan" ? 7 : 30;
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - (daysToFetch - 1));
-            startDate.setHours(0, 0, 0, 0);
+            const now = new Date();
+            let startDate: Date;
+            let daysToFetch: number;
+
+            if (timeRange === "tahun_ini") {
+                startDate = new Date(now.getFullYear(), 0, 1);
+                startDate.setHours(0, 0, 0, 0);
+                daysToFetch = 0; // not used for yearly
+            } else {
+                daysToFetch = timeRange === "mingguan" ? 7 : 30;
+                startDate = new Date();
+                startDate.setDate(startDate.getDate() - (daysToFetch - 1));
+                startDate.setHours(0, 0, 0, 0);
+            }
 
             const { data: orders } = await supabase
                 .from('orders')
@@ -78,11 +88,22 @@ export default function LaporanPage() {
                 .eq('status', 'lunas')
                 .gte('created_at', startDate.toISOString());
 
-            // Fetch previous period for comparison
-            const prevStartDate = new Date(startDate);
-            prevStartDate.setDate(prevStartDate.getDate() - daysToFetch);
-            const prevEndDate = new Date(startDate);
-            prevEndDate.setMilliseconds(prevEndDate.getMilliseconds() - 1);
+
+            // Comparison period
+            let prevStartDate: Date;
+            let prevEndDate: Date;
+            if (timeRange === "tahun_ini") {
+                // Same Jan–today period last year
+                prevStartDate = new Date(now.getFullYear() - 1, 0, 1);
+                prevStartDate.setHours(0, 0, 0, 0);
+                prevEndDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                prevEndDate.setHours(23, 59, 59, 999);
+            } else {
+                prevStartDate = new Date(startDate);
+                prevStartDate.setDate(prevStartDate.getDate() - daysToFetch);
+                prevEndDate = new Date(startDate);
+                prevEndDate.setMilliseconds(prevEndDate.getMilliseconds() - 1);
+            }
 
             const { data: prevOrders } = await supabase
                 .from('orders')
@@ -90,31 +111,42 @@ export default function LaporanPage() {
                 .eq('business_id', business.id)
                 .eq('status', 'lunas')
                 .gte('created_at', prevStartDate.toISOString())
-                .lt('created_at', startDate.toISOString());
+                .lte('created_at', prevEndDate.toISOString());
 
             const processedData = [];
             const orderCountProcessed = [];
             const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-            for (let i = daysToFetch - 1; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dayStr = days[date.getDay()];
-                const dateKey = date.toISOString().split('T')[0];
+            if (timeRange === "tahun_ini") {
+                for (let m = 0; m <= now.getMonth(); m++) {
+                    const monthOrders = orders?.filter(o => {
+                        const d = new Date(o.created_at);
+                        return d.getFullYear() === now.getFullYear() && d.getMonth() === m;
+                    }) || [];
+                    processedData.push({ name: monthNames[m], total: monthOrders.reduce((s, o) => s + o.total, 0) });
+                    orderCountProcessed.push({ name: monthNames[m], orders: monthOrders.length });
+                }
+            } else {
+                for (let i = daysToFetch - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dayStr = days[date.getDay()];
+                    const dateKey = date.toISOString().split('T')[0];
 
-                const dayOrders = orders?.filter(o => o.created_at.startsWith(dateKey)) || [];
-                const dayTotal = dayOrders.reduce((sum, o) => sum + o.total, 0);
-                const dayCount = dayOrders.length;
+                    const dayOrders = orders?.filter(o => o.created_at.startsWith(dateKey)) || [];
+                    const dayTotal = dayOrders.reduce((sum, o) => sum + o.total, 0);
+                    const dayCount = dayOrders.length;
 
-                processedData.push({
-                    name: timeRange === "mingguan" ? dayStr : date.getDate().toString(),
-                    total: dayTotal
-                });
-
-                orderCountProcessed.push({
-                    name: timeRange === "mingguan" ? dayStr : date.getDate().toString(),
-                    orders: dayCount
-                });
+                    processedData.push({
+                        name: timeRange === "mingguan" ? dayStr : date.getDate().toString(),
+                        total: dayTotal
+                    });
+                    orderCountProcessed.push({
+                        name: timeRange === "mingguan" ? dayStr : date.getDate().toString(),
+                        orders: dayCount
+                    });
+                }
             }
             setRevenueData(processedData);
             setOrderCountData(orderCountProcessed);
@@ -211,7 +243,7 @@ export default function LaporanPage() {
         const doc = new jsPDF();
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        const periodLabel = timeRange === 'mingguan' ? '7 Hari Terakhir' : '30 Hari Terakhir';
+        const periodLabel = timeRange === 'mingguan' ? '7 Hari Terakhir' : timeRange === 'tahun_ini' ? `Tahun ${now.getFullYear()}` : '30 Hari Terakhir';
 
         // Header
         doc.setFontSize(20);
@@ -324,7 +356,13 @@ export default function LaporanPage() {
                         onClick={() => setTimeRange("bulanan")}
                         className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "bulanan" ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white/90'}`}
                     >
-                        Bulanan
+                        30 Hari
+                    </button>
+                    <button
+                        onClick={() => setTimeRange("tahun_ini")}
+                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "tahun_ini" ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white/90'}`}
+                    >
+                        Tahun Ini
                     </button>
                 </div>
             </div>
@@ -556,6 +594,7 @@ export default function LaporanPage() {
                                 </div>
                             </div>
                         )}
+
                     </div>
 
                     {/* Insights Column */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +23,8 @@ import {
     Sparkles,
     AlertTriangle,
     MessageSquare,
-    Bot
+    Bot,
+    AlertCircle
 } from "lucide-react";
 
 const SIDEBAR_ITEMS = [
@@ -35,6 +36,7 @@ const SIDEBAR_ITEMS = [
     { name: "WA Marketing", href: "/dashboard/wa-marketing", icon: MessageCircle },
     { name: "Asisten AI", href: "/dashboard/asisten-ai", icon: Bot },
     { name: "Laporan & Insight", href: "/dashboard/laporan", icon: BarChart3 },
+    { name: "Komplain", href: "/dashboard/komplain", icon: AlertCircle, complaint: true },
     { name: "Pengaturan", href: "/dashboard/pengaturan", icon: Settings },
 ];
 
@@ -52,6 +54,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+
+    // Search State
+    const [searchQuery, setSearchQuery] = useState("");
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Notifications State
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [complaintCount, setComplaintCount] = useState(0);
 
     // Auth State
     const [userName, setUserName] = useState("User");
@@ -90,15 +101,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     setUserAvatar(session.user.user_metadata.avatar_url || "");
                 }
 
-                // 2. Get Business Name
+                // 2. Get Business Name & ID
                 const { data: business } = await supabase
                     .from('businesses')
-                    .select('business_name')
+                    .select('id, business_name')
                     .eq('user_id', session.user.id)
                     .single();
 
                 if (isMounted && business) {
                     setBusinessName(business.business_name);
+                    
+                    // Fetch recent orders for notifications
+                    const { data: recentOrders } = await supabase
+                        .from('orders')
+                        .select('id, customer_name, total, created_at, status')
+                        .eq('business_id', business.id)
+                        .order('created_at', { ascending: false })
+                        .limit(5);
+
+                    if (recentOrders && isMounted) {
+                        setNotifications(recentOrders);
+                        setUnreadCount(recentOrders.filter(o => o.status === 'menunggu').length);
+                    }
+
+                    // Fetch unresolved complaint count
+                    const { count: cCount } = await supabase
+                        .from('complaints')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('business_id', business.id)
+                        .eq('status', 'baru');
+                    if (isMounted) setComplaintCount(cCount || 0);
+
+                    // Listen to REALTIME table changes for push notification
+                    supabase.channel('layout_notifications')
+                        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders', filter: `business_id=eq.${business.id}` }, payload => {
+                            if (isMounted) {
+                                setNotifications(prev => [payload.new, ...prev].slice(0, 5));
+                                setUnreadCount(prev => prev + 1);
+                            }
+                        })
+                        .subscribe();
+
+                    supabase.channel('complaint_notifications')
+                        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'complaints', filter: `business_id=eq.${business.id}` }, () => {
+                            if (isMounted) setComplaintCount(prev => prev + 1);
+                        })
+                        .subscribe();
+
                 } else if (!business) {
                     // No business yet, force onboarding
                     router.push('/onboarding');
@@ -154,7 +203,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    // Close dropdowns when clicking outside (simplified for clarity, ideally use a hook)
+    // Handle shortcut for Search (CMD+K)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = () => {
             setIsNotificationOpen(false);
@@ -217,6 +278,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     {item.highlight && (
                                         <span className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[9px] font-black uppercase tracking-wider">
                                             POS
+                                        </span>
+                                    )}
+                                    {(item as any).complaint && complaintCount > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-lg shadow-rose-500/30">
+                                            {complaintCount > 9 ? "9+" : complaintCount}
                                         </span>
                                     )}
                                 </div>
@@ -324,9 +390,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             </button>
 
                             {/* Search Bar */}
-                            <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#161616]/80 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] border border-white/5 w-64 focus-within:border-orange-500/30 focus-within:ring-1 focus-within:ring-orange-500/20 transition-all">
+                            <form onSubmit={(e) => {
+                                e.preventDefault();
+                                if (searchQuery.trim()) {
+                                    router.push(`/dashboard/pesanan?search=${encodeURIComponent(searchQuery)}`);
+                                }
+                            }} className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-lg bg-[#161616]/80 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)] border border-white/5 w-64 focus-within:border-orange-500/30 focus-within:ring-1 focus-within:ring-orange-500/20 transition-all cursor-text" onClick={() => searchInputRef.current?.focus()}>
                                 <Search size={18} className="text-white/30" />
                                 <input
+                                    ref={searchInputRef}
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                     type="text"
                                     placeholder="Cari pesanan, pelanggan..."
                                     className="bg-transparent border-none outline-none text-sm text-white/90 placeholder:text-white/30 w-full font-light"
@@ -334,7 +408,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 <div className="px-2 py-0.5 rounded-md bg-white/5 text-white/40 text-[10px] font-black tracking-widest uppercase border border-white/5">
                                     ⌘K
                                 </div>
-                            </div>
+                            </form>
                         </div>
 
                         <div className="flex items-center gap-4">
@@ -344,6 +418,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     onClick={() => {
                                         setIsNotificationOpen(!isNotificationOpen);
                                         setIsProfileOpen(false);
+                                        if (unreadCount > 0) setUnreadCount(0); // clear bubble when opened
                                     }}
                                     className={`relative p-2 rounded-lg transition-all border ${isNotificationOpen
                                         ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
@@ -351,7 +426,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         }`}
                                 >
                                     <Bell size={18} />
-                                    <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-orange-500 ring-2 ring-[#0a0a0a]" />
+                                    {unreadCount > 0 && (
+                                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-[#0a0a0a]" />
+                                    )}
                                 </button>
 
                                 <AnimatePresence>
@@ -365,28 +442,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         >
                                             <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
                                                 <h3 className="font-medium text-white/90 tracking-tight">Notifikasi</h3>
-                                                <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider">3 Baru</span>
+                                                {unreadCount > 0 && (
+                                                    <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider">{unreadCount} Baru</span>
+                                                )}
                                             </div>
-                                            <div className="py-2">
-                                                {NOTIFICATIONS.map((notif) => {
-                                                    const Icon = notif.icon;
+                                            <div className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                {notifications.length > 0 ? notifications.map((notif) => {
+                                                    const isUnread = notif.status === 'menunggu';
                                                     return (
-                                                        <div key={notif.id} className="flex items-start gap-4 px-6 py-4 hover:bg-[#1a1a1a] transition-colors cursor-pointer group">
-                                                            <div className={`mt-0.5 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${notif.bg} ${notif.color} group-hover:scale-105 transition-transform`}>
-                                                                <Icon size={18} />
+                                                        <Link href="/dashboard/pesanan" key={notif.id} onClick={() => setIsNotificationOpen(false)} className="flex items-start gap-4 px-6 py-4 hover:bg-[#1a1a1a] transition-colors cursor-pointer group">
+                                                            <div className={`mt-0.5 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5 ${isUnread ? 'bg-orange-500/10 text-orange-400' : 'bg-white/5 text-white/40'} group-hover:scale-105 transition-transform`}>
+                                                                <ShoppingCart size={18} />
                                                             </div>
                                                             <div>
-                                                                <p className="text-sm font-medium text-white/90 mb-0.5 tracking-tight group-hover:text-orange-400 transition-colors">{notif.title}</p>
-                                                                <p className="text-[10px] text-white/40 font-medium uppercase tracking-widest">{notif.time}</p>
+                                                                <p className={`text-sm tracking-tight group-hover:text-orange-400 transition-colors ${isUnread ? 'font-bold text-white/90' : 'font-medium text-white/60'}`}>
+                                                                    Pesanan dari {notif.customer_name}
+                                                                </p>
+                                                                <p className="text-[10px] text-white/40 font-medium uppercase tracking-widest mt-0.5">
+                                                                    {new Date(notif.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} • Rp {notif.total?.toLocaleString('id-ID')}
+                                                                </p>
                                                             </div>
-                                                        </div>
+                                                            {isUnread && <div className="w-2 h-2 rounded-full bg-orange-500 mt-2 ml-auto" />}
+                                                        </Link>
                                                     );
-                                                })}
+                                                }) : (
+                                                    <div className="px-6 py-8 text-center text-white/40 text-sm font-medium">Belum ada pesanan terbaru</div>
+                                                )}
                                             </div>
                                             <div className="p-4 border-t border-white/5">
-                                                <button className="w-full py-3 text-xs font-semibold text-white/40 uppercase tracking-widest hover:text-orange-400 hover:bg-[#1a1a1a]/50 transition-colors bg-[#111] rounded-xl border border-transparent hover:border-white/5">
-                                                    Lihat semua
-                                                </button>
+                                                <Link href="/dashboard/pesanan" onClick={() => setIsNotificationOpen(false)} className="block w-full py-3 text-center text-xs font-semibold text-white/40 uppercase tracking-widest hover:text-orange-400 hover:bg-[#1a1a1a]/50 transition-colors bg-[#111] rounded-xl border border-transparent hover:border-white/5">
+                                                    Lihat semua pesanan
+                                                </Link>
                                             </div>
                                         </motion.div>
                                     )}
