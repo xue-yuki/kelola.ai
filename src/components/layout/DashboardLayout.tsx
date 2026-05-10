@@ -24,12 +24,14 @@ import {
     AlertTriangle,
     MessageSquare,
     Bot,
-    AlertCircle
+    AlertCircle,
+    MessagesSquare
 } from "lucide-react";
 
 const SIDEBAR_ITEMS = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Pesanan", href: "/dashboard/pesanan", icon: ShoppingCart },
+    { name: "Percakapan", href: "/dashboard/percakapan", icon: MessagesSquare },
     { name: "Pelanggan", href: "/dashboard/pelanggan", icon: Users },
     { name: "Produk", href: "/dashboard/produk", icon: Package },
     { name: "Kasir (POS)", href: "/dashboard/kasir", icon: Calculator, highlight: true },

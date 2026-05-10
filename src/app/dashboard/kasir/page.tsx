@@ -14,7 +14,7 @@ import {
     Loader2,
     CheckCircle2,
     Package,
-    ArrowRight,
+    ArrowLeft,
     Tag,
     X,
     ChevronRight,
@@ -34,6 +34,7 @@ export default function KasirPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [activeCategory, setActiveCategory] = useState("Semua");
+    const [mobileView, setMobileView] = useState<"catalog" | "cart">("catalog");
 
     const [businessId, setBusinessId] = useState<string | null>(null);
 
@@ -127,6 +128,7 @@ export default function KasirPage() {
 
             setOrderSuccess(true);
             setCart([]);
+            setMobileView("catalog");
             setTimeout(() => setOrderSuccess(false), 3000);
         } catch (error) {
             console.error("Checkout error:", error);
@@ -143,9 +145,9 @@ export default function KasirPage() {
     const categories = ["Semua", "Makanan", "Minuman", "Lainnya"];
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] select-none">
+        <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-140px)] select-none">
             {/* Left Side: Product Selection */}
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+            <div className={`${mobileView === "cart" ? "hidden lg:flex" : "flex"} flex-1 flex-col gap-6 overflow-hidden`}>
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
                         <div>
@@ -234,11 +236,17 @@ export default function KasirPage() {
             </div>
 
             {/* Right Side: Billing System */}
-            <div className="w-full lg:w-[420px] flex flex-col gap-6">
+            <div className={`${mobileView === "catalog" ? "hidden lg:flex" : "flex"} flex-col w-full lg:w-[420px] gap-6`}>
                 <div className="flex-1 bg-[#161616]/90 backdrop-blur-2xl rounded-3xl border border-white/5 shadow-2xl flex flex-col overflow-hidden relative">
                     {/* Cart Header */}
                     <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#111]">
                         <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setMobileView("catalog")}
+                                className="lg:hidden w-9 h-9 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white mr-1"
+                            >
+                                <ArrowLeft size={18} />
+                            </button>
                             <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center relative shadow-[0_0_20px_rgba(255,107,43,0.1)]">
                                 <ShoppingCart size={20} />
                                 {cart.length > 0 && (
@@ -307,7 +315,7 @@ export default function KasirPage() {
                     </div>
 
                     {/* Checkout Panel */}
-                    <div className="p-8 bg-[#111] border-t border-white/5 space-y-6">
+                    <div className="p-5 lg:p-8 bg-[#111] border-t border-white/5 space-y-4 lg:space-y-6">
                         <div className="space-y-3">
                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 pl-1">Pilih Metode Pembayaran</label>
                             <div className="grid grid-cols-3 gap-3">
@@ -319,7 +327,7 @@ export default function KasirPage() {
                                     <button
                                         key={method.id}
                                         onClick={() => setPaymentMethod(method.id)}
-                                        className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${paymentMethod === method.id
+                                        className={`flex flex-col items-center gap-1.5 p-2.5 lg:p-3 rounded-2xl border transition-all ${paymentMethod === method.id
                                             ? 'bg-orange-500/10 border-orange-500/50 text-orange-400 shadow-[0_0_15px_rgba(255,107,43,0.15)] ring-1 ring-orange-500/20'
                                             : 'bg-white/5 border-white/5 text-white/40 hover:border-white/20 hover:text-white/60'
                                             }`}
@@ -331,15 +339,15 @@ export default function KasirPage() {
                             </div>
                         </div>
 
-                        <div className="py-4 border-y border-white/5 flex items-center justify-between">
+                        <div className="py-3 lg:py-4 border-y border-white/5 flex items-center justify-between">
                             <div className="text-xs font-black text-white/40 uppercase tracking-widest">Total Tagihan</div>
-                            <div className="text-3xl font-black text-white/90">Rp {totalAmount.toLocaleString('id-ID')}</div>
+                            <div className="text-2xl lg:text-3xl font-black text-white/90">Rp {totalAmount.toLocaleString('id-ID')}</div>
                         </div>
 
                         <button
                             onClick={handleCheckout}
                             disabled={cart.length === 0 || isProcessing}
-                            className={`w-full py-5 rounded-full font-black text-lg tracking-tight transition-all flex items-center justify-center gap-3 shadow-2xl relative overflow-hidden ${orderSuccess
+                            className={`w-full py-3.5 lg:py-5 rounded-full font-black text-base lg:text-lg tracking-tight transition-all flex items-center justify-center gap-2 shadow-2xl relative overflow-hidden ${orderSuccess
                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
                                 : 'bg-orange-500 hover:bg-orange-600 text-white shadow-[0_0_30px_rgba(255,107,43,0.3)] active:scale-95 disabled:opacity-50 disabled:bg-white/10 disabled:text-white/40 disabled:border disabled:border-white/5 disabled:shadow-none'
                                 }`}
@@ -355,6 +363,27 @@ export default function KasirPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Floating Cart Button — mobile only, shown in catalog view */}
+            <AnimatePresence>
+                {mobileView === "catalog" && (
+                    <motion.button
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        onClick={() => setMobileView("cart")}
+                        className="fixed bottom-6 right-6 lg:hidden z-50 flex items-center gap-3 bg-orange-500 hover:bg-orange-600 text-white px-5 py-4 rounded-full shadow-[0_0_30px_rgba(255,107,43,0.4)] font-black text-sm active:scale-95 transition-transform"
+                    >
+                        <ShoppingCart size={20} />
+                        <span>Keranjang</span>
+                        {cart.length > 0 && (
+                            <span className="bg-white text-orange-500 text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">
+                                {cart.reduce((a, b) => a + b.qty, 0)}
+                            </span>
+                        )}
+                    </motion.button>
+                )}
+            </AnimatePresence>
 
             {/* Success Animation */}
             <AnimatePresence>
