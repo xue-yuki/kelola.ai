@@ -223,7 +223,13 @@ export default function PengaturanPage() {
 
     const handleConnectClick = async () => {
         setWaStatus('connecting');
-        checkWaStatus();
+        try {
+            const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:3001";
+            await fetch(`${agentUrl}/api/connect/${businessId}`, { method: 'POST' });
+            checkWaStatus();
+        } catch (error) {
+            console.error("Gagal memulai koneksi WA:", error);
+        }
     };
 
     const handleDisconnectClick = async () => {
