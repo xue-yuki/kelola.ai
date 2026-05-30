@@ -9,7 +9,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:3001";
 
 type Customer = { wa_number: string; name: string; last_order_at?: string; order_count?: number };
 
@@ -49,7 +48,15 @@ export default function WAMarketingPage() {
 
     const checkBotStatus = async () => {
         try {
-            const res = await fetch(`${AGENT_URL}/api/status/check`, { signal: AbortSignal.timeout(3000) });
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session || !businessId) return;
+            const res = await fetch(
+                `/api/agent-proxy?path=/api/status&businessId=${businessId}`,
+                {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    signal: AbortSignal.timeout(3000)
+                }
+            );
             const data = await res.json();
             setBotConnected(data.status === "connected");
         } catch {
@@ -143,10 +150,17 @@ export default function WAMarketingPage() {
         setBroadcastProgress({ running: true, sent: 0, failed: 0, total: recipients.length });
 
         try {
-            const res = await fetch(`${AGENT_URL}/api/broadcast`, {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || '';
+
+            const res = await fetch(`/api/agent-proxy?path=/api/broadcast&businessId=${businessId}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify({
+                    businessId,
                     recipients: recipients.map(c => ({ number: c.wa_number, name: c.name })),
                     template: message,
                 }),
@@ -160,7 +174,10 @@ export default function WAMarketingPage() {
             // Poll progress every 1.5s
             pollRef.current = setInterval(async () => {
                 try {
-                    const statusRes = await fetch(`${AGENT_URL}/api/broadcast/status`);
+                    const statusRes = await fetch(
+                        `/api/agent-proxy?path=/api/broadcast/status&businessId=${businessId}`,
+                        { headers: { 'Authorization': `Bearer ${token}` } }
+                    );
                     const state: BroadcastState = await statusRes.json();
                     setBroadcastProgress(state);
 

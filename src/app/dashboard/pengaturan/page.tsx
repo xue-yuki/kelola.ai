@@ -190,10 +190,13 @@ export default function PengaturanPage() {
     const checkWaStatus = async () => {
         if (!businessId) return;
         try {
-            const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:3001";
-            const response = await fetch(`${agentUrl}/api/status/${businessId}`, { cache: 'no-store' });
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || '';
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            const response = await fetch(`/api/agent-proxy?path=/api/status&businessId=${businessId}`, { cache: 'no-store', headers });
             const data = await response.json();
-            
+
             setWaStatus(prevStatus => {
                 if (data.status !== prevStatus) {
                     if (data.status === 'connected') {
@@ -210,7 +213,7 @@ export default function PengaturanPage() {
             });
 
             if (data.status === 'connecting') {
-                const qrRes = await fetch(`${agentUrl}/api/qr/${businessId}`, { cache: 'no-store' });
+                const qrRes = await fetch(`/api/agent-proxy?path=/api/qr&businessId=${businessId}`, { cache: 'no-store', headers });
                 const qrData = await qrRes.json();
                 if (qrData.qr) setQrCode(qrData.qr);
             } else {
@@ -224,8 +227,12 @@ export default function PengaturanPage() {
     const handleConnectClick = async () => {
         setWaStatus('connecting');
         try {
-            const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:3001";
-            await fetch(`${agentUrl}/api/connect/${businessId}`, { method: 'POST' });
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || '';
+            await fetch(`/api/agent-proxy?path=/api/connect&businessId=${businessId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             checkWaStatus();
         } catch (error) {
             console.error("Gagal memulai koneksi WA:", error);
@@ -234,12 +241,16 @@ export default function PengaturanPage() {
 
     const handleDisconnectClick = async () => {
         try {
-            const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:3001";
-            const response = await fetch(`${agentUrl}/api/disconnect/${businessId}`, { 
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || '';
+            const response = await fetch(`/api/agent-proxy?path=/api/disconnect&businessId=${businessId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
