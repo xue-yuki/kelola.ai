@@ -11,7 +11,7 @@ import {
     Banknote,
     QrCode,
     ShoppingCart,
-    Loader2,
+    Loader2,    
     CheckCircle2,
     Package,
     ArrowLeft,

@@ -4,9 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import {
     Search, Loader2, MessageCircle,
     CheckCircle2, Truck, Settings2, Clock, XCircle,
-    ShoppingBag, Phone, Package, ArrowLeft, RefreshCw
+    ShoppingBag, Phone, Package, ArrowLeft, RefreshCw,
+    Edit, Filter, MoreVertical, Paperclip, Smile, Link as LinkIcon, Bookmark, ChevronRight, Mail, MapPin, MoreHorizontal, FileText, X, Plus
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { motion, AnimatePresence } from "framer-motion";
 
 type ConvSummary = {
     customer_wa: string;
@@ -34,29 +36,23 @@ type Order = {
 };
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string; icon: React.ElementType }> = {
-    menunggu:   { label: "Menunggu",   color: "text-orange-400",  bg: "bg-orange-500/10",  border: "border-orange-500/20",  icon: Clock },
-    diproses:   { label: "Diproses",   color: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-500/20",   icon: Settings2 },
-    dikirim:    { label: "Dikirim",    color: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/20",    icon: Truck },
-    lunas:      { label: "Lunas",      color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20", icon: CheckCircle2 },
-    dibatalkan: { label: "Dibatalkan", color: "text-rose-400",    bg: "bg-rose-500/10",    border: "border-rose-500/20",    icon: XCircle },
+    menunggu:   { label: "Menunggu",   color: "text-orange-600 dark:text-orange-400",  bg: "bg-orange-50 dark:bg-orange-500/10",  border: "border-orange-200 dark:border-orange-500/20",  icon: Clock },
+    diproses:   { label: "Diproses",   color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-500/10",   border: "border-amber-200 dark:border-amber-500/20",   icon: Settings2 },
+    dikirim:    { label: "Dikirim",    color: "text-blue-600 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-500/10",    border: "border-blue-200 dark:border-blue-500/20",    icon: Truck },
+    lunas:      { label: "Lunas",      color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10", border: "border-emerald-200 dark:border-emerald-500/20", icon: CheckCircle2 },
+    dibatalkan: { label: "Dibatalkan", color: "text-rose-600 dark:text-rose-400",    bg: "bg-rose-50 dark:bg-rose-500/10",    border: "border-rose-200 dark:border-rose-500/20",    icon: XCircle },
 };
 
-const NEXT_STATUSES: Record<string, string[]> = {
-    menunggu:   ["diproses", "dibatalkan"],
-    diproses:   ["dikirim",  "dibatalkan"],
-    dikirim:    ["lunas",    "dibatalkan"],
-    lunas:      [],
-    dibatalkan: [],
-};
+const TABS = ["All", "Open", "Waiting", "Closed"];
 
 function timeLabel(iso: string) {
     const d = new Date(iso);
     const now = new Date();
     const diffH = (now.getTime() - d.getTime()) / 3600000;
     if (diffH < 24 && d.getDate() === now.getDate())
-        return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-    if (diffH < 48) return "Kemarin";
-    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+        return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    if (diffH < 48) return "Yesterday";
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default function PercakapanPage() {
@@ -69,9 +65,11 @@ export default function PercakapanPage() {
     const [selected, setSelected] = useState<ConvSummary | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
-    const [updatingOrder, setUpdatingOrder] = useState<string | null>(null);
-
-    // Mobile: "list" | "chat"
+    const [activeListTab, setActiveListTab] = useState("All");
+    const [inputText, setInputText] = useState("");
+    const [inputMode, setInputMode] = useState<"reply"|"note">("reply");
+    
+    const [isSending, setIsSending] = useState(false);
     const [mobileView, setMobileView] = useState<"list" | "chat">("list");
 
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -163,60 +161,93 @@ export default function PercakapanPage() {
         }
     };
 
-    const updateOrderStatus = async (orderId: string, newStatus: string) => {
-        setUpdatingOrder(orderId);
+    const filtered = convList.filter(c => {
+        const matchSearch = c.customer_name.toLowerCase().includes(search.toLowerCase()) || c.customer_wa.includes(search);
+        let matchTab = true;
+        if (activeListTab === "Waiting") matchTab = c.has_pending;
+        else if (activeListTab === "Open") matchTab = !c.has_pending;
+        return matchSearch && matchTab;
+    });
+
+    const handleSendMessage = async () => {
+        if (!inputText.trim() || !selected || inputMode === "note") return;
+        setIsSending(true);
         try {
-            await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
-            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-            if (!["menunggu", "diproses", "dikirim"].includes(newStatus)) {
-                setConvList(prev => prev.map(c =>
-                    c.customer_wa === selected?.customer_wa ? { ...c, has_pending: false } : c
-                ));
-            }
+            const newMsg = {
+                business_id: businessId,
+                customer_wa: selected.customer_wa,
+                role: "assistant",
+                message: inputText.trim()
+            };
+            const { error } = await supabase.from("conversations").insert(newMsg);
+            if (error) throw error;
+            
+            setMessages(prev => [...prev, { id: Date.now().toString(), role: "assistant", message: newMsg.message, created_at: new Date().toISOString() }]);
+            setInputText("");
+            loadConversations();
+        } catch (err) {
+            console.error(err);
         } finally {
-            setUpdatingOrder(null);
+            setIsSending(false);
         }
     };
 
-    const filtered = convList.filter(c =>
-        c.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-        c.customer_wa.includes(search)
-    );
-
+    // Context calculations
+    const totalSpend = orders.reduce((acc, o) => acc + (o.total || 0), 0);
     const activeOrder = orders.find(o => ["menunggu", "diproses", "dikirim"].includes(o.status));
-    const pastOrders = orders.filter(o => !["menunggu", "diproses", "dikirim"].includes(o.status));
 
-    // ── Conversation List Panel ──────────────────────────────────────────
+    // ── 1. List Panel (Left) ──────────────────────────────────────────
     const ListPanel = (
-        <div className={`flex-col flex-none w-full lg:w-80 border-r border-white/5 ${mobileView === "chat" ? "hidden lg:flex" : "flex"}`}>
-            <div className="p-4 border-b border-white/5 flex items-center gap-3">
-                <div className="flex-1">
-                    <h2 className="font-black text-white/90 text-base mb-3">Percakapan</h2>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-xl border border-white/5 focus-within:border-orange-500/30 transition-colors">
-                        <Search size={13} className="text-white/30 flex-shrink-0" />
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            placeholder="Cari pelanggan..."
-                            className="bg-transparent text-sm text-white/80 placeholder:text-white/20 outline-none w-full"
-                        />
-                    </div>
-                </div>
-                <button onClick={loadConversations} className="p-2 rounded-xl hover:bg-white/5 text-white/30 hover:text-white/60 transition-colors mt-1 flex-shrink-0">
-                    <RefreshCw size={15} />
+        <div className={`flex-col flex-none w-full md:w-[320px] lg:w-[350px] border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0a0a0a] ${mobileView === "chat" ? "hidden md:flex" : "flex"} h-full`}>
+            {/* Header & New Button */}
+            <div className="p-4 flex items-center justify-between shrink-0">
+                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">Conversations</h2>
+                <button className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors">
+                    <Edit size={16} />
                 </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            {/* Tabs */}
+            <div className="flex px-4 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
+                {TABS.map(tab => (
+                    <button 
+                        key={tab}
+                        onClick={() => setActiveListTab(tab)}
+                        className={`mr-4 pb-2 text-xs font-semibold border-b-2 transition-colors ${
+                            activeListTab === tab 
+                            ? "border-orange-500 text-orange-600 dark:text-orange-500" 
+                            : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        }`}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
+
+            {/* Search */}
+            <div className="p-4 shrink-0">
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Search conversations..."
+                            className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-md text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600"
+                        />
+                    </div>
+                    <button className="p-1.5 border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                        <Filter size={14} />
+                    </button>
+                </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {isLoadingList ? (
-                    <div className="flex items-center justify-center h-40">
-                        <Loader2 className="animate-spin text-orange-400 w-6 h-6" />
-                    </div>
+                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-orange-500 w-5 h-5" /></div>
                 ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-40 gap-2 text-white/20">
-                        <MessageCircle size={32} />
-                        <p className="text-xs font-bold">Belum ada percakapan</p>
-                    </div>
+                    <div className="p-8 text-center text-xs text-zinc-500">No conversations found.</div>
                 ) : (
                     filtered.map(conv => {
                         const isActive = selected?.customer_wa === conv.customer_wa;
@@ -224,30 +255,36 @@ export default function PercakapanPage() {
                             <button
                                 key={conv.customer_wa}
                                 onClick={() => selectConversation(conv)}
-                                className={`w-full flex items-center gap-3 px-4 py-3.5 transition-all text-left border-b border-white/[0.03] ${isActive ? "bg-orange-500/10 border-l-2 border-l-orange-500" : "hover:bg-white/[0.03] active:bg-white/[0.06]"}`}
+                                className={`w-full flex items-start gap-3 p-4 text-left border-b border-zinc-100 dark:border-zinc-800/50 transition-colors ${
+                                    isActive 
+                                    ? "bg-zinc-50 dark:bg-[#111] border-l-2 border-l-orange-500 pl-[14px]" 
+                                    : "hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50"
+                                }`}
                             >
-                                <div className="relative flex-shrink-0">
-                                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-orange-500/30 to-orange-600/20 border border-orange-500/20 flex items-center justify-center">
-                                        <span className="text-base font-black text-orange-400">
-                                            {conv.customer_name.charAt(0).toUpperCase()}
-                                        </span>
-                                    </div>
-                                    {conv.has_pending && (
-                                        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-orange-500 border-2 border-[#0e0e0e]" />
-                                    )}
+                                <div className="w-9 h-9 rounded bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-300 dark:border-zinc-700">
+                                    <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                                        {conv.customer_name.charAt(0).toUpperCase()}
+                                    </span>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between mb-0.5">
-                                        <p className={`text-sm font-bold truncate ${isActive ? "text-orange-400" : "text-white/90"}`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className={`text-xs font-semibold truncate ${isActive ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-700 dark:text-zinc-300"}`}>
                                             {conv.customer_name}
                                         </p>
-                                        <span className="text-[10px] text-white/30 flex-shrink-0 ml-2">
+                                        <span className="text-[10px] text-zinc-500 dark:text-zinc-500 shrink-0 ml-2">
                                             {timeLabel(conv.last_time)}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-white/40 truncate">
-                                        {conv.last_role === "assistant" ? "🤖 " : ""}{conv.last_message}
-                                    </p>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-xs text-zinc-500 dark:text-zinc-500 truncate">
+                                            {conv.last_role === "user" ? "You: " : ""}{conv.last_message}
+                                        </p>
+                                        {conv.has_pending && (
+                                            <div className="w-4 h-4 rounded-full bg-orange-600 flex items-center justify-center shrink-0">
+                                                <span className="text-[9px] font-bold text-white">1</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </button>
                         );
@@ -257,151 +294,232 @@ export default function PercakapanPage() {
         </div>
     );
 
-    // ── Chat Panel ───────────────────────────────────────────────────────
+    // ── 2. Chat Panel (Middle) ──────────────────────────────────────────
     const ChatPanel = (
-        <div className={`flex-col flex-1 min-w-0 ${mobileView === "list" ? "hidden lg:flex" : "flex"}`}>
+        <div className={`flex-col flex-1 min-w-0 bg-white dark:bg-[#0a0a0a] h-full ${mobileView === "list" ? "hidden md:flex" : "flex"}`}>
             {!selected ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-white/20">
-                    <MessageCircle size={48} />
-                    <p className="font-bold text-sm">Pilih percakapan untuk mulai</p>
+                <div className="flex-1 flex flex-col items-center justify-center text-zinc-400">
+                    <MessageCircle size={32} className="mb-4 opacity-50" />
+                    <p className="text-sm">Select a conversation to start messaging</p>
                 </div>
             ) : (
                 <>
                     {/* Header */}
-                    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/5 bg-[#0e0e0e] flex-shrink-0">
-                        {/* Back button (mobile only) */}
-                        <button
-                            onClick={() => setMobileView("list")}
-                            className="lg:hidden p-1.5 -ml-1 rounded-xl hover:bg-white/5 text-white/50 hover:text-white transition-colors"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
-
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500/30 to-orange-600/20 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-black text-orange-400">
-                                {selected.customer_name.charAt(0).toUpperCase()}
-                            </span>
+                    <div className="h-16 px-4 md:px-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setMobileView("list")}
+                                className="md:hidden p-1.5 -ml-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500"
+                            >
+                                <ArrowLeft size={18} />
+                            </button>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{selected.customer_name}</h2>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">Active</span>
+                                    </div>
+                                </div>
+                                <p className="text-[11px] text-zinc-500 mt-0.5">Enterprise Plan • Customer since Jan 15, 2024</p>
+                            </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-white/90 leading-none mb-0.5">{selected.customer_name}</p>
-                            <p className="text-[11px] text-white/30 flex items-center gap-1">
-                                <Phone size={9} /> {selected.customer_wa}
-                            </p>
+                        <div className="flex items-center gap-2">
+                            <button className="hidden sm:flex px-3 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                                Close conversation
+                            </button>
+                            <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+                                <MoreVertical size={16} />
+                            </button>
                         </div>
-                        {orders.length > 0 && (
-                            <span className="text-[10px] font-bold text-white/30 flex items-center gap-1 flex-shrink-0">
-                                <ShoppingBag size={11} /> {orders.length}
-                            </span>
-                        )}
                     </div>
 
-                    {/* Active Order Card */}
-                    {activeOrder && (() => {
-                        const st = STATUS_CFG[activeOrder.status];
-                        const StatusIcon = st.icon;
-                        const nextStatuses = NEXT_STATUSES[activeOrder.status] || [];
-                        let items: any[] = [];
-                        try { items = typeof activeOrder.items === "string" ? JSON.parse(activeOrder.items) : activeOrder.items || []; } catch {}
-
-                        return (
-                            <div className={`mx-3 mt-3 p-3.5 rounded-2xl border ${st.bg} ${st.border} flex-shrink-0`}>
-                                <div className="flex items-center gap-2 mb-2.5">
-                                    <StatusIcon size={14} className={st.color} />
-                                    <p className="text-xs font-bold text-white/60">
-                                        Pesanan Aktif · <span className={st.color}>{st.label}</span>
-                                    </p>
-                                </div>
-                                <p className="text-xs text-white/60 mb-3 flex items-start gap-1.5">
-                                    <Package size={11} className="flex-shrink-0 mt-0.5" />
-                                    <span>{items.map((i: any) => `${i.name} x${i.qty}`).join(", ")} — Rp {activeOrder.total?.toLocaleString("id-ID")}</span>
-                                </p>
-                                {nextStatuses.length > 0 && (
-                                    <div className="flex gap-2 flex-wrap">
-                                        {nextStatuses.map(ns => {
-                                            const nst = STATUS_CFG[ns];
-                                            const NIcon = nst.icon;
-                                            const isUpdating = updatingOrder === activeOrder.id;
-                                            return (
-                                                <button
-                                                    key={ns}
-                                                    onClick={() => updateOrderStatus(activeOrder.id, ns)}
-                                                    disabled={isUpdating}
-                                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all active:scale-95 disabled:opacity-50 ${nst.bg} ${nst.border} ${nst.color}`}
-                                                >
-                                                    {isUpdating ? <Loader2 size={11} className="animate-spin" /> : <NIcon size={11} />}
-                                                    {nst.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })()}
-
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">
+                    {/* Messages Area */}
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-zinc-50/50 dark:bg-[#0a0a0a] space-y-6 custom-scrollbar">
                         {isLoadingChat ? (
-                            <div className="flex items-center justify-center h-full">
-                                <Loader2 className="animate-spin text-orange-400 w-8 h-8" />
-                            </div>
-                        ) : messages.length === 0 ? (
-                            <div className="flex items-center justify-center h-full text-white/20 text-sm font-bold">
-                                Belum ada pesan
-                            </div>
+                            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-orange-500 w-6 h-6" /></div>
                         ) : (
-                            messages.map((msg, i) => {
-                                const isUser = msg.role === "user";
-                                const showTime = i === messages.length - 1 || messages[i + 1]?.role !== msg.role;
-                                return (
-                                    <div key={msg.id} className={`flex ${isUser ? "justify-start" : "justify-end"}`}>
-                                        <div className={`max-w-[80%] sm:max-w-[70%] flex flex-col ${isUser ? "items-start" : "items-end"} gap-0.5`}>
-                                            <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                                                isUser
-                                                    ? "bg-white/[0.07] text-white/80 rounded-tl-sm"
-                                                    : "bg-orange-500/20 text-white/90 rounded-tr-sm border border-orange-500/20"
-                                            }`}>
-                                                {msg.message}
-                                            </div>
-                                            {showTime && (
-                                                <span className="text-[10px] text-white/20 px-1">
-                                                    {new Date(msg.created_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
-                                                </span>
+                            <>
+                                <div className="flex justify-center">
+                                    <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Today</span>
+                                </div>
+                                {messages.map((msg, i) => {
+                                    const isUser = msg.role === "user"; // Customer
+                                    return (
+                                        <div key={msg.id} className={`flex gap-3 ${isUser ? "flex-row" : "flex-row-reverse"}`}>
+                                            {isUser && (
+                                                <div className="w-8 h-8 rounded bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-300 dark:border-zinc-700">
+                                                    <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-400">
+                                                        {selected.customer_name.charAt(0).toUpperCase()}
+                                                    </span>
+                                                </div>
                                             )}
+                                            <div className={`flex flex-col ${isUser ? "items-start" : "items-end"} max-w-[75%]`}>
+                                                <div className={`px-4 py-2.5 text-sm ${
+                                                    isUser 
+                                                    ? "bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-xl rounded-tl-none" 
+                                                    : "bg-zinc-800 dark:bg-[#1a1a1a] border border-zinc-700 dark:border-zinc-800 text-zinc-100 rounded-xl rounded-tr-none"
+                                                }`}>
+                                                    {msg.message}
+                                                </div>
+                                                <span className="text-[10px] text-zinc-400 mt-1.5 px-1 flex items-center gap-1">
+                                                    {new Date(msg.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                                                    {!isUser && <CheckCircle2 size={10} className="text-zinc-500" />}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })
+                                    )
+                                })}
+                            </>
                         )}
                         <div ref={bottomRef} />
                     </div>
 
-                    {/* Past Orders */}
-                    {pastOrders.length > 0 && (
-                        <div className="px-3 pb-3 flex-shrink-0 border-t border-white/5 pt-3">
-                            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-2">Riwayat Pesanan</p>
-                            <div className="flex gap-2 overflow-x-auto pb-1">
-                                {pastOrders.map(o => {
-                                    const st = STATUS_CFG[o.status] ?? STATUS_CFG.lunas;
-                                    return (
-                                        <div key={o.id} className={`flex-shrink-0 px-3 py-1.5 rounded-xl border ${st.bg} ${st.border} text-xs flex items-center gap-2`}>
-                                            <span className={`font-bold ${st.color}`}>{st.label}</span>
-                                            <span className="text-white/40">Rp {o.total?.toLocaleString("id-ID")}</span>
-                                        </div>
-                                    );
-                                })}
+                    {/* Input Area */}
+                    <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0a0a0a] p-4">
+                        <div className="flex items-center gap-6 mb-3 px-2">
+                            <button 
+                                onClick={() => setInputMode("reply")}
+                                className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${inputMode === "reply" ? "border-orange-500 text-orange-600 dark:text-orange-500" : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
+                            >
+                                Reply
+                            </button>
+                            <button 
+                                onClick={() => setInputMode("note")}
+                                className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${inputMode === "note" ? "border-amber-500 text-amber-600 dark:text-amber-500" : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
+                            >
+                                Note
+                            </button>
+                        </div>
+                        <div className={`border rounded-lg transition-colors overflow-hidden ${inputMode === "note" ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50" : "bg-white dark:bg-[#111] border-zinc-200 dark:border-zinc-800 focus-within:border-zinc-400 dark:focus-within:border-zinc-600"}`}>
+                            <textarea 
+                                value={inputText}
+                                onChange={e => setInputText(e.target.value)}
+                                placeholder={inputMode === "reply" ? "Type your message..." : "Type an internal note..."}
+                                className="w-full bg-transparent p-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-none min-h-[80px] resize-none"
+                            />
+                            <div className="flex items-center justify-between p-2 border-t border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-transparent">
+                                <div className="flex items-center gap-1">
+                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><Paperclip size={16} /></button>
+                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><Smile size={16} /></button>
+                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><LinkIcon size={16} /></button>
+                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><Bookmark size={16} /></button>
+                                </div>
+                                <button 
+                                    onClick={handleSendMessage}
+                                    disabled={isSending}
+                                    className={`px-4 py-1.5 rounded-md text-xs font-medium text-white flex items-center gap-2 transition-colors disabled:opacity-50 ${inputMode === "note" ? "bg-amber-600 hover:bg-amber-700" : "bg-orange-600 hover:bg-orange-700"}`}>
+                                    {isSending ? <Loader2 size={14} className="animate-spin" /> : null}
+                                    {inputMode === "note" ? "Add Note" : "Send"} 
+                                </button>
                             </div>
                         </div>
-                    )}
+                    </div>
                 </>
             )}
         </div>
     );
 
+    // ── 3. Context Panel (Right) ──────────────────────────────────────────
+    const ContextPanel = (
+        <div className="hidden xl:flex flex-col w-[300px] border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0a0a0a] h-full overflow-y-auto custom-scrollbar">
+            {selected ? (
+                <>
+                    {/* Customer Profile Card */}
+                    <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
+                                <span className="text-lg font-semibold text-zinc-600 dark:text-zinc-400">
+                                    {selected.customer_name.charAt(0).toUpperCase()}
+                                </span>
+                            </div>
+                            <button className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"><MoreHorizontal size={16} /></button>
+                        </div>
+                            <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-base mb-1">{selected.customer_name}</h2>
+                        <div className="flex items-center gap-1.5 mb-4">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="text-xs text-emerald-600 dark:text-emerald-500">Active</span>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3 text-xs text-zinc-600 dark:text-zinc-400">
+                                <Phone size={14} className="text-zinc-400 shrink-0" />
+                                <span>{selected.customer_wa}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Customer Overview */}
+                    <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
+                        <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Customer Overview</h3>
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-xs">
+                                <span className="text-zinc-500">Total Spend</span>
+                                <span className="font-mono text-zinc-900 dark:text-zinc-100 font-medium">Rp {totalSpend.toLocaleString("id-ID")}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-zinc-500">Total Orders</span>
+                                <span className="font-mono text-zinc-900 dark:text-zinc-100 font-medium">{orders.length}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-zinc-500">Last Active</span>
+                                <span className="font-mono text-zinc-900 dark:text-zinc-100 font-medium">{new Date(selected.last_time).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                            </div>
+                        </div>
+                        <button className="mt-4 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 group">
+                            View full profile <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                    </div>
+
+                    {/* Recent Orders */}
+                    <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Recent Orders</h3>
+                            <button className="text-[10px] font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-500 dark:hover:text-orange-400 flex items-center gap-1">
+                                View all <ChevronRight size={10} />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            {orders.length === 0 ? (
+                                <p className="text-xs text-zinc-500">No recent orders.</p>
+                            ) : (
+                                orders.slice(0, 3).map(o => {
+                                    const st = STATUS_CFG[o.status] || STATUS_CFG.lunas;
+                                    return (
+                                        <div key={o.id}>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">Order #{o.id.slice(0,4).toUpperCase()}</p>
+                                                <span className={`text-[10px] font-semibold flex items-center gap-1 ${st.color}`}>
+                                                    <div className={`w-1 h-1 rounded-full bg-current`} />
+                                                    {st.label}
+                                                </span>
+                                            </div>
+                                            <p className="text-[10px] font-mono text-zinc-500">
+                                                Rp {o.total?.toLocaleString("id-ID")} • {new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                            </p>
+                                        </div>
+                                    )
+                                })
+                            )}
+                        </div>
+                    </div>
+
+
+                </>
+            ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-zinc-400 opacity-50">
+                    <FileText size={32} className="mb-4" />
+                </div>
+            )}
+        </div>
+    );
+
     return (
-        <div className="h-[calc(100vh-8rem)] flex rounded-3xl overflow-hidden border border-white/5 bg-[#0e0e0e]">
+        <div className="-m-8 h-[calc(100vh-73px)] flex overflow-hidden border-l-0 font-sans">
             {ListPanel}
             {ChatPanel}
+            {ContextPanel}
         </div>
     );
 }
