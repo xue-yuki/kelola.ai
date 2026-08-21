@@ -43,8 +43,13 @@ export default function WAMarketingPage() {
 
     useEffect(() => {
         loadData();
-        checkBotStatus();
     }, []);
+
+    // Cek status bot SETELAH businessId terisi (loadData async).
+    // Tanpa ini, checkBotStatus jalan saat businessId masih "" → status nyangkut null.
+    useEffect(() => {
+        if (businessId) checkBotStatus();
+    }, [businessId]);
 
     const checkBotStatus = async () => {
         try {

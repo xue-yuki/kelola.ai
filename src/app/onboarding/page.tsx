@@ -21,6 +21,7 @@ import {
     QrCode
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeWa } from "@/lib/phone";
 
 const BUSINESS_TYPES = [
     { name: "Makanan & Minuman", icon: Coffee },
@@ -48,19 +49,33 @@ export default function OnboardingPage() {
     // QR Code state
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [waStatus, setWaStatus] = useState("disconnected");
+    const [businessId, setBusinessId] = useState<string | null>(null);
 
     useEffect(() => {
         let pollInterval: NodeJS.Timeout;
-        if (step === 4) {
+        if (step === 4 && businessId) {
             pollInterval = setInterval(async () => {
                 try {
-                    const res = await fetch('http://localhost:3001/api/qr/1');
-                    const data = await res.json();
-                    if (data.qr) setQrCode(data.qr);
-                    setWaStatus(data.status);
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const token = session?.access_token || '';
+                    const headers = { 'Authorization': `Bearer ${token}` };
 
-                    if (data.status === 'connected') {
+                    const statusRes = await fetch(`/api/agent-proxy?path=/api/status&businessId=${businessId}`, { cache: 'no-store', headers });
+                    const statusData = await statusRes.json();
+                    setWaStatus(statusData.status);
+
+                    if (statusData.status === 'connected') {
+                        await supabase.from('businesses')
+                            .update({ wa_status: 'connected', wa_connected_at: new Date().toISOString() })
+                            .eq('id', businessId);
                         clearInterval(pollInterval);
+                        return;
+                    }
+
+                    if (statusData.status === 'connecting') {
+                        const qrRes = await fetch(`/api/agent-proxy?path=/api/qr&businessId=${businessId}`, { cache: 'no-store', headers });
+                        const qrData = await qrRes.json();
+                        if (qrData.qr) setQrCode(qrData.qr);
                     }
                 } catch (err) {
                     console.error("Agent API error:", err);
@@ -68,7 +83,7 @@ export default function OnboardingPage() {
             }, 2000);
         }
         return () => clearInterval(pollInterval);
-    }, [step]);
+    }, [step, businessId]);
 
     const handleNext = () => setStep((s) => Math.min(s + 1, 4));
     const handlePrev = () => setStep((s) => Math.max(s - 1, 1));
@@ -83,21 +98,47 @@ export default function OnboardingPage() {
             const { data: { user }, error: userError } = await supabase.auth.getUser();
             if (userError || !user) throw new Error("Gagal mengambil data user");
 
-            // 2. Insert into businesses table
-            const { data: businessData, error: businessError } = await supabase
+            // 2. Upsert businesses — kalau bisnis sudah dibuat saat register,
+            //    UPDATE baris yang ada; jangan insert baru (cegah bisnis dobel).
+            const { data: existing } = await supabase
                 .from('businesses')
-                .insert([
-                    {
-                        user_id: user.id,
+                .select('id')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            let businessData;
+            if (existing) {
+                const { data, error } = await supabase
+                    .from('businesses')
+                    .update({
                         business_name: formData.businessName,
                         business_type: formData.businessType,
-                        wa_number: formData.waNumber,
-                    }
-                ])
-                .select()
-                .single();
+                        wa_number: normalizeWa(formData.waNumber),
+                    })
+                    .eq('id', existing.id)
+                    .select()
+                    .single();
+                if (error) throw error;
+                businessData = data;
+            } else {
+                const { data, error } = await supabase
+                    .from('businesses')
+                    .insert([
+                        {
+                            user_id: user.id,
+                            business_name: formData.businessName,
+                            business_type: formData.businessType,
+                            wa_number: normalizeWa(formData.waNumber),
+                            owner_name: user.user_metadata?.full_name || null,
+                        }
+                    ])
+                    .select()
+                    .single();
+                if (error) throw error;
+                businessData = data;
+            }
 
-            if (businessError) throw businessError;
+            setBusinessId(businessData.id);
 
             // 3. AI Auto-generate dummy products via OpenRouter
             setLoadingMessage("AI sedang membuat katalog produk...");
@@ -117,7 +158,16 @@ export default function OnboardingPage() {
                 console.error("AI Generation failed, falling back to basic data...");
             }
 
+            // 4. Mulai sesi WhatsApp lewat agent-proxy (server-side, aman) —
+            //    pakai businessId asli, bukan hardcoded.
             setLoadingMessage("Selesai! Menyiapkan QR WhatsApp...");
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || '';
+            await fetch(`/api/agent-proxy?path=/api/connect&businessId=${businessData.id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(err => console.error("Gagal memulai sesi WA:", err));
+
             await new Promise((resolve) => setTimeout(resolve, 800)); // Brief pause for UX
 
             setIsLoading(false);

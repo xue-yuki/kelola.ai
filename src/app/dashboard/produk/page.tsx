@@ -3,49 +3,43 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Plus,
-    Search,
-    Package,
-    Edit2,
-    Trash2,
-    AlertCircle,
-    Loader2,
-    X,
-    Check,
-    LayoutGrid,
-    List
+    Search, Plus, Package, Edit2, Trash2, Loader2, X, Check,
+    Download, Filter, Columns, MoreHorizontal, ArrowRight, TrendingUp, TrendingDown,
+    Activity, ArrowUpRight, DollarSign, Box, AlertCircle
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+
+type Product = {
+    id: string;
+    business_id: string;
+    name: string;
+    price: number;
+    cost_price: number;
+    stock: number;
+    created_at: string;
+    // Computed fields
+    unitsSold?: number;
+    revenue?: number;
+};
+
+const CHART_COLORS = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#f43f5e", "#71717a"];
+const TABS = ["Semua Produk"];
 
 export default function ProdukPage() {
     const supabase = createClient();
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [activeTab, setActiveTab] = useState("All Products");
+
+    // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<any>(null);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [formData, setFormData] = useState({ name: "", price: "", cost_price: "", stock: "" });
 
-    // ... (rest of logic: fetchProducts, handleOpenModal, handleSubmit, handleDelete)
-    // Keep logic identical to original but wrap in new UI
-
-    const container = {
-        hidden: { opacity: 0 },
-        show: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
-        }
-    };
-
-    const item = {
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0 }
-    };
-
-    useEffect(() => {
-        fetchProducts();
-    }, []);
+    useEffect(() => { fetchProducts(); }, []);
 
     const fetchProducts = async () => {
         setIsLoading(true);
@@ -53,22 +47,54 @@ export default function ProdukPage() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const { data: business } = await supabase
-                .from('businesses')
-                .select('id')
-                .eq('user_id', session.user.id)
-                .single();
-
+            const { data: business } = await supabase.from('businesses').select('id').eq('user_id', session.user.id).single();
             if (!business) return;
 
-            const { data, error } = await supabase
-                .from('products')
-                .select('*')
-                .eq('business_id', business.id)
-                .order('created_at', { ascending: false });
+            // Fetch products AND orders to calculate real sales data
+            const [productsResponse, ordersResponse] = await Promise.all([
+                supabase.from('products').select('*').eq('business_id', business.id).order('created_at', { ascending: false }),
+                supabase.from('orders').select('items, status').eq('business_id', business.id)
+            ]);
 
-            if (error) throw error;
-            setProducts(data || []);
+            if (productsResponse.error) throw productsResponse.error;
+            
+            const rawProducts = productsResponse.data || [];
+            const rawOrders = ordersResponse.data || [];
+
+            // Parse JSON items from orders to aggregate sales per product
+            const salesMap: Record<string, { qty: number, revenue: number }> = {};
+            
+            rawOrders.forEach(order => {
+                // Only count non-cancelled orders for revenue
+                if (order.status !== 'dibatalkan') {
+                    let items: any[] = [];
+                    try {
+                        items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+                    } catch (e) { }
+
+                    items.forEach(item => {
+                        const nameKey = item.name?.toLowerCase().trim();
+                        if (nameKey) {
+                            if (!salesMap[nameKey]) salesMap[nameKey] = { qty: 0, revenue: 0 };
+                            salesMap[nameKey].qty += (parseInt(item.qty) || 0);
+                            salesMap[nameKey].revenue += ((parseInt(item.qty) || 0) * (parseInt(item.price) || 0));
+                        }
+                    });
+                }
+            });
+
+            // Merge sales data into products
+            const enrichedProducts = rawProducts.map(p => {
+                const nameKey = p.name?.toLowerCase().trim();
+                const sales = salesMap[nameKey] || { qty: 0, revenue: 0 };
+                return {
+                    ...p,
+                    unitsSold: sales.qty,
+                    revenue: sales.revenue
+                };
+            });
+
+            setProducts(enrichedProducts);
         } catch (error) {
             console.error("Error fetching products:", error);
         } finally {
@@ -76,14 +102,14 @@ export default function ProdukPage() {
         }
     };
 
-    const handleOpenModal = (product: any = null) => {
+    const handleOpenModal = (product: Product | null = null) => {
         if (product) {
             setEditingProduct(product);
             setFormData({
                 name: product.name,
-                price: product.price.toString(),
-                cost_price: product.cost_price.toString(),
-                stock: product.stock.toString()
+                price: product.price?.toString() || "0",
+                cost_price: product.cost_price?.toString() || "0",
+                stock: product.stock?.toString() || "0"
             });
         } else {
             setEditingProduct(null);
@@ -92,47 +118,27 @@ export default function ProdukPage() {
         setIsModalOpen(true);
     };
 
-    const [formData, setFormData] = useState({
-        name: "",
-        price: "",
-        cost_price: "",
-        stock: ""
-    });
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
-
-            const { data: business } = await supabase
-                .from('businesses')
-                .select('id')
-                .eq('user_id', session.user.id)
-                .single();
-
+            const { data: business } = await supabase.from('businesses').select('id').eq('user_id', session.user.id).single();
             if (!business) return;
 
             const productData = {
                 business_id: business.id,
                 name: formData.name,
-                price: parseInt(formData.price),
-                cost_price: parseInt(formData.cost_price),
-                stock: parseInt(formData.stock)
+                price: parseInt(formData.price) || 0,
+                cost_price: parseInt(formData.cost_price) || 0,
+                stock: parseInt(formData.stock) || 0
             };
 
             if (editingProduct) {
-                const { error } = await supabase
-                    .from('products')
-                    .update(productData)
-                    .eq('id', editingProduct.id);
-                if (error) throw error;
+                await supabase.from('products').update(productData).eq('id', editingProduct.id);
             } else {
-                const { error } = await supabase
-                    .from('products')
-                    .insert([productData]);
-                if (error) throw error;
+                await supabase.from('products').insert([productData]);
             }
 
             fetchProducts();
@@ -148,420 +154,316 @@ export default function ProdukPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Hapus produk ini?")) return;
         try {
-            const { error } = await supabase
-                .from('products')
-                .delete()
-                .eq('id', id);
-            if (error) throw error;
+            await supabase.from('products').delete().eq('id', id);
             fetchProducts();
         } catch (error) {
             console.error("Error deleting product:", error);
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // Filtered Data
+    const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Metrics
+    const lowStockProducts = products.filter(p => p.stock <= 5).sort((a,b) => a.stock - b.stock);
+    const totalProducts = products.length;
+    const activeProducts = products.filter(p => p.stock > 0).length;
+    const totalRevenue = products.reduce((acc, p) => acc + (p.revenue || 0), 0);
+    const totalUnitsSold = products.reduce((acc, p) => acc + (p.unitsSold || 0), 0);
+
+    // Top Products Chart Data (Sorted by real revenue)
+    const sortedByRev = [...products].sort((a,b) => (b.revenue || 0) - (a.revenue || 0));
+    const topProductsList = sortedByRev.slice(0, 5).filter(p => (p.revenue || 0) > 0);
+    const otherRev = sortedByRev.slice(5).reduce((acc, p) => acc + (p.revenue || 0), 0);
+    
+    const chartData = topProductsList.map((p, i) => ({
+        name: p.name,
+        value: p.revenue || 0,
+        color: CHART_COLORS[i % CHART_COLORS.length]
+    }));
+    
+    if (otherRev > 0) {
+        chartData.push({ name: "Others", value: otherRev, color: CHART_COLORS[5] });
+    }
+    
+    const chartTotal = chartData.reduce((acc, d) => acc + d.value, 0);
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-10">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div>
-                    <h1 className="text-[28px] font-black text-white/90 tracking-tight mb-2">Katalog Produk</h1>
-                    <p className="text-sm font-medium text-white/40">Atur stok, harga, dan semua item jualanmu.</p>
-                </div>
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="flex items-center justify-center gap-2 bg-orange-500 text-white px-8 py-3 rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20 active:scale-95"
-                >
-                    <Plus size={20} />
-                    Tambah Produk
-                </button>
-            </div>
-
-            {/* Toolbar */}
-            <div className="flex flex-col md:flex-row gap-6 items-center">
-                <div className="flex-1 w-full relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-orange-400 transition-colors" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Cari nama produk..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-[#161616]/90 backdrop-blur-xl border border-white/5 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-white/90 placeholder:text-white/30 focus:ring-1 focus:ring-orange-500/20 focus:border-orange-500/30 transition-all outline-none"
-                    />
-                </div>
-
-                <div className="flex items-center p-1 bg-[#161616]/90 backdrop-blur-xl border border-white/5 rounded-2xl">
-                    <button
-                        onClick={() => setViewMode('grid')}
-                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white shadow-md border border-white/5' : 'text-white/40 hover:text-white'}`}
-                    >
-                        <LayoutGrid size={20} />
-                    </button>
-                    <button
-                        onClick={() => setViewMode('list')}
-                        className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-md border border-white/5' : 'text-white/40 hover:text-white'}`}
-                    >
-                        <List size={20} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Content Area */}
-            <AnimatePresence mode="wait">
-                {isLoading ? (
-                    <motion.div
-                        key="loading"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex flex-col items-center justify-center py-32"
-                    >
-                        <Loader2 className="animate-spin w-12 h-12 text-orange-400 mb-4" />
-                        <p className="text-white/30 font-bold uppercase tracking-widest text-xs">Menyiapkan katalog...</p>
-                    </motion.div>
-                ) : filteredProducts.length > 0 ? (
-                    viewMode === 'grid' ? (
-                        <motion.div
-                            key="grid"
-                            variants={container}
-                            initial="hidden"
-                            animate="show"
-                            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                        >
-                            {filteredProducts.map((p) => (
-                                <motion.div
-                                    key={p.id}
-                                    variants={item}
-                                    className="bg-[#161616]/90 backdrop-blur-2xl rounded-2xl border border-white/5 p-5 group hover:shadow-2xl hover:border-white/10 transition-all relative"
+        <div className="-m-8 min-h-[calc(100vh-73px)] bg-zinc-50 dark:bg-[#0a0a0a] text-zinc-900 dark:text-zinc-100 font-sans p-8 flex justify-center">
+            <div className="flex gap-8 w-full max-w-[1600px]">
+                
+                {/* ── Main Column ───────────────────────────────────────── */}
+                <div className="flex-1 min-w-0 flex flex-col h-[calc(100vh-137px)] overflow-y-auto custom-scrollbar pr-2">
+                    
+                    {/* Tabs & Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-zinc-200 dark:border-zinc-800 shrink-0">
+                        <div className="flex gap-6 overflow-x-auto custom-scrollbar pb-[-1px]">
+                            {TABS.map(tab => (
+                                <button 
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`pb-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === tab ? "border-orange-500 text-orange-600 dark:text-orange-500" : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"}`}
                                 >
-                                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleOpenModal(p)} className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 hover:bg-blue-500/20 shadow-sm transition-all z-10 w-9 h-9 flex items-center justify-center">
-                                            <Edit2 size={14} />
-                                        </button>
-                                        <button onClick={() => handleDelete(p.id)} className="p-2 bg-rose-500/10 border border-rose-500/20 rounded-full text-rose-400 hover:bg-rose-500/20 shadow-sm transition-all z-10 w-9 h-9 flex items-center justify-center">
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-
-                                    <div className="w-full aspect-square rounded-xl bg-white/5 border border-white/10 mb-5 flex items-center justify-center overflow-hidden">
-                                        <Package size={48} className="text-white/20 group-hover:text-orange-400 group-hover:scale-110 transition-all duration-500" />
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <div>
-                                            <h3 className="font-bold text-white/90 group-hover:text-orange-400 transition-colors line-clamp-1">{p.name}</h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                {(() => {
-                                                    const margin = p.price && p.cost_price ? p.price - p.cost_price : 0;
-                                                    const marginPercent = p.cost_price ? Math.round((margin / p.cost_price) * 100) : 0;
-                                                    return (
-                                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${marginPercent >= 20 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : marginPercent >= 10 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
-                                                            +{marginPercent}% margin
-                                                        </span>
-                                                    );
-                                                })()}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                            <div>
-                                                <p className="font-black text-white/90">Rp {p.price?.toLocaleString('id-ID')}</p>
-                                                <p className="text-[10px] text-white/40">HPP: Rp {p.cost_price?.toLocaleString('id-ID')}</p>
-                                            </div>
-                                            <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${p.stock <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-white/40 border border-transparent'
-                                                }`}>
-                                                Stok: {p.stock}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {p.stock <= 5 && (
-                                        <div className="mt-3 flex items-center gap-1.5 text-[9px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 p-1.5 rounded-lg justify-center uppercase tracking-widest">
-                                            <AlertCircle size={10} /> Hampir Habis
-                                        </div>
-                                    )}
-                                </motion.div>
+                                    {tab}
+                                </button>
                             ))}
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="list"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="bg-[#161616]/90 backdrop-blur-2xl rounded-2xl border border-white/5 overflow-hidden shadow-2xl"
-                        >
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-[#111] border-b border-white/5">
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Produk</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Harga Beli (HPP)</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Harga Jual</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-center">Margin</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-center">Stok</th>
-                                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredProducts.map((p) => (
-                                        <tr key={p.id} className="border-b border-white/5 hover:bg-[#1a1a1a]/50 transition-colors group">
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/40 group-hover:bg-[#111] group-hover:text-orange-400 group-hover:border-orange-500/20 transition-all">
-                                                        <Package size={20} />
-                                                    </div>
-                                                    <p className="font-bold text-white/90 text-sm tracking-tight">{p.name}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 font-bold text-white/40 text-[11px] uppercase tracking-wider">
-                                                Rp {p.cost_price?.toLocaleString('id-ID')}
-                                            </td>
-                                            <td className="px-6 py-5 font-black text-white/90 text-sm">
-                                                Rp {p.price?.toLocaleString('id-ID')}
-                                            </td>
-                                            <td className="px-6 py-5 text-center">
-                                                {(() => {
-                                                    const margin = p.price && p.cost_price ? p.price - p.cost_price : 0;
-                                                    const marginPercent = p.cost_price ? Math.round((margin / p.cost_price) * 100) : 0;
-                                                    return (
-                                                        <div className="inline-flex flex-col items-center">
-                                                            <span className={`px-3 py-1.5 rounded-full text-[10px] font-bold ${marginPercent >= 20 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : marginPercent >= 10 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
-                                                                +Rp {margin.toLocaleString('id-ID')}
-                                                            </span>
-                                                            <p className={`text-[9px] font-bold mt-1 ${marginPercent >= 20 ? 'text-emerald-400' : marginPercent >= 10 ? 'text-amber-400' : 'text-rose-400'}`}>
-                                                                {marginPercent}%
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="px-6 py-5 text-center">
-                                                <div className="inline-flex flex-col items-center">
-                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${p.stock <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-white/5 text-white/50 border border-transparent'
-                                                        }`}>
-                                                        {p.stock} Unit
-                                                    </span>
-                                                    {p.stock <= 5 && (
-                                                        <p className="text-[9px] font-bold text-rose-400 uppercase mt-1 tracking-tighter">Stok Rendah</p>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <button onClick={() => handleOpenModal(p)} className="p-2.5 text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/20 rounded-xl transition-all">
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    <button onClick={() => handleDelete(p.id)} className="p-2.5 text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-xl transition-all">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </motion.div>
-                    )
-                ) : (
-                    <motion.div
-                        key="empty"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-[#161616]/90 backdrop-blur-2xl rounded-3xl border-2 border-dashed border-white/10 py-32 text-center shadow-2xl"
-                    >
-                        <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6 text-white/20">
-                            <Package size={48} />
                         </div>
-                        <h2 className="text-xl font-bold text-white/90 tracking-tight">Katalog Anda Masih Kosong</h2>
-                        <p className="text-white/40 mt-2 mb-8 max-w-sm mx-auto font-medium">Mulai tambahkan produk pertama Anda untuk bisa mulai berjualan di Kelola.ai.</p>
-                        <button
-                            onClick={() => handleOpenModal()}
-                            className="bg-orange-500 text-white px-8 py-3 rounded-full font-bold hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/20"
-                        >
-                            Tambah Produk Sekarang
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                        <div className="flex items-center gap-3 pb-3">
+                            <button onClick={() => handleOpenModal()} className="flex items-center gap-2 px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                                <Plus size={14} /> Tambah Produk
+                            </button>
+                        </div>
+                    </div>
 
+                    {/* Metric Cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 shrink-0">
+                        <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                            <p className="text-xs font-medium text-zinc-500 mb-2">Total Produk</p>
+                            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{totalProducts}</p>
+                            <p className="text-[10px] font-semibold flex items-center gap-1 text-emerald-600 dark:text-emerald-500"><TrendingUp size={12}/> Updated <span className="text-zinc-400 font-normal">just now</span></p>
+                        </div>
+                        <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                            <p className="text-xs font-medium text-zinc-500 mb-2">Produk Aktif</p>
+                            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{activeProducts}</p>
+                            <p className="text-[10px] font-semibold flex items-center gap-1 text-emerald-600 dark:text-emerald-500"><TrendingUp size={12}/> Ready stock <span className="text-zinc-400 font-normal">items</span></p>
+                        </div>
+                        <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm col-span-2 md:col-span-1">
+                            <p className="text-xs font-medium text-zinc-500 mb-2">Total Omzet</p>
+                            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Rp {(totalRevenue / 1000).toLocaleString('id-ID')}k</p>
+                            <p className="text-[10px] font-semibold flex items-center gap-1 text-emerald-600 dark:text-emerald-500"><TrendingUp size={12}/> All time <span className="text-zinc-400 font-normal">revenue</span></p>
+                        </div>
+                        <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                            <p className="text-xs font-medium text-zinc-500 mb-2">Terjual</p>
+                            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{totalUnitsSold.toLocaleString('id-ID')}</p>
+                            <p className="text-[10px] font-semibold flex items-center gap-1 text-emerald-600 dark:text-emerald-500"><TrendingUp size={12}/> All time <span className="text-zinc-400 font-normal">sales</span></p>
+                        </div>
+                        <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                            <p className="text-xs font-medium text-zinc-500 mb-2">Stok Menipis</p>
+                            <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">{lowStockProducts.length}</p>
+                            {lowStockProducts.length > 0 ? (
+                                <p className="text-[10px] font-semibold flex items-center gap-1 text-rose-600 dark:text-rose-500"><AlertCircle size={12}/> Needs attention <span className="text-zinc-400 font-normal">soon</span></p>
+                            ) : (
+                                <p className="text-[10px] font-semibold flex items-center gap-1 text-emerald-600 dark:text-emerald-500"><Check size={12}/> Stock healthy <span className="text-zinc-400 font-normal">overall</span></p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Table Section */}
+                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm flex flex-col flex-1 shrink-0 overflow-hidden mb-8">
+                        
+                        {/* Table Toolbar */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 gap-4">
+                            <div className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Semua Produk</div>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:w-64">
+                                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Cari produk..."
+                                        value={searchTerm}
+                                        onChange={e => setSearchTerm(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-1.5 bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="overflow-x-auto custom-scrollbar flex-1">
+                            {isLoading ? (
+                                <div className="flex flex-col items-center justify-center py-20">
+                                    <Loader2 className="animate-spin text-orange-500 w-8 h-8 mb-4" />
+                                    <p className="text-sm text-zinc-500">Loading products...</p>
+                                </div>
+                            ) : filteredProducts.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-20 text-center px-4">
+                                    <Box size={40} className="text-zinc-300 dark:text-zinc-700 mb-4" />
+                                    <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Belum ada produk</p>
+                                    <p className="text-xs text-zinc-500 mt-1">Coba ubah pencarian atau tambah produk baru.</p>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left whitespace-nowrap min-w-[800px]">
+                                    <thead className="sticky top-0 bg-zinc-50/95 dark:bg-[#111]/95 backdrop-blur z-10 border-b border-zinc-200 dark:border-zinc-800">
+                                        <tr>
+                                            <th className="px-4 py-3 w-10 text-center"><input type="checkbox" className="rounded border-zinc-300 dark:border-zinc-700 bg-transparent text-orange-500" /></th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Produk</th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">SKU</th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Harga</th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider text-right">Terjual</th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider text-right">Omzet</th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider text-center">Stok</th>
+                                            <th className="px-4 py-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredProducts.map(p => (
+                                            <tr key={p.id} className="border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-[#161616] transition-colors group">
+                                                <td className="px-4 py-4 text-center"><input type="checkbox" className="rounded border-zinc-300 dark:border-zinc-700 bg-transparent text-orange-500" /></td>
+                                                <td className="px-4 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-md bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
+                                                            <Package size={18} className="text-zinc-400" />
+                                                        </div>
+                                                        <div className="max-w-[200px]">
+                                                            <p className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 truncate group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors">{p.name}</p>
+                                                            <p className="text-[11px] text-zinc-500 truncate mt-0.5">Produk Fisik</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 text-xs font-mono text-zinc-500">{p.id.slice(0,8).toUpperCase()}</td>
+                                                <td className="px-4 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Rp {p.price.toLocaleString('id-ID')}</td>
+                                                <td className="px-4 py-4 text-xs font-medium text-zinc-700 dark:text-zinc-300 text-right">{p.unitsSold?.toLocaleString() || 0}</td>
+                                                <td className="px-4 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100 text-right">Rp {((p.revenue || 0)/1000).toLocaleString('id-ID')}k</td>
+                                                <td className="px-4 py-4 text-center">
+                                                    <span className={`text-sm font-bold ${p.stock <= 5 ? 'text-rose-600 dark:text-rose-500 line-through decoration-rose-500/30' : 'text-zinc-700 dark:text-zinc-300'}`}>
+                                                        {p.stock}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-4 text-center">
+                                                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => handleOpenModal(p)} className="p-1.5 text-zinc-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded transition-colors"><Edit2 size={16}/></button>
+                                                        <button onClick={() => handleDelete(p.id)} className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded transition-colors"><Trash2 size={16}/></button>
+                                                        <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors"><MoreHorizontal size={16}/></button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="border-t border-zinc-200 dark:border-zinc-800 p-4 flex items-center justify-between text-xs text-zinc-500 bg-zinc-50/50 dark:bg-transparent">
+                            <span>Showing 1 to {filteredProducts.length} of {filteredProducts.length} results</span>
+                            <div className="flex gap-1">
+                                <button className="px-2 py-1 border border-zinc-200 dark:border-zinc-800 rounded bg-white dark:bg-[#161616] hover:bg-zinc-50 dark:hover:bg-zinc-900">&lt;</button>
+                                <button className="px-2.5 py-1 border border-orange-500 rounded bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-500 font-semibold">1</button>
+                                <button className="px-2 py-1 border border-zinc-200 dark:border-zinc-800 rounded bg-white dark:bg-[#161616] hover:bg-zinc-50 dark:hover:bg-zinc-900">&gt;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Sidebar (Right) ───────────────────────────────────────── */}
+                <div className="hidden xl:flex flex-col w-[320px] shrink-0 h-[calc(100vh-137px)] overflow-y-auto custom-scrollbar border-l border-zinc-200 dark:border-zinc-800 pl-8 space-y-8 pb-8">
+                    
+                    {/* Top Products Chart */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Produk Terlaris</h3>
+                        {chartData.length > 0 ? (
+                            <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
+                                <div className="h-40 relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={chartData}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={45}
+                                                outerRadius={70}
+                                                stroke="none"
+                                                dataKey="value"
+                                            >
+                                                {chartData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip formatter={(value) => `Rp ${(value as number / 1000).toLocaleString('id-ID')}k`} contentStyle={{ borderRadius: '8px', border: '1px solid #333', background: '#111', fontSize: '12px' }} itemStyle={{ color: '#fff' }} />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="mt-4 space-y-2">
+                                    {chartData.map((d, i) => (
+                                        <div key={i} className="flex items-center justify-between text-[11px]">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                                                <span className="text-zinc-600 dark:text-zinc-400 truncate max-w-[120px]">{d.name}</span>
+                                            </div>
+                                            <span className="font-mono font-medium text-zinc-900 dark:text-zinc-100 shrink-0 ml-2">
+                                                {((d.value / chartTotal) * 100).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-xl p-8 text-center shadow-sm">
+                                <p className="text-xs text-zinc-500">Data penjualan belum cukup untuk menampilkan grafik.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Low Stock Alerts */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Stok Menipis</h3>
+                        </div>
+                        {lowStockProducts.length === 0 ? (
+                            <p className="text-xs text-zinc-500">Semua produk stoknya aman.</p>
+                        ) : (
+                            <div className="space-y-3">
+                                {lowStockProducts.slice(0,5).map(p => (
+                                    <div key={p.id} className="flex items-center justify-between text-[11px] group cursor-pointer">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                            <span className="text-zinc-700 dark:text-zinc-300 truncate group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">{p.name}</span>
+                                        </div>
+                                        <span className="font-medium text-rose-600 dark:text-rose-500 shrink-0 ml-2">
+                                            {p.stock} sisa
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+
+            {/* Modal Add/Edit */}
             <AnimatePresence>
                 {isModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute inset-0 bg-[#0a0a0a]/80 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-4xl bg-[#111] border border-white/10 rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row"
-                        >
-                            {/* Form Section */}
-                            <div className="w-full md:w-3/5 p-8 md:p-10 flex flex-col justify-between h-full">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-lg bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+                            <div className="p-6 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-[#0a0a0a]">
+                                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{editingProduct ? 'Edit Produk' : 'Tambah Produk'}</h2>
+                                <button onClick={() => setIsModalOpen(false)} className="p-1.5 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors"><X size={18}/></button>
+                            </div>
+                            <form onSubmit={handleSubmit} className="p-6 space-y-4">
                                 <div>
-                                    <div className="flex items-center gap-4 mb-8">
-                                        <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20">
-                                            {editingProduct ? <Edit2 size={24} /> : <Plus size={24} />}
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl font-black text-white tracking-tight">
-                                                {editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}
-                                            </h2>
-                                            <p className="text-sm text-white/40 font-medium">Lengkapi detail produk Anda di bawah ini.</p>
+                                    <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 block">Nama Produk *</label>
+                                    <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-shadow" placeholder="cth: Kopi Susu Gula Aren" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 block">Harga Modal (HPP) *</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">Rp</span>
+                                            <input required type="number" value={formData.cost_price} onChange={e => setFormData({...formData, cost_price: e.target.value})} className="w-full bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-shadow" placeholder="0" />
                                         </div>
                                     </div>
-
-                                    <form id="productForm" onSubmit={handleSubmit} className="space-y-5">
-                                        <div className="space-y-4">
-                                            {/* Nama Produk */}
-                                            <div className="group relative">
-                                                <input
-                                                    required
-                                                    type="text"
-                                                    id="productName"
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
-                                                    placeholder=" "
-                                                />
-                                                <label htmlFor="productName" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
-                                                    Nama Produk
-                                                </label>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                {/* HPP */}
-                                                <div className="group relative">
-                                                    <input
-                                                        required
-                                                        type="number"
-                                                        id="costPrice"
-                                                        value={formData.cost_price}
-                                                        onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                                                        className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
-                                                        placeholder=" "
-                                                    />
-                                                    <label htmlFor="costPrice" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
-                                                        Harga Modal (HPP)
-                                                    </label>
-                                                </div>
-                                                {/* Harga Jual */}
-                                                <div className="group relative">
-                                                    <input
-                                                        required
-                                                        type="number"
-                                                        id="salePrice"
-                                                        value={formData.price}
-                                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                        className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
-                                                        placeholder=" "
-                                                    />
-                                                    <label htmlFor="salePrice" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
-                                                        Harga Jual
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            {/* Stok */}
-                                            <div className="group relative">
-                                                <input
-                                                    required
-                                                    type="number"
-                                                    id="stock"
-                                                    value={formData.stock}
-                                                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                                    className="w-full bg-white/5 border border-white/10 focus:border-orange-500/50 rounded-2xl px-5 pt-7 pb-3 text-sm font-bold text-white transition-all outline-none peer"
-                                                    placeholder=" "
-                                                />
-                                                <label htmlFor="stock" className="absolute left-5 top-4 text-[10px] font-black uppercase tracking-widest text-white/30 transition-all peer-focus:-translate-y-2 peer-focus:text-orange-400 peer-focus:text-[9px] peer-[:not(:placeholder-shown)]:-translate-y-2 peer-[:not(:placeholder-shown)]:text-[9px]">
-                                                    Stok Tersedia
-                                                </label>
-                                            </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 block">Harga Jual *</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">Rp</span>
+                                            <input required type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-shadow" placeholder="0" />
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
-                                
-                                {/* Form Actions */}
-                                <div className="flex gap-4 mt-8 md:mb-0 mb-4 px-8 md:px-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-6 py-4 rounded-2xl bg-white/5 text-white/60 font-bold hover:bg-white/10 hover:text-white transition-all border border-white/5"
-                                    >
-                                        Batal
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        form="productForm"
-                                        disabled={isSaving}
-                                        className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-2xl font-bold transition-all shadow-xl shadow-orange-500/20 disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-                                    >
-                                        {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Check size={20} />}
-                                        {isSaving ? 'Menyimpan...' : 'Simpan Produk'}
+                                <div>
+                                    <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 block">Stok Tersedia *</label>
+                                    <input required type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} className="w-full bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-shadow" placeholder="0" />
+                                </div>
+                                <div className="pt-4 flex gap-3">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">Batal</button>
+                                    <button type="submit" disabled={isSaving} className="flex-1 py-2.5 rounded-lg bg-orange-600 text-white font-medium text-sm hover:bg-orange-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                                        {isSaving && <Loader2 size={16} className="animate-spin" />}
+                                        {editingProduct ? 'Simpan Perubahan' : 'Tambah Produk'}
                                     </button>
                                 </div>
-                            </div>
-
-                            {/* Live Preview Section */}
-                            <div className="w-full md:w-2/5 bg-[#0a0a0a] border-l border-white/5 p-8 md:p-10 flex flex-col items-center justify-center relative hidden md:flex">
-                                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-500/10 via-transparent to-transparent opacity-50" />
-                                
-                                <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-6 relative z-10 w-full text-center">Live Preview Card</h3>
-                                
-                                <div className="w-full max-w-[280px] bg-[#161616]/90 backdrop-blur-xl rounded-[24px] border border-white/10 p-5 shadow-2xl relative z-10 group">
-                                    <div className="w-full aspect-square rounded-[16px] bg-white/5 border border-white/5 mb-5 flex items-center justify-center overflow-hidden">
-                                        <Package size={56} className="text-white/10 group-hover:text-orange-500/50 group-hover:scale-110 transition-all duration-700" />
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div>
-                                            <h3 className="text-lg font-black text-white leading-tight line-clamp-2">
-                                                {formData.name || 'Nama Produk'}
-                                            </h3>
-                                            
-                                            {(() => {
-                                                const p = parseInt(formData.price) || 0;
-                                                const c = parseInt(formData.cost_price) || 0;
-                                                const margin = p - c;
-                                                const marginPercent = c > 0 ? Math.round((margin / c) * 100) : 0;
-                                                
-                                                if (p > 0 && c > 0) {
-                                                    return (
-                                                        <div className="mt-3 bg-[#0a0a0a] border border-white/5 rounded-xl p-3 flex flex-col gap-1.5">
-                                                            <div className="flex justify-between items-center text-xs">
-                                                                <span className="text-white/40 font-medium">Profit margin:</span>
-                                                                <span className="font-bold text-emerald-400">+Rp {margin.toLocaleString('id-ID')}</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center text-[10px]">
-                                                                <span className="text-white/30 font-medium">Margin Ratio:</span>
-                                                                <span className={`font-bold ${marginPercent > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{marginPercent}%</span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            })()}
-                                        </div>
-
-                                        <div className="flex justify-between items-end pt-2">
-                                            <div>
-                                                <p className="text-[10px] uppercase font-bold tracking-widest text-white/30 mb-1">Harga Jual</p>
-                                                <p className="text-xl font-black text-orange-400">
-                                                    Rp {parseInt(formData.price || '0').toLocaleString('id-ID')}
-                                                </p>
-                                            </div>
-                                            <div className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white/50">
-                                                SISA: {formData.stock || '0'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}

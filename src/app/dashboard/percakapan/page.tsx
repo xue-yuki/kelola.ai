@@ -43,7 +43,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
     dibatalkan: { label: "Dibatalkan", color: "text-rose-600 dark:text-rose-400",    bg: "bg-rose-50 dark:bg-rose-500/10",    border: "border-rose-200 dark:border-rose-500/20",    icon: XCircle },
 };
 
-const TABS = ["All", "Open", "Waiting", "Closed"];
+const TABS = ["Semua", "Terbuka", "Menunggu"];
 
 function timeLabel(iso: string) {
     const d = new Date(iso);
@@ -65,7 +65,7 @@ export default function PercakapanPage() {
     const [selected, setSelected] = useState<ConvSummary | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
-    const [activeListTab, setActiveListTab] = useState("All");
+    const [activeListTab, setActiveListTab] = useState("Semua");
     const [inputText, setInputText] = useState("");
     const [inputMode, setInputMode] = useState<"reply"|"note">("reply");
     
@@ -164,8 +164,8 @@ export default function PercakapanPage() {
     const filtered = convList.filter(c => {
         const matchSearch = c.customer_name.toLowerCase().includes(search.toLowerCase()) || c.customer_wa.includes(search);
         let matchTab = true;
-        if (activeListTab === "Waiting") matchTab = c.has_pending;
-        else if (activeListTab === "Open") matchTab = !c.has_pending;
+        if (activeListTab === "Menunggu") matchTab = c.has_pending;
+        else if (activeListTab === "Terbuka") matchTab = !c.has_pending;
         return matchSearch && matchTab;
     });
 
@@ -201,7 +201,7 @@ export default function PercakapanPage() {
         <div className={`flex-col flex-none w-full md:w-[320px] lg:w-[350px] border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#0a0a0a] ${mobileView === "chat" ? "hidden md:flex" : "flex"} h-full`}>
             {/* Header & New Button */}
             <div className="p-4 flex items-center justify-between shrink-0">
-                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">Conversations</h2>
+                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">Percakapan</h2>
                 <button className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors">
                     <Edit size={16} />
                 </button>
@@ -232,7 +232,7 @@ export default function PercakapanPage() {
                         <input
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            placeholder="Search conversations..."
+                            placeholder="Cari percakapan..."
                             className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-md text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600"
                         />
                     </div>
@@ -277,7 +277,7 @@ export default function PercakapanPage() {
                                     </div>
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="text-xs text-zinc-500 dark:text-zinc-500 truncate">
-                                            {conv.last_role === "user" ? "You: " : ""}{conv.last_message}
+                                            {conv.last_role === "assistant" ? "Kamu: " : ""}{conv.last_message}
                                         </p>
                                         {conv.has_pending && (
                                             <div className="w-4 h-4 rounded-full bg-orange-600 flex items-center justify-center shrink-0">
@@ -300,7 +300,7 @@ export default function PercakapanPage() {
             {!selected ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-zinc-400">
                     <MessageCircle size={32} className="mb-4 opacity-50" />
-                    <p className="text-sm">Select a conversation to start messaging</p>
+                    <p className="text-sm">Pilih percakapan untuk mulai membalas</p>
                 </div>
             ) : (
                 <>
@@ -321,16 +321,10 @@ export default function PercakapanPage() {
                                         <span className="text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">Active</span>
                                     </div>
                                 </div>
-                                <p className="text-[11px] text-zinc-500 mt-0.5">Enterprise Plan • Customer since Jan 15, 2024</p>
+                                <p className="text-[11px] text-zinc-500 mt-0.5">+{selected.customer_wa}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button className="hidden sm:flex px-3 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                Close conversation
-                            </button>
-                            <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
-                                <MoreVertical size={16} />
-                            </button>
                         </div>
                     </div>
 
@@ -341,7 +335,7 @@ export default function PercakapanPage() {
                         ) : (
                             <>
                                 <div className="flex justify-center">
-                                    <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Today</span>
+                                    <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-600">Hari ini</span>
                                 </div>
                                 {messages.map((msg, i) => {
                                     const isUser = msg.role === "user"; // Customer
@@ -382,35 +376,30 @@ export default function PercakapanPage() {
                                 onClick={() => setInputMode("reply")}
                                 className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${inputMode === "reply" ? "border-orange-500 text-orange-600 dark:text-orange-500" : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
                             >
-                                Reply
+                                Balas
                             </button>
                             <button 
                                 onClick={() => setInputMode("note")}
                                 className={`text-xs font-semibold pb-1 border-b-2 transition-colors ${inputMode === "note" ? "border-amber-500 text-amber-600 dark:text-amber-500" : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
                             >
-                                Note
+                                Catatan
                             </button>
                         </div>
                         <div className={`border rounded-lg transition-colors overflow-hidden ${inputMode === "note" ? "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50" : "bg-white dark:bg-[#111] border-zinc-200 dark:border-zinc-800 focus-within:border-zinc-400 dark:focus-within:border-zinc-600"}`}>
                             <textarea 
                                 value={inputText}
                                 onChange={e => setInputText(e.target.value)}
-                                placeholder={inputMode === "reply" ? "Type your message..." : "Type an internal note..."}
+                                placeholder={inputMode === "reply" ? "Ketik pesanmu..." : "Ketik catatan internal..."}
                                 className="w-full bg-transparent p-3 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 focus:outline-none min-h-[80px] resize-none"
                             />
                             <div className="flex items-center justify-between p-2 border-t border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-transparent">
-                                <div className="flex items-center gap-1">
-                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><Paperclip size={16} /></button>
-                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><Smile size={16} /></button>
-                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><LinkIcon size={16} /></button>
-                                    <button className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded"><Bookmark size={16} /></button>
-                                </div>
+                                <div />
                                 <button 
                                     onClick={handleSendMessage}
                                     disabled={isSending}
                                     className={`px-4 py-1.5 rounded-md text-xs font-medium text-white flex items-center gap-2 transition-colors disabled:opacity-50 ${inputMode === "note" ? "bg-amber-600 hover:bg-amber-700" : "bg-orange-600 hover:bg-orange-700"}`}>
                                     {isSending ? <Loader2 size={14} className="animate-spin" /> : null}
-                                    {inputMode === "note" ? "Add Note" : "Send"} 
+                                    {inputMode === "note" ? "Tambah Catatan" : "Kirim"}
                                 </button>
                             </div>
                         </div>
@@ -451,45 +440,39 @@ export default function PercakapanPage() {
 
                     {/* Customer Overview */}
                     <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
-                        <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Customer Overview</h3>
+                        <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Ringkasan Pelanggan</h3>
                         <div className="space-y-3">
                             <div className="flex justify-between text-xs">
-                                <span className="text-zinc-500">Total Spend</span>
+                                <span className="text-zinc-500">Total Belanja</span>
                                 <span className="font-mono text-zinc-900 dark:text-zinc-100 font-medium">Rp {totalSpend.toLocaleString("id-ID")}</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                                <span className="text-zinc-500">Total Orders</span>
+                                <span className="text-zinc-500">Total Pesanan</span>
                                 <span className="font-mono text-zinc-900 dark:text-zinc-100 font-medium">{orders.length}</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                                <span className="text-zinc-500">Last Active</span>
+                                <span className="text-zinc-500">Terakhir Aktif</span>
                                 <span className="font-mono text-zinc-900 dark:text-zinc-100 font-medium">{new Date(selected.last_time).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
                             </div>
                         </div>
-                        <button className="mt-4 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 group">
-                            View full profile <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                        </button>
                     </div>
 
                     {/* Recent Orders */}
                     <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Recent Orders</h3>
-                            <button className="text-[10px] font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-500 dark:hover:text-orange-400 flex items-center gap-1">
-                                View all <ChevronRight size={10} />
-                            </button>
+                            <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Pesanan Terakhir</h3>
                         </div>
                         
                         <div className="space-y-4">
                             {orders.length === 0 ? (
-                                <p className="text-xs text-zinc-500">No recent orders.</p>
+                                <p className="text-xs text-zinc-500">Belum ada pesanan.</p>
                             ) : (
                                 orders.slice(0, 3).map(o => {
                                     const st = STATUS_CFG[o.status] || STATUS_CFG.lunas;
                                     return (
                                         <div key={o.id}>
                                             <div className="flex justify-between items-start mb-1">
-                                                <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">Order #{o.id.slice(0,4).toUpperCase()}</p>
+                                                <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">Pesanan #{o.id.slice(0,4).toUpperCase()}</p>
                                                 <span className={`text-[10px] font-semibold flex items-center gap-1 ${st.color}`}>
                                                     <div className={`w-1 h-1 rounded-full bg-current`} />
                                                     {st.label}

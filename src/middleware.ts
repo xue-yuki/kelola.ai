@@ -54,18 +54,20 @@ export async function middleware(request: NextRequest) {
         }
     )
 
-    const { data: { session } } = await supabase.auth.getSession()
+    // getUser() memvalidasi token ke Auth server (aman untuk keputusan otorisasi),
+    // berbeda dengan getSession() yang hanya baca cookie tanpa verifikasi.
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/onboarding')
+    const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/onboarding') || request.nextUrl.pathname.startsWith('/admin')
 
-    // If no session and route is protected, redirect to login
-    if (!session && isProtectedRoute) {
+    // If no user and route is protected, redirect to login
+    if (!user && isProtectedRoute) {
         const redirectUrl = new URL('/auth/login', request.url)
         return NextResponse.redirect(redirectUrl)
     }
 
-    // If session exists and on auth login page, redirect to dashboard
-    if (session && request.nextUrl.pathname === '/auth/login') {
+    // If user exists and on auth login page, redirect to dashboard
+    if (user && request.nextUrl.pathname === '/auth/login') {
         return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 

@@ -238,11 +238,11 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 border-t border-zinc-200 dark:border-zinc-800">
                 {metrics && metrics.map((metric: any, i: number) => (
                     <div key={i} className="p-6 border-b border-r border-zinc-200 dark:border-zinc-800 flex flex-col justify-between h-32 hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors">
-                        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-2">{metric.title}</p>
+                        <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 mb-2">{metric.title}</p>
                         <p className="text-3xl font-mono tracking-tight font-light">{metric.value}</p>
                         <div className="mt-2 h-4">
                             {metric.change && (
-                                <p className={`text-[10px] font-mono ${metric.isPositive ? 'text-zinc-500 dark:text-zinc-400' : 'text-rose-500'}`}>
+                                <p className={`text-xs font-medium font-mono ${metric.isPositive ? 'text-zinc-500 dark:text-zinc-400' : 'text-rose-500'}`}>
                                     {metric.change}
                                 </p>
                             )}
@@ -257,12 +257,9 @@ export default function DashboardPage() {
                 {/* Bar Chart */}
                 <div className="lg:col-span-2 border-r border-b border-zinc-200 dark:border-zinc-800 p-6 flex flex-col">
                     <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-sm font-semibold">Revenue</h2>
+                        <h2 className="text-base font-semibold">Pendapatan</h2>
                         <div className="flex items-center gap-2">
-                            <select className="bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-md text-xs px-2 py-1 outline-none">
-                                <option>Daily</option>
-                            </select>
-                            <span className="text-xs text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-md px-2 py-1">
+                            <span className="text-sm text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-md px-2 py-1">
                                 7 Hari Terakhir
                             </span>
                         </div>
@@ -272,16 +269,16 @@ export default function DashboardPage() {
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={revenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                                 <CartesianGrid vertical={false} stroke="var(--color-border, #27272a)" strokeOpacity={0.3} />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 10, fontFamily: 'monospace' }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 10, fontFamily: 'monospace' }} tickFormatter={(val) => `Rp${val/1000}k`} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12, fontFamily: 'monospace' }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12, fontFamily: 'monospace' }} tickFormatter={(val) => `Rp${val/1000}k`} />
                                 <Tooltip
                                     cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                                     content={({ active, payload, label }) => {
                                         if (active && payload && payload.length) {
                                             return (
-                                                <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-2 shadow-xl">
-                                                    <p className="text-[10px] text-zinc-500 mb-1">{label}</p>
-                                                    <p className="text-sm font-mono">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
+                                                <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-3 shadow-xl rounded-md">
+                                                    <p className="text-xs text-zinc-500 mb-1">{label}</p>
+                                                    <p className="text-base font-mono">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
                                                 </div>
                                             );
                                         }
@@ -297,8 +294,8 @@ export default function DashboardPage() {
                         </ResponsiveContainer>
                     </div>
                     <div className="mt-4">
-                        <Link href="/dashboard/laporan" className="text-xs text-orange-500 hover:text-orange-400 font-medium flex items-center gap-1 group w-max">
-                            View analytics <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                        <Link href="/dashboard/laporan" className="text-sm text-orange-500 hover:text-orange-400 font-medium flex items-center gap-1 group w-max">
+                            Lihat analitik <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
                 </div>
@@ -306,7 +303,7 @@ export default function DashboardPage() {
                 {/* Donut Chart */}
                 <div className="border-r border-b border-zinc-200 dark:border-zinc-800 p-6 flex flex-col">
                     <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-sm font-semibold">Revenue Breakdown</h2>
+                        <h2 className="text-base font-semibold">Rincian Pendapatan</h2>
                     </div>
                     
                     <div className="flex-1 flex flex-col items-center justify-center">
@@ -331,9 +328,9 @@ export default function DashboardPage() {
                                         content={({ active, payload }) => {
                                             if (active && payload && payload.length && payload[0].name !== 'Belum ada data') {
                                                 return (
-                                                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-2 shadow-xl">
-                                                        <p className="text-[10px] text-zinc-500">{payload[0].name}</p>
-                                                        <p className="text-xs font-mono">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
+                                                    <div className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 p-3 shadow-xl rounded-md">
+                                                        <p className="text-xs text-zinc-500 mb-1">{payload[0].name}</p>
+                                                        <p className="text-sm font-mono">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
                                                     </div>
                                                 );
                                             }
@@ -343,10 +340,10 @@ export default function DashboardPage() {
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <p className="text-xs font-mono tracking-tighter">
+                                <p className="text-sm font-mono tracking-tighter">
                                     {breakdownData[0]?.name === 'Belum ada data' ? 'Rp 0' : `Rp ${(breakdownData[0]?.total || 0).toLocaleString('id-ID')}`}
                                 </p>
-                                <p className="text-[10px] text-zinc-500">Total</p>
+                                <p className="text-xs text-zinc-500">Total</p>
                             </div>
                         </div>
                         
@@ -355,14 +352,14 @@ export default function DashboardPage() {
                                 if (entry.name === 'Belum ada data') return null;
                                 const pct = ((entry.value / entry.total) * 100).toFixed(1);
                                 return (
-                                    <div key={index} className="flex items-center justify-between text-xs">
+                                    <div key={index} className="flex items-center justify-between text-sm py-1">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                                            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                                             <span className="text-zinc-400">{entry.name}</span>
                                         </div>
                                         <div className="flex items-center gap-4 font-mono">
                                             <span>Rp {entry.value.toLocaleString('id-ID')}</span>
-                                            <span className="text-zinc-500 w-8 text-right">{pct}%</span>
+                                            <span className="text-zinc-500 w-9 text-right">{pct}%</span>
                                         </div>
                                     </div>
                                 );
@@ -378,25 +375,25 @@ export default function DashboardPage() {
                 {/* Recent Transactions */}
                 <div className="lg:col-span-2 border-r border-b border-zinc-200 dark:border-zinc-800 p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-sm font-semibold">Recent Transactions</h2>
-                        <Link href="/dashboard/pesanan" className="text-xs text-orange-500 hover:text-orange-400 font-medium flex items-center gap-1 group">
-                            View all <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                        <h2 className="text-base font-semibold">Transaksi Terbaru</h2>
+                        <Link href="/dashboard/pesanan" className="text-sm text-orange-500 hover:text-orange-400 font-medium flex items-center gap-1 group">
+                            Lihat semua <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
                     
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500">
+                                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-sm text-zinc-500">
                                     <th className="pb-3 font-normal">ID</th>
-                                    <th className="pb-3 font-normal">Customer</th>
-                                    <th className="pb-3 font-normal">Channel</th>
-                                    <th className="pb-3 font-normal text-right">Amount</th>
+                                    <th className="pb-3 font-normal">Pelanggan</th>
+                                    <th className="pb-3 font-normal">Kanal</th>
+                                    <th className="pb-3 font-normal text-right">Jumlah</th>
                                     <th className="pb-3 font-normal text-center">Status</th>
-                                    <th className="pb-3 font-normal text-right">Date</th>
+                                    <th className="pb-3 font-normal text-right">Tanggal</th>
                                 </tr>
                             </thead>
-                            <tbody className="text-xs font-mono">
+                            <tbody className="text-sm font-mono">
                                 {recentOrders.length > 0 ? recentOrders.map((order, i) => {
                                     const cleanedName = order.customer_name?.replace(/@(s\.whatsapp\.net|c\.us|lid)/g, '') || "Customer";
                                     const date = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -408,12 +405,12 @@ export default function DashboardPage() {
                                             <td className="py-3 text-zinc-500 font-sans">{order.channel || 'System'}</td>
                                             <td className="py-3 text-right">Rp {order.total?.toLocaleString('id-ID')}</td>
                                             <td className="py-3 text-center">
-                                                <span className={`px-2 py-0.5 border text-[10px] ${
-                                                    isPending ? 'border-orange-500/30 text-orange-500' : 
-                                                    order.status?.toLowerCase() === 'dibatalkan' ? 'border-rose-500/30 text-rose-500' :
-                                                    'border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400'
+                                                <span className={`px-2.5 py-1 border text-xs rounded-md font-medium ${
+                                                    isPending ? 'border-orange-500/30 text-orange-500 bg-orange-50 dark:bg-orange-500/10' : 
+                                                    order.status?.toLowerCase() === 'dibatalkan' ? 'border-rose-500/30 text-rose-500 bg-rose-50 dark:bg-rose-500/10' :
+                                                    'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50'
                                                 }`}>
-                                                    {isPending ? 'Pending' : order.status === 'lunas' ? 'Succeeded' : order.status || 'Done'}
+                                                    {isPending ? 'Menunggu' : order.status === 'lunas' ? 'Lunas' : order.status || 'Selesai'}
                                                 </span>
                                             </td>
                                             <td className="py-3 text-right text-zinc-500">{date}</td>
@@ -421,7 +418,7 @@ export default function DashboardPage() {
                                     );
                                 }) : (
                                     <tr>
-                                        <td colSpan={6} className="py-8 text-center text-zinc-500 font-sans">No recent transactions</td>
+                                        <td colSpan={6} className="py-8 text-center text-zinc-500 font-sans">Belum ada transaksi</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -435,32 +432,32 @@ export default function DashboardPage() {
                     {/* Top Products */}
                     <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-sm font-semibold">Top Products</h2>
+                            <h2 className="text-base font-semibold">Produk Terlaris</h2>
                         </div>
                         <div className="space-y-4">
                             {topProducts.length > 0 ? topProducts.map((p, i) => (
-                                <div key={i} className="flex items-center justify-between text-xs">
+                                <div key={i} className="flex items-center justify-between text-sm py-1">
                                     <span className="font-medium truncate max-w-[150px]">{p.name}</span>
                                     <div className="flex items-center gap-4 font-mono">
-                                        <span className="text-zinc-500">{p.sales} sold</span>
+                                        <span className="text-zinc-500">{p.sales} terjual</span>
                                         <span>Rp {p.price.toLocaleString('id-ID')}</span>
                                     </div>
                                 </div>
                             )) : (
-                                <p className="text-xs text-zinc-500">No products data available.</p>
+                                <p className="text-sm text-zinc-500">Belum ada data produk.</p>
                             )}
                         </div>
                     </div>
 
                     {/* Quick Actions */}
                     <div className="p-6">
-                        <h2 className="text-sm font-semibold mb-4">Quick Actions</h2>
+                        <h2 className="text-base font-semibold mb-4">Aksi Cepat</h2>
                         <div className="space-y-2">
                             {QUICK_ACTIONS.map((action, i) => {
                                 const Icon = action.icon;
                                 return (
-                                    <Link key={i} href={action.href} className="flex items-center gap-3 w-full p-2 text-xs border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors text-zinc-600 dark:text-zinc-300">
-                                        <Icon size={14} className="text-zinc-400" />
+                                    <Link key={i} href={action.href} className="flex items-center gap-3 w-full p-3 rounded-lg text-sm font-medium border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors text-zinc-700 dark:text-zinc-300">
+                                        <Icon size={16} className="text-zinc-400" />
                                         {action.title}
                                     </Link>
                                 );

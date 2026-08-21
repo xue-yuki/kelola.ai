@@ -25,7 +25,7 @@ export async function POST(request: Request) {
                 'X-Title': 'Kelola.ai',
             },
             body: JSON.stringify({
-                model: 'google/gemini-2.0-flash-001',
+                model: process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash-lite',
                 messages: [
                     {
                         role: 'user',

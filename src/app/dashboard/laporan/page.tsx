@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     BarChart,
     Bar,
@@ -34,6 +34,7 @@ import {
     Sparkles
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -47,10 +48,50 @@ export default function LaporanPage() {
     const [orderCountData, setOrderCountData] = useState<any[]>([]);
     const [summaryStats, setSummaryStats] = useState({ totalRevenue: 0, totalOrders: 0, avgOrder: 0 });
     const [comparison, setComparison] = useState({ revenue: 0, orders: 0, avgOrder: 0 });
+    const [aiInsight, setAiInsight] = useState<string | null>(null);
+    const [isLoadingInsight, setIsLoadingInsight] = useState(false);
+    const [insightError, setInsightError] = useState<string | null>(null);
+    const lastInsightArgs = useRef<{ summary: any; businessId: string } | null>(null);
 
     useEffect(() => {
         fetchReportData();
     }, [timeRange]);
+
+    // Rekomendasi AI dari data nyata. Cache per (bisnis, periode, hari) di localStorage
+    // agar tidak memanggil AI berulang kali dalam satu hari.
+    const generateInsight = async (summary: any, businessId: string, force = false) => {
+        lastInsightArgs.current = { summary, businessId };
+        const today = new Date().toISOString().split("T")[0];
+        const cacheKey = `kelola_insight_${businessId}_${timeRange}_${today}`;
+        if (!force) {
+            try {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) { setAiInsight(cached); setInsightError(null); return; }
+            } catch { }
+        }
+
+        setIsLoadingInsight(true);
+        setAiInsight(null);
+        setInsightError(null);
+        try {
+            const res = await fetch("/api/ai-insight", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ summary }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.insight) {
+                setAiInsight(data.insight);
+                try { localStorage.setItem(cacheKey, data.insight); } catch { }
+            } else {
+                setInsightError(data.error || `Gagal memuat (HTTP ${res.status})`);
+            }
+        } catch (e: any) {
+            setInsightError(e?.message || "Gagal terhubung ke server");
+        } finally {
+            setIsLoadingInsight(false);
+        }
+    };
 
     const fetchReportData = async () => {
         setIsLoading(true);
@@ -169,11 +210,12 @@ export default function LaporanPage() {
                 telegram: 'Telegram',
                 unknown: 'Lainnya'
             };
-            setChannelData(Object.entries(channelCounts).map(([key, value]) => ({
+            const channelArr = Object.entries(channelCounts).map(([key, value]) => ({
                 name: channelLabels[key] || key,
                 value,
                 color: channelColors[key] || '#9CA3AF'
-            })));
+            }));
+            setChannelData(channelArr);
 
             // Summary stats
             const totalRevenue = orders?.reduce((sum, o) => sum + o.total, 0) || 0;
@@ -191,11 +233,12 @@ export default function LaporanPage() {
                 if (prev === 0) return current > 0 ? 100 : 0;
                 return Math.round(((current - prev) / prev) * 100);
             };
-            setComparison({
+            const comparisonObj = {
                 revenue: calcChange(totalRevenue, prevRevenue),
                 orders: calcChange(totalOrders, prevOrderCount),
                 avgOrder: calcChange(avgOrder, prevAvgOrder)
-            });
+            };
+            setComparison(comparisonObj);
 
             // Get all completed orders to calculate real sales
             const { data: allOrders } = await supabase
@@ -231,6 +274,21 @@ export default function LaporanPage() {
             })).sort((a, b) => b.total_sales - a.total_sales).slice(0, 5) || [];
 
             setTopProducts(productsWithSales);
+
+            // Generate rekomendasi AI dari data nyata di atas
+            const periodLabel = timeRange === 'mingguan' ? '7 hari terakhir' : timeRange === 'tahun_ini' ? 'tahun ini' : '30 hari terakhir';
+            generateInsight({
+                period: periodLabel,
+                totalRevenue,
+                totalOrders,
+                avgOrder,
+                comparisonRevenue: comparisonObj.revenue,
+                comparisonOrders: comparisonObj.orders,
+                revenueByDay: processedData,
+                orderByDay: orderCountProcessed,
+                topProducts: productsWithSales.map((p: any) => ({ name: p.name, sales: p.total_sales })),
+                channels: channelArr.map(c => ({ name: c.name, value: c.value })),
+            }, business.id);
 
         } catch (error) {
             console.error("Error fetching report:", error);
@@ -628,7 +686,7 @@ export default function LaporanPage() {
                                                         style={{ width: `${100 - (idx * 15)}%` }}
                                                     />
                                                 </div>
-                                                <span className="text-[10px] font-bold text-white/40">{p.total_sales || 20} Terjual</span>
+                                                <span className="text-[10px] font-bold text-white/40">{p.total_sales || 0} Terjual</span>
                                             </div>
                                         </div>
                                     </div>
@@ -644,12 +702,31 @@ export default function LaporanPage() {
                                     <Sparkles size={16} className="text-orange-400" />
                                     <h4 className="font-bold text-orange-400 text-sm">💡 Rekomendasi AI</h4>
                                 </div>
-                                <p className="text-sm text-white/70 leading-relaxed mb-6">
-                                    <span className="font-bold text-white/90">Sabtu</span> selalu menjadi puncak penjualanmu minggu ini. Buat promo <span className="font-bold text-white/90">Bundling Hemat</span> di hari Sabtu siang untuk memaksimalkan angka konversi secara drastis!
-                                </p>
-                                <button className="flex items-center gap-2 bg-orange-500/10 text-orange-400 border border-orange-500/20 w-full justify-center py-2.5 rounded-xl text-xs font-bold transition-all hover:bg-orange-500 hover:text-white shadow-lg hover:shadow-orange-500/20">
-                                    Atur Promo Sekarang <ArrowRight size={14} />
-                                </button>
+                                {isLoadingInsight ? (
+                                    <div className="flex items-center gap-3 mb-6 text-white/50">
+                                        <Loader2 size={16} className="animate-spin text-orange-400" />
+                                        <p className="text-sm">Menganalisa data bisnismu...</p>
+                                    </div>
+                                ) : aiInsight ? (
+                                    <p className="text-sm text-white/70 leading-relaxed mb-6 whitespace-pre-wrap">{aiInsight}</p>
+                                ) : insightError ? (
+                                    <div className="mb-6">
+                                        <p className="text-sm text-rose-300/80 leading-relaxed mb-2">Gagal memuat rekomendasi AI: {insightError}</p>
+                                        <button
+                                            onClick={() => lastInsightArgs.current && generateInsight(lastInsightArgs.current.summary, lastInsightArgs.current.businessId, true)}
+                                            className="text-xs font-bold text-orange-400 underline underline-offset-2 hover:text-orange-300"
+                                        >
+                                            Coba lagi
+                                        </button>
+                                    </div>
+                                ) : summaryStats.totalOrders > 0 ? (
+                                    <p className="text-sm text-white/50 leading-relaxed mb-6">Rekomendasi belum tersedia. Coba muat ulang halaman ya.</p>
+                                ) : (
+                                    <p className="text-sm text-white/50 leading-relaxed mb-6">Rekomendasi AI akan muncul begitu ada data transaksi. Mulai catat penjualan lewat WhatsApp atau Kasir dulu ya! 🚀</p>
+                                )}
+                                <Link href="/dashboard/wa-marketing" className="flex items-center gap-2 bg-orange-500/10 text-orange-400 border border-orange-500/20 w-full justify-center py-2.5 rounded-xl text-xs font-bold transition-all hover:bg-orange-500 hover:text-white shadow-lg hover:shadow-orange-500/20">
+                                    Buat Promo Broadcast <ArrowRight size={14} />
+                                </Link>
                             </div>
                         </div>
                     </div>

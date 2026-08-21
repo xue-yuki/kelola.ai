@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/layout/AuthLayout";
 import { User, Store, Mail, Phone, Lock, Eye, EyeOff, Loader2, Sparkles, ChevronRight, AlertCircle, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeWa } from "@/lib/phone";
 
 export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -60,9 +61,7 @@ export default function RegisterPage() {
                     user_id: authData.user.id,
                     business_name: formData.businessName,
                     owner_name: formData.name,
-                    wa_number: formData.phone.startsWith('0')
-                        ? '62' + formData.phone.slice(1)
-                        : formData.phone,
+                    wa_number: normalizeWa(formData.phone),
                 });
 
                 if (bizError) {

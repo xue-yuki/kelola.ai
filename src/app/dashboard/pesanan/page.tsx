@@ -15,6 +15,7 @@ import {
     Truck,
     Settings2,
     CheckCircle2,
+    MapPin,
     XCircle,
     Clock,
     PackageCheck,
@@ -29,13 +30,21 @@ import {
 import { createClient } from "@/lib/supabase/client";
 
 const TABS = [
-    { label: "All Orders", value: "all" },
+    { label: "Semua", value: "all" },
     { label: "Menunggu", value: "menunggu" },
     { label: "Diproses", value: "diproses" },
     { label: "Dikirim", value: "dikirim" },
     { label: "Selesai", value: "lunas" },
     { label: "Dibatalkan", value: "dibatalkan" },
 ];
+
+type OrderItem = {
+    name: string;
+    qty?: number;
+    quantity?: number;
+    price?: number;
+    subtotal?: number;
+};
 
 type Order = {
     id: string;
@@ -46,7 +55,7 @@ type Order = {
     created_at: string;
     total: number;
     status: string;
-    items?: any;
+    items?: OrderItem[] | string;
 };
 
 type Toast = {
@@ -189,31 +198,6 @@ export default function PesananPage() {
         action: "diproses" | "dikirim" | "lunas" | null;
     }>({ isOpen: false, orderId: "", orderName: "", action: null });
 
-    useEffect(() => {
-        fetchOrders();
-
-        const subscription = supabase
-            .channel("orders_updates")
-            .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-                fetchOrders();
-            })
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(subscription);
-        };
-    }, []); // Fetch all, we'll filter on client for tabs to make it snappy
-
-    const addToast = (type: Toast["type"], message: string) => {
-        const id = Math.random().toString(36).substr(2, 9);
-        setToasts((prev) => [...prev, { id, type, message }]);
-        return id;
-    };
-
-    const dismissToast = (id: string) => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-    };
-
     const fetchOrders = async () => {
         setIsLoading(true);
         try {
@@ -238,7 +222,7 @@ export default function PesananPage() {
 
             if (error) throw error;
             setOrders(data || []);
-            
+
             // Update selected order if it was open
             if (selectedOrder && data) {
                 const updated = data.find(o => o.id === selectedOrder.id);
@@ -249,6 +233,32 @@ export default function PesananPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    useEffect(() => {
+        queueMicrotask(() => fetchOrders());
+
+        const subscription = supabase
+            .channel("orders_updates")
+            .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+                fetchOrders();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(subscription);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Fetch all, we'll filter on client for tabs to make it snappy
+
+    const addToast = (type: Toast["type"], message: string) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        setToasts((prev) => [...prev, { id, type, message }]);
+        return id;
+    };
+
+    const dismissToast = (id: string) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
     };
 
     const openModal = (orderId: string, orderName: string, action: "diproses" | "dikirim" | "lunas") => {
@@ -348,17 +358,7 @@ export default function PesananPage() {
                         </button>
                     ))}
                 </div>
-                <div className="flex items-center gap-3 pb-4 mt-4 md:mt-0 overflow-x-auto w-full md:w-auto shrink-0">
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                        <Download size={14} /> Export
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                        <Filter size={14} /> Filters
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors shadow-sm shadow-orange-500/20 whitespace-nowrap">
-                        <Plus size={14} /> New Order
-                    </button>
-                </div>
+                <div className="pb-4" />
             </div>
 
             <div className="p-6 flex-1 flex flex-col min-h-0 relative">
@@ -366,31 +366,31 @@ export default function PesananPage() {
                 {/* Metrics Row */}
                 <div className="flex overflow-x-auto gap-4 pb-4 mb-2 custom-scrollbar shrink-0">
                     <div className="min-w-[200px] flex-1 p-4 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors">
-                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Total Orders (All)</p>
+                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Total Pesanan</p>
                         <div>
                             <h3 className="text-2xl font-mono tracking-tight font-medium text-zinc-900 dark:text-zinc-100">{totalOrders.toLocaleString()}</h3>
                         </div>
                     </div>
                     <div className="min-w-[200px] flex-1 p-4 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors">
-                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Total Revenue (All)</p>
+                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Total Omzet</p>
                         <div>
                             <h3 className="text-2xl font-mono tracking-tight font-medium text-zinc-900 dark:text-zinc-100">Rp {totalRevenue.toLocaleString("id-ID")}</h3>
                         </div>
                     </div>
                     <div className="min-w-[200px] flex-1 p-4 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors">
-                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Average Order Value</p>
+                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Rata-rata Pesanan</p>
                         <div>
                             <h3 className="text-2xl font-mono tracking-tight font-medium text-zinc-900 dark:text-zinc-100">Rp {avgOrderValue.toLocaleString("id-ID", {maximumFractionDigits:0})}</h3>
                         </div>
                     </div>
                     <div className="min-w-[200px] flex-1 p-4 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors">
-                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Orders Completed</p>
+                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Pesanan Selesai</p>
                         <div>
                             <h3 className="text-2xl font-mono tracking-tight font-medium text-zinc-900 dark:text-zinc-100">{ordersCompleted.toLocaleString()}</h3>
                         </div>
                     </div>
                     <div className="min-w-[200px] flex-1 p-4 border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors">
-                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Orders Cancelled</p>
+                        <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-2">Pesanan Dibatalkan</p>
                         <div>
                             <h3 className="text-2xl font-mono tracking-tight font-medium text-zinc-900 dark:text-zinc-100">{ordersCancelled.toLocaleString()}</h3>
                         </div>
@@ -401,25 +401,19 @@ export default function PesananPage() {
                 <div className="border border-zinc-200 dark:border-zinc-800 flex flex-col flex-1 min-h-0 bg-white dark:bg-[#0a0a0a]">
                     {/* Table Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 gap-4 shrink-0">
-                        <h2 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">All Orders</h2>
+                        <h2 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">Semua Pesanan</h2>
                         <div className="flex items-center gap-3">
                             {/* Search */}
                             <div className="relative group">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search orders..." 
+                                <input
+                                    type="text"
+                                    placeholder="Cari pesanan..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-8 pr-4 py-1.5 text-xs bg-transparent border border-zinc-200 dark:border-zinc-800 rounded-md focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors w-full sm:w-64 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-500"
                                 />
                             </div>
-                            <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                <Filter size={14} /> Filters
-                            </button>
-                            <button className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                <Columns size={14} /> Columns
-                            </button>
                         </div>
                     </div>
 
@@ -428,23 +422,24 @@ export default function PesananPage() {
                         <table className="w-full text-left border-collapse whitespace-nowrap">
                             <thead className="sticky top-0 bg-zinc-50 dark:bg-[#111] z-10 outline outline-1 outline-zinc-200 dark:outline-zinc-800">
                                 <tr>
-                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider pl-6">Order ID</th>
-                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Customer</th>
-                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Date</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider pl-6">ID Pesanan</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Pelanggan</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Alamat</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Tanggal</th>
                                     <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Channel</th>
-                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider text-right">Amount</th>
-                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider text-center">Items</th>
-                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider text-center">Actions</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kanal</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider text-right">Jumlah</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider text-center">Item</th>
+                                    <th className="px-4 py-3 text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-20 text-center">
+                                        <td colSpan={9} className="px-6 py-20 text-center">
                                             <div className="flex flex-col items-center gap-3">
                                                 <Loader2 className="animate-spin w-6 h-6 text-orange-500" />
-                                                <p className="text-xs text-zinc-500">Loading orders...</p>
+                                                <p className="text-xs text-zinc-500">Memuat pesanan...</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -467,6 +462,15 @@ export default function PesananPage() {
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">{order.customer_name?.replace(/@lid|@s\.whatsapp\.net/g, "") || "Unknown"}</p>
+                                                </td>
+                                                <td className="px-4 py-3 max-w-[200px]">
+                                                    {order.customer_address ? (
+                                                        <p className="text-xs text-zinc-600 dark:text-zinc-400 truncate" title={order.customer_address}>
+                                                            {order.customer_address}
+                                                        </p>
+                                                    ) : (
+                                                        <span className="text-xs text-zinc-400 dark:text-zinc-600 italic">—</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-3 text-xs font-mono text-zinc-500 dark:text-zinc-400">
                                                     {new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} {new Date(order.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
@@ -495,8 +499,8 @@ export default function PesananPage() {
                                     })
                                 ) : (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-20 text-center text-xs text-zinc-500">
-                                            No orders found.
+                                        <td colSpan={9} className="px-6 py-20 text-center text-xs text-zinc-500">
+                                            Tidak ada pesanan.
                                         </td>
                                     </tr>
                                 )}
@@ -506,14 +510,8 @@ export default function PesananPage() {
                     {/* Pagination Footer */}
                     <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
                         <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                            Showing 1 to {filteredOrders.length} of {orders.length} results
+                            Menampilkan {filteredOrders.length} dari {orders.length} pesanan
                         </p>
-                        <div className="flex items-center gap-2">
-                            <select className="text-[11px] bg-transparent border border-zinc-200 dark:border-zinc-800 rounded px-2 py-1 text-zinc-700 dark:text-zinc-300 outline-none focus:border-orange-500">
-                                <option>10 per page</option>
-                                <option>50 per page</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
 
@@ -539,7 +537,7 @@ export default function PesananPage() {
                         >
                             {/* Panel Header */}
                             <div className="flex items-center justify-between p-6 border-b border-zinc-200 dark:border-zinc-800">
-                                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Order Details</h2>
+                                <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Detail Pesanan</h2>
                                 <button onClick={() => setSelectedOrder(null)} className="p-1 rounded-md text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
                                     <X size={16} />
                                 </button>
@@ -568,35 +566,49 @@ export default function PesananPage() {
 
                                 {/* Customer Card */}
                                 <div>
-                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Customer</h4>
+                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Pelanggan</h4>
                                     <div className="flex items-center gap-4 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg">
                                         <div className="w-10 h-10 rounded bg-zinc-100 dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-xs font-semibold text-zinc-600 dark:text-zinc-400">
                                             {selectedOrder.customer_name?.charAt(0).toUpperCase() || "?"}
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{selectedOrder.customer_name?.replace(/@lid|@s\.whatsapp\.net/g, "") || "Unknown"}</p>
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{selectedOrder.customer_wa || "No contact info"}</p>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{selectedOrder.customer_wa || "Tidak ada kontak"}</p>
                                         </div>
-                                        <button className="ml-auto text-[10px] font-semibold px-2 py-1 border border-zinc-200 dark:border-zinc-700 rounded text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800">
-                                            View profile
-                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Alamat Pengiriman */}
+                                <div>
+                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Alamat Pengiriman</h4>
+                                    <div className="flex items-start gap-3 p-4 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                                        <MapPin size={16} className="text-zinc-400 dark:text-zinc-500 shrink-0 mt-0.5" />
+                                        {selectedOrder.customer_address ? (
+                                            <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                                                {selectedOrder.customer_address}
+                                            </p>
+                                        ) : (
+                                            <p className="text-xs text-zinc-400 dark:text-zinc-600 italic">
+                                                Belum ada alamat pengiriman
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
                                 {/* Order Summary */}
                                 <div>
-                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Order Summary</h4>
+                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Ringkasan Pesanan</h4>
                                     <div className="space-y-3">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-zinc-500 dark:text-zinc-400">Subtotal</span>
                                             <span className="font-mono text-zinc-900 dark:text-zinc-100">Rp {selectedOrder.total?.toLocaleString("id-ID")}</span>
                                         </div>
                                         <div className="flex justify-between text-xs">
-                                            <span className="text-zinc-500 dark:text-zinc-400">Discount</span>
+                                            <span className="text-zinc-500 dark:text-zinc-400">Diskon</span>
                                             <span className="font-mono text-rose-600 dark:text-rose-500">- Rp 0</span>
                                         </div>
                                         <div className="flex justify-between text-xs">
-                                            <span className="text-zinc-500 dark:text-zinc-400">Tax</span>
+                                            <span className="text-zinc-500 dark:text-zinc-400">Pajak</span>
                                             <span className="font-mono text-zinc-900 dark:text-zinc-100">Rp 0</span>
                                         </div>
                                         <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex justify-between">
@@ -608,7 +620,7 @@ export default function PesananPage() {
 
                                 {/* Payment Channel */}
                                 <div>
-                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Payment</h4>
+                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Pembayaran</h4>
                                     <div className="flex items-center justify-between p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg">
                                         <div className="flex items-center gap-3">
                                             <div className="px-2 py-1 rounded bg-[#111] text-[10px] font-bold text-white uppercase tracking-wider">
@@ -624,15 +636,15 @@ export default function PesananPage() {
 
                                 {/* Items List */}
                                 <div>
-                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Items</h4>
+                                    <h4 className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">Item</h4>
                                     <div className="space-y-4">
                                         {(() => {
                                             let itemsArr = [];
                                             try { itemsArr = typeof selectedOrder.items === 'string' ? JSON.parse(selectedOrder.items) : (selectedOrder.items || []); } catch(e) {}
                                             
-                                            if (itemsArr.length === 0) return <p className="text-xs text-zinc-500 italic">No items details</p>;
+                                            if (itemsArr.length === 0) return <p className="text-xs text-zinc-500 italic">Tidak ada detail item</p>;
                                             
-                                            return itemsArr.map((item: any, idx: number) => (
+                                            return itemsArr.map((item: OrderItem, idx: number) => (
                                                 <div key={idx} className="flex gap-4">
                                                     <div className="w-12 h-12 rounded bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center shrink-0">
                                                         <ShoppingBag size={16} className="text-zinc-400" />
@@ -649,9 +661,6 @@ export default function PesananPage() {
                                         })()}
                                     </div>
                                     
-                                    <button className="w-full mt-6 py-2 flex items-center justify-center gap-2 text-xs font-medium border border-zinc-200 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                        <Receipt size={14} /> View invoice
-                                    </button>
                                 </div>
                             </div>
 

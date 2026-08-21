@@ -52,8 +52,8 @@ export async function saveGlobalBannerSettings(message: string, isActive: boolea
 export async function getGlobalBannerSettings() {
     // Optional check: Ensure user is at least logged in
     const supabaseAuth = await createServerClient();
-    const { data: { session } } = await supabaseAuth.auth.getSession();
-    if (!session) return null;
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (!user) return null;
 
     // Bypass RLS using Service Role to just read the public banner
     const supabaseAdmin = createClient(

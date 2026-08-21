@@ -71,6 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [userName, setUserName] = useState("User");
     const [userAvatar, setUserAvatar] = useState("");
     const [businessName, setBusinessName] = useState("Bisnis");
+    const [subscriptionTier, setSubscriptionTier] = useState<string>("starter");
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
     // Global Banner State
@@ -88,6 +89,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Fetch Auth and Business Data
     useEffect(() => {
         let isMounted = true;
+        let orderChannel: ReturnType<typeof supabase.channel> | null = null;
+        let complaintChannel: ReturnType<typeof supabase.channel> | null = null;
 
         async function loadProfile() {
             try {
@@ -107,12 +110,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 // 2. Get Business Name & ID
                 const { data: business } = await supabase
                     .from('businesses')
-                    .select('id, business_name')
+                    .select('id, business_name, subscription_tier')
                     .eq('user_id', session.user.id)
                     .single();
 
                 if (isMounted && business) {
                     setBusinessName(business.business_name);
+                    setSubscriptionTier(business.subscription_tier || 'starter');
                     
                     // Fetch recent orders for notifications
                     const { data: recentOrders } = await supabase
@@ -136,7 +140,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     if (isMounted) setComplaintCount(cCount || 0);
 
                     // Listen to REALTIME table changes for push notification
-                    supabase.channel('layout_notifications')
+                    orderChannel = supabase.channel('layout_notifications')
                         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders', filter: `business_id=eq.${business.id}` }, payload => {
                             if (isMounted) {
                                 setNotifications(prev => [payload.new, ...prev].slice(0, 5));
@@ -145,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         })
                         .subscribe();
 
-                    supabase.channel('complaint_notifications')
+                    complaintChannel = supabase.channel('complaint_notifications')
                         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'complaints', filter: `business_id=eq.${business.id}` }, () => {
                             if (isMounted) setComplaintCount(prev => prev + 1);
                         })
@@ -184,7 +188,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         loadProfile();
         fetchGlobalBanner();
 
-        return () => { isMounted = false };
+        return () => {
+            isMounted = false;
+            if (orderChannel) supabase.removeChannel(orderChannel);
+            if (complaintChannel) supabase.removeChannel(complaintChannel);
+        };
     }, [supabase, router]);
 
     const dismissBanner = () => {
@@ -280,12 +288,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     <Icon size={18} className={isActive ? "text-orange-500" : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors"} />
                                     <span className="flex-1 text-sm">{item.name}</span>
                                     {item.highlight && (
-                                        <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30 text-[9px] font-black uppercase tracking-wider">
+                                        <span className="px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-500/30 text-[10px] font-black uppercase tracking-wider">
                                             POS
                                         </span>
                                     )}
                                     {(item as any).complaint && complaintCount > 0 && (
-                                        <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-lg shadow-rose-500/30">
+                                        <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-xs font-black flex items-center justify-center shadow-lg shadow-rose-500/30">
                                             {complaintCount > 9 ? "9+" : complaintCount}
                                         </span>
                                     )}
@@ -314,9 +322,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
                                     <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{userName}</p>
-                                    <span className="px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[8px] font-black uppercase tracking-wider">Pro Plan</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-wider">{subscriptionTier?.toLowerCase() === 'pro' ? 'Pro' : subscriptionTier?.toLowerCase() === 'basic' ? 'Basic' : 'Free'}</span>
                                 </div>
-                                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{businessName}</p>
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{businessName}</p>
                             </div>
                             <ChevronDown size={14} className={`text-zinc-500 dark:text-zinc-400 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
                         </div>
@@ -360,8 +368,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0, overflow: "hidden" }}
-                            className="bg-gradient-to-r from-orange-600 to-rose-600 relative z-40 shadow-[0_4px_20px_rgba(234,88,12,0.3)]"
-                            className="bg-orange-600 dark:bg-orange-500 relative z-40"
+                            className="bg-gradient-to-r from-orange-600 to-rose-600 dark:from-orange-500 dark:to-rose-500 relative z-40 shadow-[0_4px_20px_rgba(234,88,12,0.3)]"
                         >
                             <div className="px-6 py-3 flex items-center justify-between sm:justify-center gap-4 relative">
                                 <ThemeToggle />
@@ -415,7 +422,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     placeholder="Cari pesanan... (⌘K)"
                                     className="bg-transparent border-none outline-none text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 w-full font-medium"
                                 />
-                                <div className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[10px] font-black tracking-widest uppercase border border-zinc-200 dark:border-zinc-700">
+                                <div className="px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-xs font-black tracking-widest uppercase border border-zinc-200 dark:border-zinc-700">
                                     ⌘K
                                 </div>
                             </form>
@@ -451,7 +458,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                             <div className="px-6 py-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                                                 <h3 className="font-medium text-zinc-900 dark:text-zinc-100 tracking-tight">Notifikasi</h3>
                                                 {unreadCount > 0 && (
-                                                    <span className="text-[10px] font-bold text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider">{unreadCount} Baru</span>
+                                                    <span className="text-xs font-bold text-orange-600 dark:text-orange-500 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider">{unreadCount} Baru</span>
                                                 )}
                                             </div>
                                             <div className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
@@ -466,7 +473,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                                                 <p className={`text-sm tracking-tight group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors ${isUnread ? 'font-bold text-zinc-900 dark:text-zinc-100' : 'font-medium text-zinc-600 dark:text-zinc-400'}`}>
                                                                     Pesanan dari {notif.customer_name}
                                                                 </p>
-                                                                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-widest mt-0.5">
+                                                                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-widest mt-1">
                                                                     {new Date(notif.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} • Rp {notif.total?.toLocaleString('id-ID')}
                                                                 </p>
                                                             </div>
@@ -478,7 +485,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                                 )}
                                             </div>
                                             <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
-                                                <Link href="/dashboard/pesanan" onClick={() => setIsNotificationOpen(false)} className="block w-full py-3 text-center text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest hover:text-orange-600 dark:hover:text-orange-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                                                <Link href="/dashboard/pesanan" onClick={() => setIsNotificationOpen(false)} className="block w-full py-3 text-center text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest hover:text-orange-600 dark:hover:text-orange-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800">
                                                     Lihat semua pesanan
                                                 </Link>
                                             </div>

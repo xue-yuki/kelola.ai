@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || 'http://localhost:3001'
+const AGENT_URL = process.env.AGENT_URL || process.env.NEXT_PUBLIC_AGENT_URL || 'http://localhost:3001'
 const AGENT_SECRET_KEY = process.env.AGENT_SECRET_KEY || ''
 
 // Supabase server-side untuk verifikasi ownership

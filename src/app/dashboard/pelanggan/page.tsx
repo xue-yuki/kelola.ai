@@ -259,12 +259,12 @@ export default function PelangganPage() {
                     {/* Header */}
                     <div className="flex items-start justify-between gap-4 mb-8 shrink-0">
                         <div>
-                            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Customer Intelligence</h1>
-                            <p className="text-sm text-zinc-500 mt-1">Manage and analyze your customer base to drive loyalty.</p>
+                            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Pelanggan</h1>
+                            <p className="text-sm text-zinc-500 mt-1">Kelola dan analisa pelangganmu untuk bikin mereka makin loyal.</p>
                         </div>
                         <button onClick={openAdd}
                             className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium text-sm transition-colors shadow-sm shrink-0">
-                            <Plus size={16} /> Add Customer
+                            <Plus size={16} /> Tambah Pelanggan
                         </button>
                     </div>
 
@@ -273,7 +273,7 @@ export default function PelangganPage() {
                         <div className="mb-8 shrink-0">
                             <div className="flex items-center gap-2 mb-4">
                                 <Trophy size={16} className="text-amber-500" />
-                                <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-widest">Top Spenders Leaderboard</h2>
+                                <h2 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 uppercase tracking-widest">Pelanggan Paling Loyal</h2>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {topSpenders.map((cust, idx) => {
@@ -289,10 +289,10 @@ export default function PelangganPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{cust.name}</p>
-                                                <p className="text-xs text-zinc-500">{cust.order_count} Orders</p>
+                                                <p className="text-xs text-zinc-500">{cust.order_count} Pesanan</p>
                                             </div>
                                             <div className="text-right shrink-0">
-                                                <p className="text-xs text-zinc-400 mb-0.5">Total Spent</p>
+                                                <p className="text-xs text-zinc-400 mb-0.5">Total Belanja</p>
                                                 <p className="text-sm font-bold text-orange-600 dark:text-orange-500">
                                                     Rp {cust.total_spent?.toLocaleString("id-ID")}
                                                 </p>
@@ -308,7 +308,7 @@ export default function PelangganPage() {
                     <div className="flex flex-col sm:flex-row gap-3 mb-6 shrink-0">
                         <div className="flex-1 relative group">
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors" />
-                            <input type="text" placeholder="Search by name or WhatsApp..."
+                            <input type="text" placeholder="Cari nama atau nomor WhatsApp..."
                                 value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                                 className="w-full bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-zinc-400 dark:focus:border-zinc-600 shadow-sm" />
                         </div>
@@ -321,7 +321,7 @@ export default function PelangganPage() {
                                     className="flex items-center gap-2 bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors shadow-sm"
                                 >
                                     <ArrowUpDown size={14} className="text-zinc-400" />
-                                    Sort by: {sortBy === "newest" ? "Newest" : sortBy === "highest_spend" ? "Highest Spend" : sortBy === "most_orders" ? "Most Orders" : "A-Z"}
+                                    Urutkan: {sortBy === "newest" ? "Terbaru" : sortBy === "highest_spend" ? "Belanja Terbanyak" : sortBy === "most_orders" ? "Pesanan Terbanyak" : "A-Z"}
                                 </button>
                                 
                                 <AnimatePresence>
@@ -333,10 +333,10 @@ export default function PelangganPage() {
                                                 className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#161616] border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-xl z-20 py-1"
                                             >
                                                 {[
-                                                    { id: "newest", label: "Newest Joined" },
-                                                    { id: "highest_spend", label: "Highest Spend" },
-                                                    { id: "most_orders", label: "Most Orders" },
-                                                    { id: "alphabetical", label: "Alphabetical (A-Z)" },
+                                                    { id: "newest", label: "Terbaru Gabung" },
+                                                    { id: "highest_spend", label: "Belanja Terbanyak" },
+                                                    { id: "most_orders", label: "Pesanan Terbanyak" },
+                                                    { id: "alphabetical", label: "Abjad (A-Z)" },
                                                 ].map(opt => (
                                                     <button key={opt.id}
                                                         onClick={() => { setSortBy(opt.id as SortOption); setShowSortMenu(false); }}
@@ -372,8 +372,8 @@ export default function PelangganPage() {
                     ) : sorted.length === 0 ? (
                         <div className="bg-white dark:bg-[#111] rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-800 py-32 text-center">
                             <Users size={40} className="mx-auto text-zinc-300 dark:text-zinc-700 mb-4" />
-                            <h2 className="text-base font-semibold text-zinc-600 dark:text-zinc-400">No customers found</h2>
-                            <p className="text-zinc-500 text-sm mt-1">Data is automatically collected when a transaction occurs.</p>
+                            <h2 className="text-base font-semibold text-zinc-600 dark:text-zinc-400">Belum ada pelanggan</h2>
+                            <p className="text-zinc-500 text-sm mt-1">Data otomatis terkumpul saat ada transaksi.</p>
                         </div>
                     ) : viewMode === "grid" ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 pb-8">
@@ -408,11 +408,11 @@ export default function PelangganPage() {
                                         </div>
                                         <div className="grid grid-cols-2 gap-3 py-3 border-y border-zinc-100 dark:border-zinc-800/50 mb-3">
                                             <div>
-                                                <p className="text-[10px] font-medium text-zinc-500 mb-0.5">Orders</p>
+                                                <p className="text-[10px] font-medium text-zinc-500 mb-0.5">Pesanan</p>
                                                 <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{c.order_count || 0}</p>
                                             </div>
                                             <div>
-                                                <p className="text-[10px] font-medium text-zinc-500 mb-0.5">Total Spent</p>
+                                                <p className="text-[10px] font-medium text-zinc-500 mb-0.5">Total Belanja</p>
                                                 <p className="text-sm font-semibold text-orange-600 dark:text-orange-500">
                                                     {c.total_spent ? `Rp ${c.total_spent.toLocaleString("id-ID")}` : "—"}
                                                 </p>
@@ -424,7 +424,7 @@ export default function PelangganPage() {
                                                 <span className="text-[10px] text-zinc-400 shrink-0">{timeAgo(c.last_message_at!)}</span>
                                             </div>
                                         ) : (
-                                            <p className="text-[11px] text-zinc-400 italic">No chat history</p>
+                                            <p className="text-[11px] text-zinc-400 italic">Belum ada chat</p>
                                         )}
                                     </motion.div>
                                 );
@@ -435,7 +435,7 @@ export default function PelangganPage() {
                             <table className="w-full text-left whitespace-nowrap">
                                 <thead>
                                     <tr className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
-                                        {["Customer", "WhatsApp", "Orders", "Total Spent", "Last Message", ""].map(h => (
+                                        {["Pelanggan", "WhatsApp", "Pesanan", "Total Belanja", "Pesan Terakhir", ""].map(h => (
                                             <th key={h} className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{h}</th>
                                         ))}
                                     </tr>
@@ -513,11 +513,11 @@ export default function PelangganPage() {
                                 {/* Stats */}
                                 <div className="grid grid-cols-2 gap-px bg-zinc-200 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-800">
                                     <div className="bg-white dark:bg-[#0a0a0a] p-4">
-                                        <p className="text-[11px] font-medium text-zinc-500 mb-1">Total Orders</p>
+                                        <p className="text-[11px] font-medium text-zinc-500 mb-1">Total Pesanan</p>
                                         <p className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{selected.order_count || 0}</p>
                                     </div>
                                     <div className="bg-white dark:bg-[#0a0a0a] p-4">
-                                        <p className="text-[11px] font-medium text-zinc-500 mb-1">Lifetime Value</p>
+                                        <p className="text-[11px] font-medium text-zinc-500 mb-1">Total Belanja</p>
                                         <p className="text-lg font-bold text-orange-600 dark:text-orange-500 leading-tight mt-1">
                                             {selected.total_spent ? `Rp ${selected.total_spent.toLocaleString("id-ID")}` : "Rp 0"}
                                         </p>
@@ -529,22 +529,22 @@ export default function PelangganPage() {
                                     <div className="flex items-start gap-3 text-sm">
                                         <MapPin size={16} className="text-zinc-400 shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="text-zinc-900 dark:text-zinc-100">{selected.address || "No address provided"}</p>
+                                            <p className="text-zinc-900 dark:text-zinc-100">{selected.address || "Alamat belum diisi"}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 text-sm">
                                         <Calendar size={16} className="text-zinc-400 shrink-0" />
-                                        <p className="text-zinc-600 dark:text-zinc-400">Customer since <span className="font-medium text-zinc-900 dark:text-zinc-100">{new Date(selected.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span></p>
+                                        <p className="text-zinc-600 dark:text-zinc-400">Pelanggan sejak <span className="font-medium text-zinc-900 dark:text-zinc-100">{new Date(selected.created_at).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}</span></p>
                                     </div>
                                 </div>
 
                                 {/* Orders */}
                                 <div className="p-6">
-                                    <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-4">Recent Orders</p>
+                                    <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-4">Pesanan Terakhir</p>
                                     {isLoadingOrders ? (
                                         <div className="flex justify-center py-5"><Loader2 className="animate-spin text-orange-500 w-5 h-5" /></div>
                                     ) : selectedOrders.length === 0 ? (
-                                        <p className="text-sm text-zinc-400 italic">No order history</p>
+                                        <p className="text-sm text-zinc-400 italic">Belum ada pesanan</p>
                                     ) : (
                                         <div className="space-y-3">
                                             {selectedOrders.map(o => {
@@ -570,7 +570,7 @@ export default function PelangganPage() {
                             <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-[#111] grid gap-2 shrink-0">
                                 <a href={waLink(selected.wa_number)} target="_blank" rel="noopener noreferrer"
                                     className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors">
-                                    <MessageSquare size={16} /> Open in WhatsApp
+                                    <MessageSquare size={16} /> Buka di WhatsApp
                                 </a>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button onClick={() => openEdit(selected)}
@@ -597,7 +597,7 @@ export default function PelangganPage() {
                                 onClick={e => e.stopPropagation()}
                                 className="bg-white dark:bg-[#111] border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-xl">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100">{editTarget ? "Edit Customer" : "Add Customer"}</h2>
+                                    <h2 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100">{editTarget ? "Edit Pelanggan" : "Tambah Pelanggan"}</h2>
                                     <button onClick={() => { setShowAddModal(false); setEditTarget(null); }}
                                         className="p-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 transition-colors">
                                         <X size={18} />
@@ -605,9 +605,9 @@ export default function PelangganPage() {
                                 </div>
                                 <div className="space-y-4">
                                     {([
-                                        { label: "Full Name *", key: "name", placeholder: "e.g. Budi Santoso" },
-                                        { label: "WhatsApp Number *", key: "wa_number", placeholder: "e.g. 6281234567890" },
-                                        { label: "Address", key: "address", placeholder: "Full delivery address" },
+                                        { label: "Nama Lengkap *", key: "name", placeholder: "cth: Budi Santoso" },
+                                        { label: "Nomor WhatsApp *", key: "wa_number", placeholder: "cth: 6281234567890" },
+                                        { label: "Alamat", key: "address", placeholder: "Alamat lengkap pengiriman" },
                                     ] as const).map(({ label, key, placeholder }) => (
                                         <div key={key}>
                                             <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1.5 block">{label}</label>
@@ -622,12 +622,12 @@ export default function PelangganPage() {
                                 <div className="flex gap-3 mt-8">
                                     <button onClick={() => { setShowAddModal(false); setEditTarget(null); }}
                                         className="flex-1 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                        Cancel
+                                        Batal
                                     </button>
                                     <button onClick={handleSave} disabled={isSaving || !form.name.trim() || !form.wa_number.trim()}
                                         className="flex-1 py-2.5 rounded-lg bg-orange-600 text-white font-medium text-sm hover:bg-orange-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
                                         {isSaving && <Loader2 size={16} className="animate-spin" />}
-                                        {editTarget ? "Save Changes" : "Add Customer"}
+                                        {editTarget ? "Simpan" : "Tambah Pelanggan"}
                                     </button>
                                 </div>
                             </motion.div>
@@ -647,19 +647,19 @@ export default function PelangganPage() {
                                 <div className="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 flex items-center justify-center mx-auto mb-5">
                                     <Trash2 size={24} className="text-rose-600 dark:text-rose-400" />
                                 </div>
-                                <h2 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 mb-2">Delete Customer?</h2>
+                                <h2 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100 mb-2">Hapus Pelanggan?</h2>
                                 <p className="text-sm text-zinc-500 mb-8">
-                                    <span className="font-medium text-zinc-900 dark:text-zinc-300">{deleteTarget.name}</span> will be permanently deleted. This action cannot be undone.
+                                    <span className="font-medium text-zinc-900 dark:text-zinc-300">{deleteTarget.name}</span> akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
                                 </p>
                                 <div className="flex gap-3">
                                     <button onClick={() => setDeleteTarget(null)}
                                         className="flex-1 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                                        Cancel
+                                        Batal
                                     </button>
                                     <button onClick={handleDelete} disabled={isDeleting}
                                         className="flex-1 py-2.5 rounded-lg bg-rose-600 text-white font-medium text-sm hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-sm">
                                         {isDeleting && <Loader2 size={16} className="animate-spin" />}
-                                        Delete
+                                        Hapus
                                     </button>
                                 </div>
                             </motion.div>

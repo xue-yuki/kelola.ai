@@ -5,6 +5,7 @@ import {
     Building2,
     Store,
     Phone,
+    MapPin,
     Save,
     CheckCircle2,
     Loader2,
@@ -25,6 +26,7 @@ import {
     AlertTriangle
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeWa } from "@/lib/phone";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BUSINESS_TYPES = [
@@ -50,21 +52,16 @@ export default function PengaturanPage() {
     const [formData, setFormData] = useState({
         businessName: "",
         businessType: "",
-        waNumber: ""
+        waNumber: "",
+        ownerName: "",
+        address: ""
     });
 
     const [businessId, setBusinessId] = useState<string | null>(null);
 
-    // Tab Notifikasi States
-    const [notifSettings, setNotifSettings] = useState({
-        orderEmail: true,
-        orderWa: true,
-        lowStock: true,
-        marketing: false,
-        report: true
-    });
-    const [isSavingNotif, setIsSavingNotif] = useState(false);
-    const [saveNotifSuccess, setSaveNotifSuccess] = useState(false);
+    // Subscription info (read-only, diambil dari DB)
+    const [subscriptionTier, setSubscriptionTier] = useState<string>("starter");
+    const [tokenUsage, setTokenUsage] = useState<number>(0);
 
     // Tab Keamanan States
     const [securityForm, setSecurityForm] = useState({ newPassword: '', confirmPassword: '' });
@@ -134,16 +131,6 @@ export default function PengaturanPage() {
         }
     };
 
-    // Notification Save Handler placeholder
-    const handleSaveNotif = () => {
-        setIsSavingNotif(true);
-        setTimeout(() => {
-            setIsSavingNotif(false);
-            setSaveNotifSuccess(true);
-            setTimeout(() => setSaveNotifSuccess(false), 3000);
-        }, 800);
-    };
-
     useEffect(() => {
         fetchBusinessData();
     }, []);
@@ -165,10 +152,14 @@ export default function PengaturanPage() {
                 setFormData({
                     businessName: business.business_name,
                     businessType: business.business_type,
-                    waNumber: business.wa_number
+                    waNumber: business.wa_number,
+                    ownerName: business.owner_name || "",
+                    address: business.address || ""
                 });
                 if (business.wa_status) setWaStatus(business.wa_status);
                 if (business.wa_connected_at) setWaConnectedAt(business.wa_connected_at);
+                setSubscriptionTier(business.subscription_tier || 'starter');
+                setTokenUsage(business.token_usage || 0);
             }
         } catch (error) {
             console.error("Error fetching business:", error);
@@ -283,7 +274,9 @@ export default function PengaturanPage() {
                 .update({
                     business_name: formData.businessName,
                     business_type: formData.businessType,
-                    wa_number: formData.waNumber
+                    wa_number: normalizeWa(formData.waNumber),
+                    owner_name: formData.ownerName,
+                    address: formData.address
                 })
                 .eq('id', businessId);
 
@@ -407,6 +400,35 @@ export default function PengaturanPage() {
                                             />
                                         </div>
                                         <p className="text-[10px] font-medium text-white/30 mt-2 italic px-1">* Digunakan sebagai pengirim otomatis di modul WA Marketing.</p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Nama Pemilik</label>
+                                        <div className="relative group">
+                                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-orange-500 transition-colors" size={20} />
+                                            <input
+                                                type="text"
+                                                value={formData.ownerName}
+                                                onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                                                className="w-full bg-[#111] border border-white/5 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold text-white/90 focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none"
+                                                placeholder="Nama kamu / kasir"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] pl-1">Alamat Toko</label>
+                                        <div className="relative group">
+                                            <MapPin className="absolute left-4 top-4 text-white/20 group-focus-within:text-orange-500 transition-colors" size={20} />
+                                            <textarea
+                                                value={formData.address}
+                                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                                rows={2}
+                                                className="w-full bg-[#111] border border-white/5 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold text-white/90 focus:ring-1 focus:ring-orange-500/30 focus:border-orange-500/30 transition-all outline-none resize-none"
+                                                placeholder="Jl. Contoh No. 12, Kelurahan, Kecamatan, Kota"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] font-medium text-white/30 mt-2 italic px-1">* Muncul di struk transaksi & profil bisnismu.</p>
                                     </div>
                                 </div>
 
@@ -628,57 +650,41 @@ export default function PengaturanPage() {
                                         <h2 className="font-bold text-xl text-white/90 tracking-tight">Preferensi Notifikasi</h2>
                                         <p className="text-xs font-medium text-white/40 mt-1">Atur di mana dan bagaimana Kelola.ai memberikan notifikasi sistem.</p>
                                     </div>
-                                    <div className="p-10 space-y-8">
-                                        {/* Toggles */}
-                                        <div className="space-y-6">
-                                            <div className="flex items-center justify-between group">
-                                                <div>
-                                                    <p className="font-bold text-sm text-white/90 flex items-center gap-2"><Smartphone size={16} className="text-orange-400" /> Notifikasi Pesanan Baru (WA)</p>
-                                                    <p className="text-xs font-medium text-white/40 mt-1">Peringatan real-time via WhatsApp agent untuk setiap invoice pesanan baru.</p>
-                                                </div>
-                                                <button onClick={() => setNotifSettings({...notifSettings, orderWa: !notifSettings.orderWa})} className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${notifSettings.orderWa ? 'bg-orange-500' : 'bg-white/10'}`}>
-                                                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${notifSettings.orderWa ? 'translate-x-6' : ''}`} />
-                                                </button>
+                                    <div className="p-10 space-y-6">
+                                        {/* Aktif: notif WA pesanan & komplain (benar-benar dikirim oleh agent) */}
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-bold text-sm text-white/90 flex items-center gap-2"><Smartphone size={16} className="text-orange-400" /> Notifikasi Pesanan &amp; Komplain (WhatsApp)</p>
+                                                <p className="text-xs font-medium text-white/40 mt-1">Dikirim otomatis ke nomor WhatsApp bisnismu oleh AI agent setiap ada pesanan atau komplain baru.</p>
                                             </div>
-                                            
-                                            <div className="w-full h-px bg-white/5" />
-
-                                            <div className="flex items-center justify-between group">
-                                                <div>
-                                                    <p className="font-bold text-sm text-white/90 flex items-center gap-2"><Mail size={16} className="text-blue-400" /> Laporan Rekap Mingguan</p>
-                                                    <p className="text-xs font-medium text-white/40 mt-1">Kirim otomatis laporan performa omzet dan insight setiap akhir pekan ke Email.</p>
-                                                </div>
-                                                <button onClick={() => setNotifSettings({...notifSettings, report: !notifSettings.report})} className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${notifSettings.report ? 'bg-orange-500' : 'bg-white/10'}`}>
-                                                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${notifSettings.report ? 'translate-x-6' : ''}`} />
-                                                </button>
-                                            </div>
-
-                                            <div className="w-full h-px bg-white/5" />
-
-                                            <div className="flex items-center justify-between group">
-                                                <div>
-                                                    <p className="font-bold text-sm text-white/90 flex items-center gap-2"><AlertTriangle size={16} className="text-amber-400" /> Peringatan Stok Menipis</p>
-                                                    <p className="text-xs font-medium text-white/40 mt-1">Berikan notifikasi jika ada produk yang stoknya kurang dari 5.</p>
-                                                </div>
-                                                <button onClick={() => setNotifSettings({...notifSettings, lowStock: !notifSettings.lowStock})} className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${notifSettings.lowStock ? 'bg-orange-500' : 'bg-white/10'}`}>
-                                                    <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${notifSettings.lowStock ? 'translate-x-6' : ''}`} />
-                                                </button>
-                                            </div>
+                                            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest shrink-0">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Aktif
+                                            </span>
                                         </div>
 
-                                        <div className="pt-6 border-t border-white/5 flex justify-end">
-                                            <button
-                                                onClick={handleSaveNotif}
-                                                disabled={isSavingNotif}
-                                                className={`px-8 py-4 rounded-full font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center gap-3 ${saveNotifSuccess
-                                                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
-                                                    : 'bg-orange-500 text-white hover:bg-orange-600'
-                                                    }`}
-                                            >
-                                                {isSavingNotif ? <Loader2 className="animate-spin" size={16} /> : saveNotifSuccess ? <CheckCircle2 size={16} /> : <Save size={16} />}
-                                                {isSavingNotif ? 'Menyimpan...' : saveNotifSuccess ? 'Tersimpan' : 'Simpan Preferensi'}
-                                            </button>
+                                        <div className="w-full h-px bg-white/5" />
+
+                                        {/* Belum tersedia: laporan email */}
+                                        <div className="flex items-center justify-between gap-4 opacity-60">
+                                            <div>
+                                                <p className="font-bold text-sm text-white/90 flex items-center gap-2"><Mail size={16} className="text-blue-400" /> Laporan Rekap Mingguan (Email)</p>
+                                                <p className="text-xs font-medium text-white/40 mt-1">Laporan performa omzet &amp; insight otomatis tiap akhir pekan ke email.</p>
+                                            </div>
+                                            <span className="px-3 py-1 rounded-full bg-white/5 text-white/40 border border-white/10 text-[10px] font-black uppercase tracking-widest shrink-0">Segera hadir</span>
                                         </div>
+
+                                        <div className="w-full h-px bg-white/5" />
+
+                                        {/* Belum tersedia: stok menipis */}
+                                        <div className="flex items-center justify-between gap-4 opacity-60">
+                                            <div>
+                                                <p className="font-bold text-sm text-white/90 flex items-center gap-2"><AlertTriangle size={16} className="text-amber-400" /> Peringatan Stok Menipis</p>
+                                                <p className="text-xs font-medium text-white/40 mt-1">Notifikasi saat ada produk dengan stok menipis.</p>
+                                            </div>
+                                            <span className="px-3 py-1 rounded-full bg-white/5 text-white/40 border border-white/10 text-[10px] font-black uppercase tracking-widest shrink-0">Segera hadir</span>
+                                        </div>
+
+                                        <p className="text-[11px] text-white/30 pt-2 border-t border-white/5 italic">Fitur laporan email &amp; peringatan stok sedang dikembangkan. Saat aktif nanti, kamu bisa mengaturnya di sini.</p>
                                     </div>
                                 </div>
                             </motion.div>
@@ -755,44 +761,37 @@ export default function PengaturanPage() {
                                             <div>
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className="px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                                                        <Sparkles size={10} /> Active Plan
+                                                        <Sparkles size={10} /> Paket Aktif
                                                     </span>
                                                 </div>
-                                                <h2 className="text-3xl font-black text-white/90 tracking-tight">Pro Plan</h2>
-                                                <p className="text-sm font-medium text-white/40 mt-1 max-w-sm">Membuka semua fitur premium Kelola.ai termasuk Agen AI pintar dan Notifikasi Pintar.</p>
+                                                <h2 className="text-3xl font-black text-white/90 tracking-tight">
+                                                    {subscriptionTier?.toLowerCase() === 'pro' ? 'Kelola Pro'
+                                                        : subscriptionTier?.toLowerCase() === 'basic' ? 'Basic'
+                                                        : 'Starter (Gratis)'}
+                                                </h2>
+                                                <p className="text-sm font-medium text-white/40 mt-1 max-w-sm">
+                                                    {subscriptionTier?.toLowerCase() === 'pro' ? 'Akses penuh tanpa batas kuota pesan AI.'
+                                                        : subscriptionTier?.toLowerCase() === 'basic' ? 'Kuota lebih besar untuk bisnis yang sedang berkembang.'
+                                                        : 'Paket gratis untuk mulai mencoba Kelola.ai.'}
+                                                </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Siklus Tagihan</p>
-                                                <p className="text-lg font-bold text-white/90 mt-1">Bulanan</p>
+                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Pemakaian Pesan AI</p>
+                                                <p className="text-lg font-bold text-white/90 mt-1">
+                                                    {subscriptionTier?.toLowerCase() === 'pro'
+                                                        ? 'Tak terbatas'
+                                                        : `${tokenUsage.toLocaleString('id-ID')} / ${(subscriptionTier?.toLowerCase() === 'basic' ? 3000 : 1000).toLocaleString('id-ID')}`}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className="mt-8 pt-8 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-                                                    <History size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Perpanjangan Berikutnya</p>
-                                                    <p className="text-sm font-bold text-white/90 mt-0.5">25 April 2026</p>
-                                                </div>
-                                            </div>
-                                            <button className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 font-bold text-sm transition-all">
-                                                Kelola Metode Pembayaran
-                                            </button>
+                                        <div className="mt-8 pt-8 border-t border-white/5">
+                                            <p className="text-sm font-medium text-white/40 flex items-start gap-3">
+                                                <History size={18} className="text-orange-400 shrink-0 mt-0.5" />
+                                                Untuk upgrade atau mengubah paket, hubungi admin Kelola.ai. Perubahan paket diproses manual oleh tim kami.
+                                            </p>
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* Danger Zone Billing */}
-                                <div className="bg-rose-500/5 rounded-[32px] border border-rose-500/10 p-10 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl backdrop-blur-xl">
-                                    <div className="text-center sm:text-left">
-                                        <h3 className="font-bold text-lg text-rose-400 tracking-tight">Batalkan Langganan</h3>
-                                        <p className="text-sm font-medium text-rose-400/60 mt-1 max-w-sm">Kamu bebas membatalkan langganan kapan pun. Bisnis akan diturunkan ke paket gratis setelah periode aktif berakhir.</p>
-                                    </div>
-                                    <button className="px-6 py-3 rounded-xl border border-rose-500/20 text-rose-400 font-bold text-sm tracking-tight hover:bg-rose-500/10 transition-all shrink-0">
-                                        Batalkan Plan
-                                    </button>
                                 </div>
                             </motion.div>
                         )}
