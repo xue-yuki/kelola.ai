@@ -33,3 +33,14 @@
 .animate-spin-slow {
   animation: spin-slow 8s linear infinite;
 }
+/* Scrollable content dengan scrollbar tersembunyi (masih bisa scroll wheel/trackpad).
+   Pattern: ChatGPT, Linear, Vercel — untuk chat areas & modal content. */
+.scrollbar-hide {
+  scrollbar-width: none;         /* Firefox */
+  -ms-overflow-style: none;      /* IE / legacy Edge */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;                 /* Chrome / Safari / Chromium */
+}

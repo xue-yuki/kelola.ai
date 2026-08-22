@@ -37,6 +37,7 @@ const SIDEBAR_ITEMS = [
     { name: "Produk", href: "/dashboard/produk", icon: Package },
     { name: "Kasir (POS)", href: "/dashboard/kasir", icon: Calculator, highlight: true },
     { name: "WA Marketing", href: "/dashboard/wa-marketing", icon: MessageCircle },
+    { name: "Tanya Kelola", href: "/dashboard/tanya-kelola", icon: Sparkles },
     { name: "Asisten AI", href: "/dashboard/asisten-ai", icon: Bot },
     { name: "Laporan & Insight", href: "/dashboard/laporan", icon: BarChart3 },
     { name: "Komplain", href: "/dashboard/komplain", icon: AlertCircle, complaint: true },
