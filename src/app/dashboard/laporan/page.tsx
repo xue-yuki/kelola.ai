@@ -2,36 +2,27 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-    BarChart,
-    Bar,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    AreaChart,
-    Area,
     PieChart,
     Pie,
     Cell,
     LineChart,
-    Line,
-    Legend
+    Line
 } from "recharts";
 import {
     Download,
-    TrendingUp,
-    TrendingDown,
-    Calendar,
-    ArrowRight,
+    ArrowUp,
+    ArrowDown,
     Loader2,
-    Trophy,
-    ShoppingBag,
-    Star,
-    Zap,
-    ChevronRight,
-    ArrowUpRight,
-    Sparkles
+    Sparkles,
+    RefreshCw,
+    Calendar,
+    Filter,
+    ArrowRight
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -395,342 +386,554 @@ export default function LaporanPage() {
         doc.save(`laporan-${timeRange}-${now.toISOString().split('T')[0]}.pdf`);
     };
 
+    // ─── Helper untuk formatting angka ala Stripe/Vercel ────────────────
+    const formatRp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+    const periodLabel = timeRange === 'mingguan' ? '7 hari terakhir' : timeRange === 'tahun_ini' ? `Tahun ${new Date().getFullYear()}` : '30 hari terakhir';
+    const prevLabel = timeRange === 'mingguan' ? 'vs minggu lalu' : timeRange === 'tahun_ini' ? 'vs tahun lalu' : 'vs periode lalu';
+
     return (
-        <div className="max-w-7xl mx-auto space-y-10 pb-20">
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-black text-white/90 tracking-tight leading-none mb-2">Insight & Laporan</h1>
-                    <p className="text-white/40 text-sm font-medium">Pantau peforma bisnismu lewat analitik real-time.</p>
+        <div className="min-h-screen bg-white dark:bg-[#090909] text-zinc-900 dark:text-[#F5F5F5]">
+            <div className="max-w-[1400px] mx-auto px-6 md:px-8 pt-4 md:pt-5 pb-10 space-y-5">
+                {/* ── Page Header ────────────────────────────────────────── */}
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-[#F5F5F5] tracking-tight" style={{ letterSpacing: '-0.02em' }}>
+                            Laporan
+                        </h1>
+                        <p className="text-[13px] text-zinc-500 dark:text-[#A1A1A1] mt-0.5">
+                            Ringkasan performa bisnis Anda
+                        </p>
+                    </div>
+                    <button
+                        onClick={exportPDF}
+                        className="hidden md:inline-flex items-center gap-2 h-8 px-3 rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] hover:bg-zinc-50 dark:hover:bg-[#151515] text-zinc-700 dark:text-[#F5F5F5] text-[13px] font-medium transition-colors"
+                    >
+                        <Download size={14} strokeWidth={2} />
+                        Export PDF
+                    </button>
                 </div>
-                <div className="flex gap-1.5 p-1.5 bg-[#161616]/90 backdrop-blur-xl rounded-2xl border border-white/5">
-                    <button
-                        onClick={() => setTimeRange("mingguan")}
-                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "mingguan" ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white/90'}`}
+
+                {/* ── Analytics Toolbar: Date Range + Filter ─────────────── */}
+                <div className="flex items-center justify-between gap-3 pb-3 border-b border-zinc-200 dark:border-[#1A1A1A]">
+                    <div className="inline-flex rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] p-0.5">
+                        {[
+                            { key: 'mingguan', label: '7 hari' },
+                            { key: 'bulanan', label: '30 hari' },
+                            { key: 'tahun_ini', label: 'Tahun ini' },
+                        ].map((r) => (
+                            <button
+                                key={r.key}
+                                onClick={() => setTimeRange(r.key)}
+                                className={`h-7 px-3 rounded text-[12px] font-medium transition-colors ${timeRange === r.key
+                                    ? 'bg-zinc-100 dark:bg-[#151515] text-zinc-900 dark:text-[#F5F5F5]'
+                                    : 'text-zinc-500 dark:text-[#A1A1A1] hover:text-zinc-900 dark:hover:text-[#F5F5F5]'
+                                    }`}
+                            >
+                                {r.label}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] text-[12px] text-zinc-500 dark:text-[#A1A1A1]">
+                            <Calendar size={12} />
+                            {periodLabel}
+                        </span>
+                        <button className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] hover:bg-zinc-50 dark:hover:bg-[#151515] text-[12px] text-zinc-700 dark:text-[#F5F5F5] font-medium">
+                            <Filter size={12} />
+                            Filter
+                        </button>
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    <LaporanSkeleton />
+                ) : (
+                    <>
+                        {/* ── KPI Grid ─────────────────────────────────── */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <KpiCard
+                                label="Total Omzet"
+                                value={formatRp(summaryStats.totalRevenue)}
+                                delta={comparison.revenue}
+                                deltaLabel={prevLabel}
+                                data={revenueData.map((r) => ({ v: r.total }))}
+                            />
+                            <KpiCard
+                                label="Total Pesanan"
+                                value={`${summaryStats.totalOrders}`}
+                                delta={comparison.orders}
+                                deltaLabel={prevLabel}
+                                data={orderCountData.map((r) => ({ v: r.orders }))}
+                            />
+                            <KpiCard
+                                label="Rata-rata Keranjang"
+                                value={formatRp(summaryStats.avgOrder)}
+                                delta={comparison.avgOrder}
+                                deltaLabel={prevLabel}
+                            />
+                            <KpiCard
+                                label="Total Pelanggan Aktif"
+                                value={`${channelData.reduce((s, c) => s + c.value, 0)}`}
+                                delta={0}
+                                deltaLabel="berdasarkan order"
+                                hideBadge
+                            />
+                        </div>
+
+                        {/* ── Main Grid: Revenue Chart + Current Performance ── */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                            <RevenueChartCard data={revenueData} />
+                            <CurrentPerformanceCard
+                                stats={summaryStats}
+                                comparison={comparison}
+                                revenueData={revenueData}
+                                orderCountData={orderCountData}
+                                channelData={channelData}
+                            />
+                        </div>
+
+                        {/* ── Secondary Grid: Top Produk (table) + Channel (donut) ── */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                            <TopProductsCard products={topProducts} totalRevenue={summaryStats.totalRevenue} />
+                            <ChannelDistributionCard data={channelData} />
+                        </div>
+
+                        {/* ── AI Insight (full width bottom card) ─────── */}
+                        <AiInsightCard
+                            insight={aiInsight}
+                            loading={isLoadingInsight}
+                            error={insightError}
+                            onRetry={() => lastInsightArgs.current && generateInsight(lastInsightArgs.current.summary, lastInsightArgs.current.businessId, true)}
+                            hasData={summaryStats.totalOrders > 0}
+                        />
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// SUB-COMPONENTS — semua styled ala Stripe/Vercel dark
+// ═══════════════════════════════════════════════════════════════════════
+
+function KpiCard({
+    label,
+    value,
+    delta,
+    deltaLabel,
+    data,
+    hideBadge = false
+}: {
+    label: string;
+    value: string;
+    delta: number;
+    deltaLabel: string;
+    data?: { v: number }[];
+    hideBadge?: boolean;
+}) {
+    const isUp = delta > 0;
+    const isDown = delta < 0;
+    return (
+        <div className="group relative rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] hover:border-zinc-300 dark:hover:border-[#333] hover:bg-zinc-50/50 dark:hover:bg-[#111] transition-colors p-4">
+            <div className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] font-normal mb-2">{label}</div>
+            <div className="flex items-end justify-between gap-3">
+                <div
+                    className="text-[26px] font-medium text-zinc-900 dark:text-[#F5F5F5] leading-none"
+                    style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
+                >
+                    {value}
+                </div>
+                {data && data.length > 1 && (
+                    <div className="w-16 h-6 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={data}>
+                                <Line
+                                    type="monotone"
+                                    dataKey="v"
+                                    stroke="#FF8A00"
+                                    strokeWidth={1.25}
+                                    dot={false}
+                                    isAnimationActive={false}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                )}
+            </div>
+            {!hideBadge && (
+                <div className="flex items-center gap-1.5 mt-3">
+                    <span
+                        className={`inline-flex items-center gap-0.5 text-[12px] font-medium ${isUp
+                            ? 'text-emerald-600 dark:text-[#4ADE80]'
+                            : isDown
+                                ? 'text-rose-600 dark:text-[#F87171]'
+                                : 'text-zinc-500 dark:text-[#666]'
+                            }`}
+                        style={{ fontVariantNumeric: 'tabular-nums' }}
                     >
-                        Mingguan
-                    </button>
-                    <button
-                        onClick={() => setTimeRange("bulanan")}
-                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "bulanan" ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white/90'}`}
-                    >
-                        30 Hari
-                    </button>
-                    <button
-                        onClick={() => setTimeRange("tahun_ini")}
-                        className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${timeRange === "tahun_ini" ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white/90'}`}
-                    >
-                        Tahun Ini
-                    </button>
+                        {isUp && <ArrowUp size={11} strokeWidth={2.5} />}
+                        {isDown && <ArrowDown size={11} strokeWidth={2.5} />}
+                        {delta > 0 ? '+' : ''}{delta}%
+                    </span>
+                    <span className="text-[12px] text-zinc-400 dark:text-[#666]">{deltaLabel}</span>
+                </div>
+            )}
+            {hideBadge && (
+                <div className="text-[12px] text-zinc-400 dark:text-[#666] mt-3">{deltaLabel}</div>
+            )}
+        </div>
+    );
+}
+
+function LaporanSkeleton() {
+    return (
+        <div className="space-y-3 animate-pulse">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="h-[104px] rounded-md border border-zinc-200 dark:border-[#242424] bg-zinc-50 dark:bg-[#151515]" />
+                ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                <div className="lg:col-span-8 h-[340px] rounded-md border border-zinc-200 dark:border-[#242424] bg-zinc-50 dark:bg-[#151515]" />
+                <div className="lg:col-span-4 h-[340px] rounded-md border border-zinc-200 dark:border-[#242424] bg-zinc-50 dark:bg-[#151515]" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                <div className="lg:col-span-7 h-[300px] rounded-md border border-zinc-200 dark:border-[#242424] bg-zinc-50 dark:bg-[#151515]" />
+                <div className="lg:col-span-5 h-[300px] rounded-md border border-zinc-200 dark:border-[#242424] bg-zinc-50 dark:bg-[#151515]" />
+            </div>
+        </div>
+    );
+}
+
+function RevenueChartCard({ data }: { data: any[] }) {
+    const hasData = data.some((d) => d.total > 0);
+    return (
+        <div className="lg:col-span-8 rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] p-5">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h3 className="text-[14px] font-medium text-zinc-900 dark:text-[#F5F5F5]">Revenue Over Time</h3>
+                    <p className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] mt-0.5">Pendapatan per periode</p>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-[#A1A1A1]">
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-block w-2.5 h-0.5 bg-[#FF8A00]" /> Periode ini
+                    </span>
                 </div>
             </div>
+            <div className="h-[280px] w-full">
+                {hasData ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid, #1D1D1D)" strokeOpacity={0.5} />
+                            <XAxis
+                                dataKey="name"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 11, fill: '#A1A1A1' }}
+                                dy={10}
+                            />
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 11, fill: '#666' }}
+                                tickFormatter={(v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}Jt` : v >= 1000 ? `${(v / 1000).toFixed(0)}rb` : v}
+                                width={50}
+                            />
+                            <Tooltip
+                                cursor={{ stroke: '#FF8A00', strokeWidth: 1, strokeDasharray: '3 3' }}
+                                content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                        return (
+                                            <div className="rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] px-3 py-2 shadow-sm">
+                                                <p className="text-[11px] text-zinc-500 dark:text-[#A1A1A1] mb-0.5">{label}</p>
+                                                <p className="text-[13px] font-medium text-zinc-900 dark:text-[#F5F5F5]" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                                    Rp {Number(payload[0].value).toLocaleString('id-ID')}
+                                                </p>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
+                            <Line
+                                type="monotone"
+                                dataKey="total"
+                                stroke="#FF8A00"
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{ r: 4, fill: '#FF8A00', strokeWidth: 0 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <EmptyChart />
+                )}
+            </div>
+        </div>
+    );
+}
 
-            {isLoading ? (
-                <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
-                    <Loader2 className="animate-spin w-12 h-12 text-orange-400" />
-                    <p className="font-black text-white/30 text-[10px] uppercase tracking-[0.2em]">Menyusun Laporan...</p>
+function EmptyChart() {
+    return (
+        <div className="h-full flex flex-col items-center justify-center text-center">
+            <p className="text-[13px] text-zinc-500 dark:text-[#A1A1A1] font-medium">Belum ada data</p>
+            <p className="text-[12px] text-zinc-400 dark:text-[#666] mt-1">Data akan muncul setelah ada transaksi</p>
+        </div>
+    );
+}
+
+function CurrentPerformanceCard({
+    stats,
+    comparison,
+    revenueData,
+    orderCountData,
+    channelData
+}: {
+    stats: { totalRevenue: number; totalOrders: number; avgOrder: number };
+    comparison: { revenue: number; orders: number; avgOrder: number };
+    revenueData: any[];
+    orderCountData: any[];
+    channelData: any[];
+}) {
+    const totalChannels = channelData.length;
+    const rows = [
+        { label: 'Omzet Periode', value: `Rp ${stats.totalRevenue.toLocaleString('id-ID')}`, delta: comparison.revenue, spark: revenueData.map(r => ({ v: r.total })) },
+        { label: 'Jumlah Pesanan', value: `${stats.totalOrders}`, delta: comparison.orders, spark: orderCountData.map(r => ({ v: r.orders })) },
+        { label: 'Rata-rata Order', value: `Rp ${stats.avgOrder.toLocaleString('id-ID')}`, delta: comparison.avgOrder, spark: [] },
+        { label: 'Kanal Aktif', value: `${totalChannels}`, delta: 0, spark: [] },
+    ];
+    return (
+        <div className="lg:col-span-4 rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] p-5">
+            <div className="mb-4">
+                <h3 className="text-[14px] font-medium text-zinc-900 dark:text-[#F5F5F5]">Current Performance</h3>
+                <p className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] mt-0.5">Ringkasan periode ini</p>
+            </div>
+            <div className="space-y-0 divide-y divide-zinc-100 dark:divide-[#1A1A1A]">
+                {rows.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between py-2.5">
+                        <span className="text-[13px] text-zinc-500 dark:text-[#A1A1A1]">{r.label}</span>
+                        <div className="flex items-center gap-2.5">
+                            {r.spark.length > 1 && (
+                                <div className="w-14 h-4 opacity-60">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={r.spark}>
+                                            <Line type="monotone" dataKey="v" stroke="#FF8A00" strokeWidth={1} dot={false} isAnimationActive={false} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
+                            <span
+                                className="text-[13px] font-medium text-zinc-900 dark:text-[#F5F5F5]"
+                                style={{ fontVariantNumeric: 'tabular-nums' }}
+                            >
+                                {r.value}
+                            </span>
+                            {r.delta !== 0 && (
+                                <span
+                                    className={`inline-flex items-center gap-0.5 text-[11px] font-medium min-w-[46px] justify-end ${r.delta > 0 ? 'text-emerald-600 dark:text-[#4ADE80]' : 'text-rose-600 dark:text-[#F87171]'}`}
+                                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                                >
+                                    {r.delta > 0 ? <ArrowUp size={10} strokeWidth={2.5} /> : <ArrowDown size={10} strokeWidth={2.5} />}
+                                    {r.delta > 0 ? '+' : ''}{r.delta}%
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function TopProductsCard({ products, totalRevenue }: { products: any[]; totalRevenue: number }) {
+    const maxSales = Math.max(...products.map((p) => p.total_sales || 0), 1);
+    return (
+        <div className="lg:col-span-7 rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-[#1A1A1A]">
+                <div>
+                    <h3 className="text-[14px] font-medium text-zinc-900 dark:text-[#F5F5F5]">Top Produk</h3>
+                    <p className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] mt-0.5">Ranking berdasarkan unit terjual</p>
+                </div>
+            </div>
+            {products.length === 0 ? (
+                <div className="py-16 text-center">
+                    <p className="text-[13px] text-zinc-500 dark:text-[#A1A1A1] font-medium">Belum ada produk terjual</p>
+                    <p className="text-[12px] text-zinc-400 dark:text-[#666] mt-1">Data muncul setelah ada order lunas</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                    {/* Charts Column */}
-                    <div className="lg:col-span-8 space-y-8">
-                        {/* Main Revenue Chart */}
-                        <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl flex flex-col group hover:border-orange-500/20 transition-all duration-300">
-                            <div className="flex items-center justify-between mb-8">
-                                <div>
-                                    <h3 className="font-bold text-lg text-white/90 tracking-tight mb-0.5">Tren Pendapatan</h3>
-                                    <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Omzet Bersih</p>
-                                </div>
-                                <button
-                                    onClick={exportPDF}
-                                    title="Export PDF"
-                                    className="w-10 h-10 flex items-center justify-center bg-white/5 text-white/40 hover:text-orange-400 border border-white/5 hover:border-orange-500/30 rounded-xl transition-all"
-                                >
-                                    <Download size={18} />
-                                </button>
-                            </div>
-
-                            <div className="h-[300px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                        <defs>
-                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#FF6B2B" stopOpacity={0.15} />
-                                                <stop offset="95%" stopColor="#FF6B2B" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#F0EEE9" />
-                                        <XAxis
-                                            dataKey="name"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }}
-                                            dy={15}
-                                        />
-                                        <YAxis
-                                            hide
-                                        />
-                                        <Tooltip
-                                            cursor={{ stroke: '#FF6B2B', strokeWidth: 1, strokeDasharray: '4 4' }}
-                                            contentStyle={{
-                                                borderRadius: '16px',
-                                                border: '1px solid #F0EEE9',
-                                                boxShadow: '0 10px 20px -5px rgba(0,0,0,0.05)',
-                                                padding: '12px'
-                                            }}
-                                            content={({ active, payload, label }) => {
-                                                if (active && payload && payload.length) {
-                                                    return (
-                                                        <div className="bg-[#111] p-3 rounded-2xl border border-white/10 shadow-2xl">
-                                                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{label}</p>
-                                                            <p className="text-sm font-black text-white/90">Rp {Number(payload[0].value).toLocaleString('id-ID')}</p>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="total"
-                                            stroke="#FF6B2B"
-                                            strokeWidth={3}
-                                            fillOpacity={1}
-                                            fill="url(#colorRevenue)"
-                                            activeDot={{ r: 6, fill: '#1A1A2E', strokeWidth: 0 }}
-                                        />
-                                    </AreaChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        {/* Summary Metrics */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-emerald-500/30 transition-all group">
-                                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 transition-transform">
-                                    <TrendingUp strokeWidth={2.5} size={22} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Omzet <span className="text-white/20">vs {timeRange === 'mingguan' ? 'minggu' : 'bulan'} lalu</span></p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.totalRevenue.toLocaleString('id-ID')}</p>
-                                        {comparison.revenue !== 0 && (
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${comparison.revenue > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                {comparison.revenue > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                                {comparison.revenue > 0 ? '+' : ''}{comparison.revenue}%
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-blue-500/30 transition-all group">
-                                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20 group-hover:scale-110 transition-transform">
-                                    <ShoppingBag strokeWidth={2.5} size={22} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Total Pesanan <span className="text-white/20">vs {timeRange === 'mingguan' ? 'minggu' : 'bulan'} lalu</span></p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-lg font-black text-white/90 tracking-tight">{summaryStats.totalOrders} Order</p>
-                                        {comparison.orders !== 0 && (
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${comparison.orders > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                {comparison.orders > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                                {comparison.orders > 0 ? '+' : ''}{comparison.orders}%
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 rounded-3xl border border-white/5 shadow-2xl flex items-center gap-4 hover:border-orange-500/30 transition-all group">
-                                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20 group-hover:scale-110 transition-transform">
-                                    <Zap strokeWidth={2.5} size={22} />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Rata. Keranjang <span className="text-white/20">vs {timeRange === 'mingguan' ? 'minggu' : 'bulan'} lalu</span></p>
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-lg font-black text-white/90 tracking-tight">Rp {summaryStats.avgOrder.toLocaleString('id-ID')}</p>
-                                        {comparison.avgOrder !== 0 && (
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ${comparison.avgOrder > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                {comparison.avgOrder > 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                                                {comparison.avgOrder > 0 ? '+' : ''}{comparison.avgOrder}%
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Order Count Trend (Line Chart) */}
-                        <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl hover:border-blue-500/20 transition-all">
-                            <div className="flex items-center justify-between mb-6">
-                                <div>
-                                    <h3 className="font-bold text-lg text-white/90 tracking-tight mb-0.5">Jumlah Pesanan</h3>
-                                    <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Order per Hari</p>
-                                </div>
-                            </div>
-                            <div className="h-[200px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={orderCountData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#333" />
-                                        <XAxis
-                                            dataKey="name"
-                                            axisLine={false}
-                                            tickLine={false}
-                                            tick={{ fontSize: 11, fontWeight: 700, fill: '#94A3B8' }}
-                                            dy={10}
-                                        />
-                                        <YAxis hide />
-                                        <Tooltip
-                                            cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                                            content={({ active, payload, label }) => {
-                                                if (active && payload && payload.length) {
-                                                    return (
-                                                        <div className="bg-[#111] p-3 rounded-2xl border border-white/10 shadow-2xl">
-                                                            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">{label}</p>
-                                                            <p className="text-sm font-black text-blue-400">{payload[0].value} Pesanan</p>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
-                                        />
-                                        <Bar dataKey="orders" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        {/* Channel Distribution (Pie Chart) */}
-                        {channelData.length > 0 && (
-                            <div className="bg-[#161616]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-white/5 shadow-2xl hover:border-purple-500/20 transition-all">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div>
-                                        <h3 className="font-bold text-lg text-white/90 tracking-tight mb-0.5">Sumber Pesanan</h3>
-                                        <p className="text-xs font-bold text-white/40 uppercase tracking-widest">Channel Distribution</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-6">
-                                    <div className="h-[180px] w-[180px]">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={channelData}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius={50}
-                                                    outerRadius={80}
-                                                    paddingAngle={3}
-                                                    dataKey="value"
-                                                >
-                                                    {channelData.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip
-                                                    content={({ active, payload }) => {
-                                                        if (active && payload && payload.length) {
-                                                            return (
-                                                                <div className="bg-[#111] p-3 rounded-2xl border border-white/10 shadow-2xl">
-                                                                    <p className="text-sm font-black text-white/90">{payload[0].name}: {payload[0].value}</p>
-                                                                </div>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    }}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                    <div className="flex-1 space-y-3">
-                                        {channelData.map((ch, idx) => (
-                                            <div key={idx} className="flex items-center gap-3">
-                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ch.color }} />
-                                                <span className="text-sm font-medium text-white/70 flex-1">{ch.name}</span>
-                                                <span className="text-sm font-bold text-white/90">{ch.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                    </div>
-
-                    {/* Insights Column */}
-                    <div className="lg:col-span-4 space-y-6">
-                        {/* Top Products Elegant Board */}
-                        <div className="bg-[#161616]/90 backdrop-blur-2xl border border-white/5 p-6 sm:p-8 rounded-3xl shadow-2xl h-auto flex flex-col">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center">
-                                    <Trophy size={18} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-white/90 tracking-tight">Peringkat Produk</h3>
-                                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Bulan Ini</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6 flex-1">
-                                {topProducts.map((p, idx) => (
-                                    <div key={p.id} className="flex items-center gap-4 group cursor-pointer">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs ${idx === 0 ? 'bg-orange-500 text-white shadow-[0_0_15px_rgba(255,107,43,0.3)]' :
-                                            idx === 1 ? 'bg-white/10 text-white/90 border border-white/10' : 'bg-white/5 text-white/40 border border-white/5'
-                                            }`}>
-                                            #{idx + 1}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-white/90 tracking-tight truncate mb-0.5 group-hover:text-orange-400 transition-colors">{p.name}</p>
+                <div className="overflow-hidden">
+                    <table className="w-full" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                        <thead>
+                            <tr className="border-b border-zinc-100 dark:border-[#1A1A1A]">
+                                <th className="text-[11px] font-medium text-zinc-400 dark:text-[#666] uppercase tracking-wider text-left px-5 py-2.5 w-8">#</th>
+                                <th className="text-[11px] font-medium text-zinc-400 dark:text-[#666] uppercase tracking-wider text-left px-2 py-2.5">Produk</th>
+                                <th className="text-[11px] font-medium text-zinc-400 dark:text-[#666] uppercase tracking-wider text-right px-2 py-2.5">Terjual</th>
+                                <th className="text-[11px] font-medium text-zinc-400 dark:text-[#666] uppercase tracking-wider text-right px-5 py-2.5 w-24">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {products.map((p, idx) => {
+                                const share = maxSales > 0 ? Math.round(((p.total_sales || 0) / maxSales) * 100) : 0;
+                                return (
+                                    <tr key={p.id} className="border-b border-zinc-100 dark:border-[#1A1A1A] last:border-0 hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors">
+                                        <td className="px-5 py-3 text-[13px] text-zinc-400 dark:text-[#666]">{idx + 1}</td>
+                                        <td className="px-2 py-3">
                                             <div className="flex items-center gap-2">
-                                                <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                                                <div className={`w-1 h-4 rounded-sm ${idx === 0 ? 'bg-[#FF8A00]' : 'bg-zinc-200 dark:bg-[#333]'}`} />
+                                                <span className="text-[13px] font-medium text-zinc-900 dark:text-[#F5F5F5]">{p.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-2 py-3 text-[13px] text-zinc-700 dark:text-[#F5F5F5] text-right">
+                                            {p.total_sales || 0}
+                                        </td>
+                                        <td className="px-5 py-3">
+                                            <div className="flex items-center gap-2 justify-end">
+                                                <div className="w-16 h-1 bg-zinc-100 dark:bg-[#1A1A1A] rounded-full overflow-hidden">
                                                     <div
-                                                        className={`h-full rounded-full ${idx === 0 ? 'bg-orange-500' : 'bg-white/30'}`}
-                                                        style={{ width: `${100 - (idx * 15)}%` }}
+                                                        className={`h-full ${idx === 0 ? 'bg-[#FF8A00]' : 'bg-zinc-400 dark:bg-[#555]'}`}
+                                                        style={{ width: `${share}%` }}
                                                     />
                                                 </div>
-                                                <span className="text-[10px] font-bold text-white/40">{p.total_sales || 0} Terjual</span>
+                                                <span className="text-[11px] text-zinc-500 dark:text-[#A1A1A1] w-8 text-right">{share}%</span>
                                             </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+}
 
-                        {/* Minimal AI Insight Card */}
-                        <div className="bg-orange-500/5 border border-orange-500/20 p-6 sm:p-8 rounded-3xl group backdrop-blur-xl relative overflow-hidden">
-                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/10 rounded-full blur-3xl" />
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Sparkles size={16} className="text-orange-400" />
-                                    <h4 className="font-bold text-orange-400 text-sm">💡 Rekomendasi AI</h4>
-                                </div>
-                                {isLoadingInsight ? (
-                                    <div className="flex items-center gap-3 mb-6 text-white/50">
-                                        <Loader2 size={16} className="animate-spin text-orange-400" />
-                                        <p className="text-sm">Menganalisa data bisnismu...</p>
-                                    </div>
-                                ) : aiInsight ? (
-                                    <p className="text-sm text-white/70 leading-relaxed mb-6 whitespace-pre-wrap">{aiInsight}</p>
-                                ) : insightError ? (
-                                    <div className="mb-6">
-                                        <p className="text-sm text-rose-300/80 leading-relaxed mb-2">Gagal memuat rekomendasi AI: {insightError}</p>
-                                        <button
-                                            onClick={() => lastInsightArgs.current && generateInsight(lastInsightArgs.current.summary, lastInsightArgs.current.businessId, true)}
-                                            className="text-xs font-bold text-orange-400 underline underline-offset-2 hover:text-orange-300"
-                                        >
-                                            Coba lagi
-                                        </button>
-                                    </div>
-                                ) : summaryStats.totalOrders > 0 ? (
-                                    <p className="text-sm text-white/50 leading-relaxed mb-6">Rekomendasi belum tersedia. Coba muat ulang halaman ya.</p>
-                                ) : (
-                                    <p className="text-sm text-white/50 leading-relaxed mb-6">Rekomendasi AI akan muncul begitu ada data transaksi. Mulai catat penjualan lewat WhatsApp atau Kasir dulu ya! 🚀</p>
-                                )}
-                                <Link href="/dashboard/wa-marketing" className="flex items-center gap-2 bg-orange-500/10 text-orange-400 border border-orange-500/20 w-full justify-center py-2.5 rounded-xl text-xs font-bold transition-all hover:bg-orange-500 hover:text-white shadow-lg hover:shadow-orange-500/20">
-                                    Buat Promo Broadcast <ArrowRight size={14} />
-                                </Link>
+function ChannelDistributionCard({ data }: { data: any[] }) {
+    const total = data.reduce((s, d) => s + d.value, 0);
+    // Force palette: orange for primary, grey shades for others (per spec: no rainbow)
+    const palette = ['#FF8A00', '#666666', '#A1A1A1', '#444444'];
+    const withColor = data.map((d, i) => ({ ...d, color: palette[i % palette.length] }));
+    return (
+        <div className="lg:col-span-5 rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] p-5">
+            <div className="mb-4">
+                <h3 className="text-[14px] font-medium text-zinc-900 dark:text-[#F5F5F5]">Kanal Penjualan</h3>
+                <p className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] mt-0.5">Distribusi order per channel</p>
+            </div>
+            {total === 0 ? (
+                <div className="py-16 text-center">
+                    <p className="text-[13px] text-zinc-500 dark:text-[#A1A1A1] font-medium">Belum ada order</p>
+                    <p className="text-[12px] text-zinc-400 dark:text-[#666] mt-1">Data channel akan muncul di sini</p>
+                </div>
+            ) : (
+                <div className="flex items-center gap-5">
+                    <div className="relative w-[140px] h-[140px] shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={withColor} cx="50%" cy="50%" innerRadius={45} outerRadius={65} paddingAngle={2} dataKey="value" stroke="none">
+                                    {withColor.map((entry, i) => (
+                                        <Cell key={i} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    content={({ active, payload }) => {
+                                        if (active && payload && payload.length) {
+                                            const p: any = payload[0];
+                                            return (
+                                                <div className="rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] px-2.5 py-1.5 shadow-sm">
+                                                    <p className="text-[12px] font-medium text-zinc-900 dark:text-[#F5F5F5]">{p.name}: {p.value}</p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <div
+                                className="text-[18px] font-medium text-zinc-900 dark:text-[#F5F5F5] leading-none"
+                                style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
+                            >
+                                {total}
                             </div>
+                            <div className="text-[10px] text-zinc-500 dark:text-[#A1A1A1] uppercase tracking-wider mt-1">Order</div>
                         </div>
                     </div>
+                    <div className="flex-1 space-y-2 min-w-0">
+                        {withColor.map((ch, idx) => {
+                            const pct = Math.round((ch.value / total) * 100);
+                            return (
+                                <div key={idx} className="flex items-center gap-2.5 py-1">
+                                    <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ch.color }} />
+                                    <span className="text-[13px] text-zinc-700 dark:text-[#F5F5F5] flex-1 truncate">{ch.name}</span>
+                                    <span className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] tabular-nums">{ch.value}</span>
+                                    <span className="text-[11px] text-zinc-400 dark:text-[#666] tabular-nums w-9 text-right">{pct}%</span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
+            )}
+        </div>
+    );
+}
+
+function AiInsightCard({
+    insight,
+    loading,
+    error,
+    onRetry,
+    hasData
+}: {
+    insight: string | null;
+    loading: boolean;
+    error: string | null;
+    onRetry: () => void;
+    hasData: boolean;
+}) {
+    return (
+        <div className="rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] p-5">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <Sparkles size={14} className="text-[#FF8A00]" strokeWidth={2} />
+                    <h3 className="text-[14px] font-medium text-zinc-900 dark:text-[#F5F5F5]">Rekomendasi AI</h3>
+                </div>
+                {(insight || error) && !loading && (
+                    <button
+                        onClick={onRetry}
+                        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-zinc-200 dark:border-[#242424] hover:bg-zinc-50 dark:hover:bg-[#151515] text-[12px] text-zinc-600 dark:text-[#A1A1A1] font-medium transition-colors"
+                    >
+                        <RefreshCw size={11} />
+                        Refresh
+                    </button>
+                )}
+            </div>
+            {loading ? (
+                <div className="flex items-center gap-2 text-zinc-500 dark:text-[#A1A1A1] py-2">
+                    <Loader2 size={13} className="animate-spin" />
+                    <span className="text-[13px]">Menganalisa data bisnis…</span>
+                </div>
+            ) : insight ? (
+                <>
+                    <p className="text-[13px] leading-relaxed text-zinc-700 dark:text-[#F5F5F5]/90 whitespace-pre-wrap">{insight}</p>
+                    <Link
+                        href="/dashboard/wa-marketing"
+                        className="inline-flex items-center gap-1.5 mt-4 text-[12px] font-medium text-[#FF8A00] hover:text-[#FF9D2E] transition-colors"
+                    >
+                        Buat promo broadcast <ArrowRight size={12} />
+                    </Link>
+                </>
+            ) : error ? (
+                <div>
+                    <p className="text-[13px] text-rose-600 dark:text-[#F87171] mb-2">Gagal memuat: {error}</p>
+                    <button onClick={onRetry} className="text-[12px] font-medium text-[#FF8A00] hover:text-[#FF9D2E]">Coba lagi</button>
+                </div>
+            ) : hasData ? (
+                <p className="text-[13px] text-zinc-500 dark:text-[#A1A1A1]">Rekomendasi belum tersedia. Coba muat ulang halaman.</p>
+            ) : (
+                <p className="text-[13px] text-zinc-500 dark:text-[#A1A1A1]">Rekomendasi AI akan muncul begitu ada data transaksi.</p>
             )}
         </div>
     );

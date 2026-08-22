@@ -149,26 +149,40 @@ export default function PelangganPage() {
         }
     };
 
-    const setupRealtime = (bizId: string) => {
-        if (realtimeRef.current) supabase.removeChannel(realtimeRef.current);
-        realtimeRef.current = supabase.channel("pelanggan_conv_rt")
-            .on("postgres_changes", {
-                event: "INSERT", schema: "public", table: "conversations",
-                filter: `business_id=eq.${bizId}`,
-            }, payload => {
-                const conv = payload.new as any;
-                setCustomers(prev => prev.map(c =>
-                    c.wa_number === conv.customer_wa
-                        ? { ...c, last_message: conv.message, last_message_at: conv.created_at }
-                        : c
-                ));
-                setSelected(prev =>
-                    prev?.wa_number === conv.customer_wa
-                        ? { ...prev, last_message: conv.message, last_message_at: conv.created_at }
-                        : prev
-                );
-            })
-            .subscribe();
+    const setupRealtime = async (bizId: string) => {
+        // Cleanup channel lama dulu (removeChannel async — harus di-await
+        // biar ga race dengan .on() di channel baru).
+        if (realtimeRef.current) {
+            try { await supabase.removeChannel(realtimeRef.current); } catch { /* noop */ }
+            realtimeRef.current = null;
+        }
+
+        // Channel name unique per business — biar kalau race sekalipun,
+        // instance lama & baru ga bentrok di key yang sama.
+        const channelName = `pelanggan_conv_rt_${bizId}_${Date.now().toString(36)}`;
+        const channel = supabase.channel(channelName);
+
+        // Attach .on() SEBELUM .subscribe() — Supabase realtime nolak add
+        // callback setelah subscribed.
+        channel.on("postgres_changes", {
+            event: "INSERT", schema: "public", table: "conversations",
+            filter: `business_id=eq.${bizId}`,
+        }, payload => {
+            const conv = payload.new as any;
+            setCustomers(prev => prev.map(c =>
+                c.wa_number === conv.customer_wa
+                    ? { ...c, last_message: conv.message, last_message_at: conv.created_at }
+                    : c
+            ));
+            setSelected(prev =>
+                prev?.wa_number === conv.customer_wa
+                    ? { ...prev, last_message: conv.message, last_message_at: conv.created_at }
+                    : prev
+            );
+        });
+
+        realtimeRef.current = channel;
+        channel.subscribe();
     };
 
     const selectCustomer = async (c: Customer) => {

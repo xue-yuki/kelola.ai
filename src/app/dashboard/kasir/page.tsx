@@ -9,7 +9,6 @@ import {
     Trash2,
     CreditCard,
     Banknote,
-    QrCode,
     ShoppingCart,
     Loader2,    
     CheckCircle2,
@@ -41,6 +40,10 @@ export default function KasirPage() {
     const [activeTab, setActiveTab] = useState("Penjualan");
 
     const [businessId, setBusinessId] = useState<string | null>(null);
+    const [businessName, setBusinessName] = useState<string>("");
+    const [qrisDataUrl, setQrisDataUrl] = useState<string | null>(null);
+    const [isGeneratingQris, setIsGeneratingQris] = useState(false);
+    const [qrisModalOpen, setQrisModalOpen] = useState(false);
     const [notice, setNotice] = useState("");
     const [cashReceived, setCashReceived] = useState("");
 
@@ -61,12 +64,13 @@ export default function KasirPage() {
 
             const { data: business } = await supabase
                 .from('businesses')
-                .select('id')
+                .select('id, business_name')
                 .eq('user_id', session.user.id)
                 .single();
 
             if (!business) return;
             setBusinessId(business.id);
+            setBusinessName(business.business_name || "MERCHANT");
 
             const { data: productsData } = await supabase
                 .from('products')
@@ -127,6 +131,49 @@ export default function KasirPage() {
     // UMKM mikro umumnya non-PKP → tidak memungut PPN. Total = subtotal.
     const totalAmount = subtotal;
     const kembalian = Math.max(0, (parseInt(cashReceived) || 0) - totalAmount);
+
+    // Manual generator — dipanggil pas user klik "Konfirmasi & Generate QRIS"
+    const generateQris = async () => {
+        if (totalAmount <= 0 || !businessName) return;
+        setIsGeneratingQris(true);
+        setQrisDataUrl(null);
+        try {
+            const { generateQrisDataUrl } = await import("@/lib/qris");
+            const refId = `POS${Date.now().toString(36).toUpperCase()}`;
+            const { dataUrl } = await generateQrisDataUrl({
+                merchantName: businessName,
+                amount: totalAmount,
+                referenceId: refId,
+            });
+            setQrisDataUrl(dataUrl);
+        } catch (err) {
+            console.error("QRIS gen error:", err);
+            setQrisDataUrl(null);
+        } finally {
+            setIsGeneratingQris(false);
+        }
+    };
+
+    // Buka modal + generate saat user klik konfirmasi (QRIS path)
+    const openQrisModal = async () => {
+        setQrisModalOpen(true);
+        await generateQris();
+    };
+
+    const closeQrisModal = () => {
+        setQrisModalOpen(false);
+        setQrisDataUrl(null);
+    };
+
+    // Escape key = tutup modal
+    useEffect(() => {
+        if (!qrisModalOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") closeQrisModal();
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [qrisModalOpen]);
 
     const handleCheckout = async () => {
         if (cart.length === 0 || !businessId) return;
@@ -400,12 +447,14 @@ export default function KasirPage() {
                         </div>
 
                         {paymentMethod === 'qris' && (
-                            <div className="mb-6 p-4 rounded-xl border border-zinc-800/80 bg-[#141414] flex flex-col items-center justify-center">
-                                <p className="text-xs font-medium text-zinc-400 mb-3">Tunjukkan QRIS tokomu ke pelanggan</p>
-                                <div className="w-32 h-32 bg-white rounded-lg p-2 shadow-inner flex items-center justify-center">
-                                    <QrCode size={112} className="text-black" />
+                            <div className="mb-6 rounded-md border border-zinc-800/80 bg-[#0D0D0D] p-3 flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-md bg-[#141414] border border-zinc-800 flex items-center justify-center shrink-0">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-orange-500"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /><rect x="17" y="17" width="4" height="4" /></svg>
                                 </div>
-                                <p className="text-[10px] text-zinc-600 mt-3 text-center">Setelah pelanggan bayar, tekan Bayar &amp; Selesai</p>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[13px] font-medium text-zinc-100">Pembayaran QRIS</p>
+                                    <p className="text-[11px] text-zinc-500 mt-0.5">Klik konfirmasi untuk generate QR</p>
+                                </div>
                             </div>
                         )}
 
@@ -436,13 +485,25 @@ export default function KasirPage() {
 
                         <div className="flex gap-3">
                             <button
-                                onClick={handleCheckout}
+                                onClick={() => {
+                                    if (paymentMethod === 'qris') {
+                                        openQrisModal();
+                                    } else {
+                                        handleCheckout();
+                                    }
+                                }}
                                 disabled={cart.length === 0 || isProcessing}
                                 className={`flex-1 py-3.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_20px_rgba(249,115,22,0.2)] ${
                                     isProcessing || orderSuccess ? 'bg-orange-600 text-white' : 'bg-orange-500 hover:bg-orange-400 text-white'
                                 } disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:shadow-none disabled:border disabled:border-zinc-700/50`}
                             >
-                                {isProcessing ? 'Memproses...' : orderSuccess ? 'Berhasil!' : 'Bayar & Selesai'}
+                                {isProcessing
+                                    ? 'Memproses...'
+                                    : orderSuccess
+                                        ? 'Berhasil!'
+                                        : paymentMethod === 'qris'
+                                            ? 'Konfirmasi & Generate QRIS'
+                                            : 'Konfirmasi & Bayar'}
                             </button>
                         </div>
                     </div>
@@ -465,6 +526,106 @@ export default function KasirPage() {
                             {cart.reduce((a, b) => a + b.qty, 0)}
                         </span>
                     </motion.button>
+                )}
+            </AnimatePresence>
+
+            {/* ─── QRIS Payment Modal (Linear/Vercel style) ────────────── */}
+            <AnimatePresence>
+                {qrisModalOpen && (
+                    <>
+                        {/* Backdrop — subtle, no accidental close */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px]"
+                        />
+                        {/* Card */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.96 }}
+                            transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+                        >
+                            <div
+                                role="dialog"
+                                aria-modal="true"
+                                aria-label="Pembayaran QRIS"
+                                className="pointer-events-auto w-full max-w-[380px] rounded-md border border-zinc-200 dark:border-[#242424] bg-white dark:bg-[#0D0D0D] shadow-sm overflow-hidden"
+                            >
+                                {/* Header */}
+                                <div className="px-5 pt-5 pb-3 border-b border-zinc-100 dark:border-[#1A1A1A]">
+                                    <h2
+                                        className="text-[15px] font-medium text-zinc-900 dark:text-[#F5F5F5]"
+                                        style={{ letterSpacing: '-0.02em' }}
+                                    >
+                                        Pembayaran QRIS
+                                    </h2>
+                                    <p className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] mt-0.5">
+                                        Minta pelanggan scan QR di bawah
+                                    </p>
+                                </div>
+
+                                {/* QR (polos, no chrome) */}
+                                <div className="px-5 py-6 flex items-center justify-center bg-zinc-50 dark:bg-[#111]">
+                                    {isGeneratingQris ? (
+                                        <div className="w-[260px] h-[260px] flex items-center justify-center">
+                                            <div className="w-7 h-7 border-2 border-zinc-300 dark:border-[#333] border-t-[#FF8A00] rounded-full animate-spin" />
+                                        </div>
+                                    ) : qrisDataUrl ? (
+                                        /* eslint-disable-next-line @next/next/no-img-element */
+                                        <img
+                                            src={qrisDataUrl}
+                                            alt="QRIS"
+                                            className="w-[260px] h-[260px] block bg-white rounded-sm"
+                                        />
+                                    ) : (
+                                        <div className="w-[260px] h-[260px] flex items-center justify-center text-[12px] text-zinc-500 dark:text-[#A1A1A1] text-center px-6">
+                                            Gagal generate QRIS.
+                                            <br />
+                                            Coba tutup dan ulangi.
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Nominal */}
+                                <div className="px-5 py-4 border-t border-zinc-100 dark:border-[#1A1A1A] flex items-center justify-between">
+                                    <span className="text-[12px] text-zinc-500 dark:text-[#A1A1A1] uppercase tracking-wider">
+                                        Nominal
+                                    </span>
+                                    <span
+                                        className="text-[22px] font-medium text-zinc-900 dark:text-[#F5F5F5]"
+                                        style={{ letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}
+                                    >
+                                        Rp {totalAmount.toLocaleString('id-ID')}
+                                    </span>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="px-5 py-4 border-t border-zinc-100 dark:border-[#1A1A1A] flex gap-2">
+                                    <button
+                                        onClick={closeQrisModal}
+                                        disabled={isProcessing}
+                                        className="h-9 px-3 rounded-md border border-zinc-200 dark:border-[#242424] text-[13px] font-medium text-zinc-700 dark:text-[#F5F5F5] hover:bg-zinc-50 dark:hover:bg-[#151515] transition-colors disabled:opacity-40"
+                                    >
+                                        Batalkan
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            await handleCheckout();
+                                            closeQrisModal();
+                                        }}
+                                        disabled={isProcessing || !qrisDataUrl}
+                                        className="flex-1 h-9 rounded-md bg-[#FF8A00] hover:bg-[#FF9D2E] text-white text-[13px] font-medium transition-colors disabled:opacity-40 disabled:bg-[#FF8A00]"
+                                    >
+                                        {isProcessing ? 'Memproses…' : 'Bayar & Selesai'}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
 
