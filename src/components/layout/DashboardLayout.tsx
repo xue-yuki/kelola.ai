@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
+import TrialBanner from "@/components/billing/TrialBanner";
+import TrialExpiryModal from "@/components/billing/TrialExpiryModal";
 import { getGlobalBannerSettings } from "@/app/actions/global-settings";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -16,6 +18,7 @@ import {
     MessageCircle,
     BarChart3,
     Settings,
+    CreditCard,
     Menu,
     Search,
     Bell,
@@ -42,6 +45,7 @@ const SIDEBAR_ITEMS = [
     { name: "Laporan & Insight", href: "/dashboard/laporan", icon: BarChart3 },
     { name: "Komplain", href: "/dashboard/komplain", icon: AlertCircle, complaint: true },
     { name: "Pengaturan", href: "/dashboard/pengaturan", icon: Settings },
+    { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ];
 
 const NOTIFICATIONS = [
@@ -72,6 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [userName, setUserName] = useState("User");
     const [userAvatar, setUserAvatar] = useState("");
     const [businessName, setBusinessName] = useState("Bisnis");
+    const [businessId, setBusinessId] = useState<string | null>(null);
     const [subscriptionTier, setSubscriptionTier] = useState<string>("starter");
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
@@ -116,6 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     .single();
 
                 if (isMounted && business) {
+                    setBusinessId(business.id);
                     setBusinessName(business.business_name);
                     setSubscriptionTier(business.subscription_tier || 'starter');
                     
@@ -343,6 +349,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     <Link href="/dashboard/pengaturan" className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all">
                                         <Settings size={14} /> Pengaturan
                                     </Link>
+                                    <Link href="/dashboard/billing" className="flex items-center gap-3 px-3 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-all">
+                                        <CreditCard size={14} /> Billing & Langganan
+                                    </Link>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -500,6 +509,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </header>
 
                 {/* Page Content with Global Transition */}
+                <TrialBanner businessId={businessId} />
+                <TrialExpiryModal businessId={businessId} />
                 <main className="flex-1 p-8">
                     <motion.div
                         key={pathname}

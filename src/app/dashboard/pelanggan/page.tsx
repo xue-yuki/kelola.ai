@@ -176,7 +176,7 @@ export default function PelangganPage() {
             ));
             setSelected(prev =>
                 prev?.wa_number === conv.customer_wa
-                    ? { ...prev, last_message: conv.message, last_message_at: conv.created_at }
+                    ? ({ ...prev, last_message: conv.message, last_message_at: conv.created_at } as Customer)
                     : prev
             );
         });
@@ -569,7 +569,7 @@ export default function PelangganPage() {
                                                             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 group-hover:text-orange-600 transition-colors">Rp {o.total?.toLocaleString("id-ID")}</p>
                                                             <p className="text-[11px] text-zinc-500 mt-0.5">{new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</p>
                                                         </div>
-                                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium border ${st.bg} ${st.border} ${st.color}`}>
+                                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium border border-current/20 ${st.color}`}>
                                                             {st.label}
                                                         </div>
                                                     </div>

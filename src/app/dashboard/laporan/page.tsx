@@ -26,8 +26,9 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+// jsPDF & jspdf-autotable di-lazy load pas tombol Export diklik (lihat handleExportPDF).
+// Rationale: jsPDF ~450KB uncompressed, cuma dipake di 1 halaman & 1 aksi.
+// Kalau di-import static, dia masuk initial bundle & kena semua route yang share layout.
 
 export default function LaporanPage() {
     const supabase = createClient();
@@ -288,7 +289,12 @@ export default function LaporanPage() {
         }
     };
 
-    const exportPDF = () => {
+    const exportPDF = async () => {
+        // Lazy load jsPDF + autotable — dimuat cuma pas tombol export diklik
+        const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+            import("jspdf"),
+            import("jspdf-autotable"),
+        ]);
         const doc = new jsPDF();
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
