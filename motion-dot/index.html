@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Kelola.ai — Satu Titik</title>
+<style>
+  @font-face { font-family: 'Jakarta'; font-weight: 600; src: url(node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-600-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Jakarta'; font-weight: 700; src: url(node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Jakarta'; font-weight: 800; src: url(node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-800-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 500; src: url(node_modules/@fontsource/inter/files/inter-latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 600; src: url(node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2) format('woff2'); }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #FFF8F4; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// =====================================================================
+// "Satu Titik": one continuous camera move, rendered as a pure function
+// of time. frame(t) averages sub-frames for motion blur.
+// =====================================================================
+const W = 1920, H = 1080, CX = W / 2, CY = H / 2 - 20;
+const DURATION = 45;
+const C = {
+  orange: '#FF6B2B', ink: '#1A1A2E', cream: '#FFF8F4', line: '#EDE4DD', chip: '#F2ECE7',
+  muted: '#6B7280', dim: '#34344F', white: '#FFFFFF',
+};
+
+// ---- math -----------------------------------------------------------
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, u) => a + (b - a) * u;
+const ease = (x) => x * x * (3 - 2 * x);
+const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const expoOut = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const expoIn = (x) => (x <= 0 ? 0 : Math.pow(2, 10 * x - 10));
+const expoInOut = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? Math.pow(2, 20 * x - 10) / 2 : (2 - Math.pow(2, -20 * x + 10)) / 2);
+const backOut = (x, s = 1.70158) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2);
+const hash = (i, j = 0) => {
+  let h = (i * 374761393 + j * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+const mixHex = (a, b, u) => {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const r = Math.round(lerp(pa >> 16, pb >> 16, u)), g = Math.round(lerp((pa >> 8) & 255, (pb >> 8) & 255, u)), bl = Math.round(lerp(pa & 255, pb & 255, u));
+  return `rgb(${r},${g},${bl})`;
+};
+const rp = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+
+// ---- camera ---------------------------------------------------------
+// keys: [t, x, y, zoom]; zoom interpolates in log space.
+const CAM = [
+  [0, 0, 0, 1.0],
+  [3.6, 0, -10, 1.06],
+  [4.7, 0, 40, 0.72],
+  [8.2, 0, 40, 0.74],
+  [9.3, 0, 1330, 1.0],
+  [12.5, 0, 1340, 1.0],
+  [13.9, 1500, 1300, 1.0],
+  [18.1, 1500, 1300, 1.0],
+  [19.1, 2250, 1470, 1.0],
+  [22.5, 3300, 1360, 1.0],
+  [23.7, 3340, 1310, 1.0],
+  [24.8, 2850, 1380, 0.55],
+  [25.2, 2850, 1380, 0.55],
+  [31.0, 1650, 700, 0.0011],
+  [45, 1650, 700, 0.0011],
+];
+function camAt(t) {
+  let i = 0;
+  while (i < CAM.length - 2 && t > CAM[i + 1][0]) i++;
+  const a = CAM[i], b = CAM[i + 1];
+  const u = easeInOut(seg(t, a[0], b[0]));
+  return { x: lerp(a[1], b[1], u), y: lerp(a[2], b[2], u), z: Math.exp(lerp(Math.log(a[3]), Math.log(b[3]), u)) };
+}
+const toScreen = (cam, x, y) => [(x - cam.x) * cam.z + CX, (y - cam.y) * cam.z + CY];
+
+// ---- drawing helpers ------------------------------------------------
+function rr(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function font(ctx, size, weight = 800, fam = 'Jakarta') {
+  ctx.font = `${weight} ${size}px ${fam}`;
+}
+function text(ctx, s, x, y, o = {}) {
+  font(ctx, o.size || 24, o.weight || 600, o.fam || 'Inter');
+  ctx.fillStyle = o.color || C.ink;
+  ctx.textAlign = o.align || 'left';
+  ctx.textBaseline = o.base || 'alphabetic';
+  ctx.letterSpacing = o.ls || '0px';
+  ctx.globalAlpha = o.alpha ?? 1;
+  ctx.fillText(s, x, y);
+  ctx.globalAlpha = 1;
+  ctx.letterSpacing = '0px';
+}
+function dot(ctx, x, y, r, color = C.orange, sx = 1, sy = 1) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * (1 - sy), r * sx, r * sy, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+const pop = (t, at, d = 0.45) => {
+  const u = seg(t, at, at + d);
+  return { a: clamp(u * 3), s: u <= 0 ? 0 : lerp(0.6, 1, backOut(u)) };
+};
+
+// ---- scene geometry (world units) ------------------------------------
+const PHONE = { x: -260, y: -470, w: 520, h: 940, r: 72 };
+const REPLY = { x: -80, y: -175, w: 310, h: 112, cx: 150, cy: -119 };
+const RECEIPT = { x: -210, y: 1110, w: 420, h: 470 };
+const DONUT = { x: 1500, y: 1300, R: 168, th: 46 };
+const CHART = (() => {
+  const vals = [7.1, 7.8, 8.4, 9.0, 9.9, 10.5, 12.4];
+  const months = ['Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov'];
+  return vals.map((v, i) => ({ x: 2100 + i * 250, y: 1560 - (v - 6) * 82, v, m: months[i] }));
+})();
+const CHART_T = [19.1, 19.75, 20.4, 21.05, 21.7, 22.35]; // dot reaches point i
+const FORE = [22.55, 23.35];
+const REGION = { x: 1650, y: 700, size: 4600 };
+
+// ---- hero dot (world space until the zoom out) ------------------------
+function bounceY(t, impacts, heights) {
+  for (let i = 0; i < impacts.length - 1; i++) {
+    if (t >= impacts[i] && t < impacts[i + 1]) {
+      const u = seg(t, impacts[i], impacts[i + 1]);
+      return -heights[i] * 4 * u * (1 - u);
+    }
+  }
+  return 0;
+}
+function squashAt(t, impacts, amps) {
+  let s = 0;
+  impacts.forEach((ti, i) => {
+    const d = Math.abs(t - ti);
+    if (d < 0.11) s = Math.max(s, (1 - d / 0.11) * amps[i]);
+  });
+  return s;
+}
+
+function hero(t) {
+  const R = 34;
+  // 1. drop & bounce
+  if (t < 4.6) {
+    const imp = [1.0, 1.75, 2.25, 2.5, 2.62];
+    let y, sx = 1, sy = 1;
+    if (t < 1.0) {
+      const u = seg(t, 0.25, 1.0);
+      y = lerp(-760, 0, u * u);
+      const st = Math.pow(u, 4) * 0.22;
+      sx = 1 - st * 0.5;
+      sy = 1 + st;
+    } else y = bounceY(t, imp, [210, 70, 22, 6]);
+    const s = squashAt(t, imp, [0.38, 0.22, 0.1, 0.05]);
+    sx *= 1 + s;
+    sy *= 1 - s;
+    // drift up into the phone's typing spot
+    const m = easeInOut(seg(t, 4.1, 4.6));
+    return { x: lerp(0, 150, m), y: lerp(y, -119, m), r: lerp(R, 11, m), sx, sy, shadow: 1 - m, ground: 1 - m };
+  }
+  // 2. typing dots -> reply bubble (drawn by the chat scene)
+  if (t < 8.4) return { x: 150, y: -119, r: 11, hidden: true };
+  // 3. drop to the receipt slot
+  if (t < 9.25) {
+    const u = seg(t, 8.4, 9.25);
+    return { x: lerp(REPLY.cx, 0, ease(u)), y: lerp(-119, 1100, u * u), r: lerp(26, 22, u), sx: 1 - u * 0.1, sy: 1 + u * 0.2 };
+  }
+  if (t < 12.5) return { x: 0, y: 1100, r: 22, hidden: true };
+  // 4. hop out of the slot to the donut
+  if (t < 14.0) {
+    const a = [12.5, 13.25, 13.9];
+    const x = t < 13.25 ? lerp(0, 950, seg(t, 12.5, 13.25)) : lerp(950, DONUT.x, seg(t, 13.25, 13.9));
+    let y;
+    if (t < 13.25) {
+      const u = seg(t, 12.5, 13.25);
+      y = lerp(1100, DONUT.y, u) - 260 * 4 * u * (1 - u);
+    } else y = DONUT.y - bounceY(t, [13.25, 13.9], [0]) - 110 * 4 * seg(t, 13.25, 13.9) * (1 - seg(t, 13.25, 13.9));
+    const s = squashAt(t, [13.25, 13.9], [0.3, 0.2]);
+    return { x, y, r: lerp(22, R, seg(t, 12.5, 13.0)), sx: 1 + s, sy: 1 - s, ground: 1 };
+  }
+  if (t < 18.0) return { x: DONUT.x, y: DONUT.y, r: R, hidden: true };
+  // 5. leave the donut, then draw the chart
+  const endA = -Math.PI / 2 + Math.PI * 2 * 0.56;
+  const p0 = { x: DONUT.x + Math.cos(endA) * (DONUT.R - DONUT.th / 2), y: DONUT.y + Math.sin(endA) * (DONUT.R - DONUT.th / 2) };
+  if (t < CHART_T[0]) {
+    const u = seg(t, 18.0, CHART_T[0]);
+    const e = easeInOut(u);
+    return { x: lerp(p0.x, CHART[0].x, e), y: lerp(p0.y, CHART[0].y, e) - 180 * 4 * u * (1 - u), r: lerp(23, 18, u) };
+  }
+  if (t < CHART_T[5]) {
+    let i = 0;
+    while (t > CHART_T[i + 1]) i++;
+    const u = easeInOut(seg(t, CHART_T[i], CHART_T[i + 1]));
+    return { x: lerp(CHART[i].x, CHART[i + 1].x, u), y: lerp(CHART[i].y, CHART[i + 1].y, u), r: 18 };
+  }
+  if (t < FORE[0]) return { x: CHART[5].x, y: CHART[5].y, r: 18 };
+  if (t < 31.5) {
+    const u = expoOut(seg(t, FORE[0], FORE[1]));
+    return { x: lerp(CHART[5].x, CHART[6].x, u), y: lerp(CHART[5].y, CHART[6].y, u), r: lerp(18, 26, u) };
+  }
+  return { x: CHART[6].x, y: CHART[6].y, r: 26 };
+}
+
+// ---- scenes ----------------------------------------------------------
+function drawChat(ctx, t) {
+  if (t < 3.9 || t > 26) return;
+  // phone outline draws, then fills
+  const draw = seg(t, 3.9, 4.6);
+  const fill = seg(t, 4.3, 4.8);
+  ctx.save();
+  rr(ctx, PHONE.x, PHONE.y, PHONE.w, PHONE.h, PHONE.r);
+  ctx.globalAlpha = fill;
+  ctx.fillStyle = C.white;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = C.ink;
+  const per = 2 * (PHONE.w + PHONE.h);
+  ctx.setLineDash([per * expoInOut(draw), per]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // notch
+  ctx.globalAlpha = fill;
+  rr(ctx, -60, PHONE.y + 22, 120, 26, 13);
+  ctx.fillStyle = C.ink;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+  if (fill <= 0) return;
+
+  // header
+  const hd = pop(t, 4.5, 0.5);
+  ctx.globalAlpha = hd.a;
+  dot(ctx, -196, -372, 26, C.orange);
+  text(ctx, 'WS', -196, -363, { size: 20, weight: 800, fam: 'Jakarta', color: C.white, align: 'center' });
+  text(ctx, 'Warung Sari', -156, -376, { size: 26, weight: 700, fam: 'Jakarta' });
+  dot(ctx, -150, -351, 5, C.orange);
+  text(ctx, 'Agen AI aktif', -138, -344, { size: 19, weight: 500, color: C.muted });
+  ctx.fillStyle = C.line;
+  ctx.fillRect(PHONE.x + 2, -318, PHONE.w - 4, 2);
+  ctx.globalAlpha = 1;
+
+  // incoming
+  const m1 = pop(t, 4.55);
+  if (m1.a > 0) {
+    ctx.save();
+    ctx.globalAlpha = m1.a;
+    ctx.translate(-226, -230);
+    ctx.scale(m1.s, m1.s);
+    rr(ctx, 0, -48, 300, 84, 28);
+    ctx.fillStyle = C.chip;
+    ctx.fill();
+    text(ctx, 'Kak, es teh 2 ya', 26, 4, { size: 27, weight: 500 });
+    ctx.restore();
+  }
+
+  // typing dots: the hero splits into three
+  if (t >= 4.6 && t < 5.75) {
+    const split = expoOut(seg(t, 4.6, 4.85));
+    const merge = expoIn(seg(t, 5.5, 5.75));
+    for (let i = -1; i <= 1; i++) {
+      const bob = Math.max(0, Math.sin((t - 4.6) * 10 - (i + 1) * 0.9)) * 9 * (1 - merge);
+      dot(ctx, REPLY.cx + i * 30 * split * (1 - merge), REPLY.cy - bob, 11, C.orange);
+    }
+  }
+  // reply bubble grows out of the dot, and collapses back later
+  const grow = t < 8 ? backOut(seg(t, 5.75, 6.2), 1.2) : 1 - expoIn(seg(t, 8.0, 8.4));
+  if (t >= 5.75 && t < 8.4) {
+    const w = lerp(22, REPLY.w, grow), h = lerp(22, REPLY.h, grow);
+    rr(ctx, lerp(REPLY.cx, REPLY.x + REPLY.w / 2, grow) - w / 2, REPLY.cy - h / 2, w, h, lerp(11, 28, grow));
+    ctx.fillStyle = C.orange;
+    ctx.fill();
+    const ta = seg(t, 6.05, 6.3) * (1 - seg(t, 7.85, 8.0));
+    if (ta > 0) {
+      text(ctx, 'Siap kak! Totalnya', REPLY.x + 26, REPLY.y + 46, { size: 27, weight: 500, color: C.white, alpha: ta });
+      text(ctx, 'Rp 10.000 ✓', REPLY.x + 26, REPLY.y + 84, { size: 27, weight: 600, color: C.white, alpha: ta });
+    }
+  }
+  const meta = seg(t, 6.5, 6.8);
+  if (meta > 0) text(ctx, 'Dibalas otomatis · 2 detik', 230, -32, { size: 19, weight: 500, color: C.muted, align: 'right', alpha: meta });
+  const m2 = pop(t, 7.1);
+  if (m2.a > 0) {
+    ctx.save();
+    ctx.globalAlpha = m2.a;
+    ctx.translate(-226, 40);
+    ctx.scale(m2.s, m2.s);
+    rr(ctx, 0, -48, 290, 84, 28);
+    ctx.fillStyle = C.chip;
+    ctx.fill();
+    text(ctx, 'Mantap, makasih!', 26, 4, { size: 27, weight: 500 });
+    ctx.restore();
+  }
+}
+
+function drawReceipt(ctx, t) {
+  if (t < 8.6 || t > 28) return;
+  const slot = expoOut(seg(t, 8.6, 9.0));
+  rr(ctx, -250 * slot, 1088, 500 * slot, 24, 12);
+  ctx.fillStyle = C.ink;
+  ctx.fill();
+  const print = easeInOut(seg(t, 9.3, 10.3));
+  if (print <= 0) return;
+  const h = RECEIPT.h * print;
+  ctx.save();
+  // paper with zigzag bottom
+  ctx.beginPath();
+  ctx.moveTo(RECEIPT.x, RECEIPT.y);
+  ctx.lineTo(RECEIPT.x + RECEIPT.w, RECEIPT.y);
+  ctx.lineTo(RECEIPT.x + RECEIPT.w, RECEIPT.y + h);
+  const teeth = 14;
+  for (let i = teeth; i >= 0; i--) ctx.lineTo(RECEIPT.x + (RECEIPT.w * i) / teeth, RECEIPT.y + h + (i % 2 ? 12 : 0));
+  ctx.closePath();
+  ctx.fillStyle = C.white;
+  ctx.fill();
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.clip();
+  const y0 = RECEIPT.y;
+  const L = RECEIPT.x + 34, R = RECEIPT.x + RECEIPT.w - 34;
+  text(ctx, 'WARUNG SARI', 0, y0 + 58, { size: 24, weight: 800, fam: 'Jakarta', align: 'center', ls: '3px' });
+  text(ctx, 'Jum, 2 Okt 2026 · 10.42', 0, y0 + 90, { size: 18, weight: 500, color: C.muted, align: 'center' });
+  const dash = (y) => {
+    ctx.strokeStyle = C.line;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(L, y);
+    ctx.lineTo(R, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  };
+  dash(y0 + 118);
+  const row = (a, b, y, at) => {
+    const al = seg(t, at, at + 0.2);
+    text(ctx, a, L, y, { size: 24, weight: 500, alpha: al });
+    text(ctx, b, R, y, { size: 24, weight: 600, align: 'right', alpha: al });
+  };
+  row('Es teh ×2', 'Rp 10.000', y0 + 166, 9.7);
+  row('Gorengan ×5', 'Rp 10.000', y0 + 210, 9.9);
+  dash(y0 + 244);
+  const tot = expoOut(seg(t, 10.2, 10.9));
+  text(ctx, 'TOTAL', L, y0 + 300, { size: 30, weight: 800, fam: 'Jakarta' });
+  text(ctx, rp(20000 * tot), R, y0 + 300, { size: 34, weight: 800, fam: 'Jakarta', align: 'right' });
+  // stamp
+  const st = pop(t, 11.0, 0.4);
+  if (st.a > 0) {
+    ctx.save();
+    ctx.translate(0, y0 + 380);
+    ctx.rotate(-0.06);
+    ctx.scale(lerp(1.4, 1, expoOut(seg(t, 11.0, 11.25))), lerp(1.4, 1, expoOut(seg(t, 11.0, 11.25))));
+    ctx.globalAlpha = st.a;
+    rr(ctx, -150, -30, 300, 60, 30);
+    ctx.strokeStyle = C.orange;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    text(ctx, 'LUNAS · VIA WHATSAPP', 0, 8, { size: 19, weight: 600, color: C.orange, align: 'center', ls: '2px' });
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawDonut(ctx, t) {
+  if (t < 13.9 || t > 29) return;
+  const { x, y, R, th } = DONUT;
+  const grow = expoOut(seg(t, 14.0, 14.5));
+  const rad = lerp(34, R, grow);
+  const w = Math.min(rad * 2, lerp(68, th, grow));
+  const mid = rad - w / 2;
+  const share = lerp(1, 0.56, easeInOut(seg(t, 14.6, 15.5)));
+  const start = -Math.PI / 2;
+  // track
+  ctx.lineCap = 'round';
+  ctx.lineWidth = w;
+  ctx.strokeStyle = C.line;
+  ctx.globalAlpha = seg(t, 14.4, 14.7);
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(0.1, mid), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  // margin arc (the end cap leaves as the dot at 18.0)
+  ctx.strokeStyle = C.orange;
+  ctx.beginPath();
+  if (share >= 0.999) ctx.arc(x, y, Math.max(0.1, mid), 0, Math.PI * 2);
+  else ctx.arc(x, y, mid, start, start + Math.PI * 2 * share);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  // labels
+  const c = seg(t, 15.0, 15.4);
+  if (c > 0) {
+    const pct = Math.round(lerp(100, 56, easeInOut(seg(t, 14.6, 15.5))));
+    text(ctx, pct + '%', x, y + 26, { size: 92, weight: 800, fam: 'Jakarta', align: 'center', alpha: seg(t, 14.5, 14.8) });
+    text(ctx, 'margin per gelas', x, y + 66, { size: 22, weight: 500, color: C.muted, align: 'center', alpha: c });
+  } else if (t > 14.5) text(ctx, '100%', x, y + 26, { size: 92, weight: 800, fam: 'Jakarta', align: 'center', alpha: seg(t, 14.5, 14.8) });
+  const l = seg(t, 15.5, 15.9);
+  if (l > 0) {
+    ctx.strokeStyle = C.line;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - R - 20, y);
+    ctx.lineTo(x - R - 20 - 60 * expoOut(l), y);
+    ctx.moveTo(x + R + 20, y);
+    ctx.lineTo(x + R + 20 + 60 * expoOut(l), y);
+    ctx.stroke();
+    text(ctx, 'HPP', x - R - 100, y - 14, { size: 20, weight: 600, color: C.muted, align: 'right', alpha: l });
+    text(ctx, 'Rp 2.200', x - R - 100, y + 20, { size: 30, weight: 800, fam: 'Jakarta', align: 'right', alpha: l });
+    text(ctx, 'HARGA JUAL', x + R + 100, y - 14, { size: 20, weight: 600, color: C.muted, alpha: l });
+    text(ctx, 'Rp 5.000', x + R + 100, y + 20, { size: 30, weight: 800, fam: 'Jakarta', alpha: l });
+  }
+}
+
+function drawChart(ctx, t, h) {
+  if (t < 18.4 || t > 31.5) return;
+  const P = CHART;
+  const gridA = seg(t, 18.4, 19.0);
+  ctx.strokeStyle = C.line;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = gridA;
+  for (let i = 0; i < 4; i++) {
+    const gy = 1560 - i * 180;
+    ctx.beginPath();
+    ctx.moveTo(2020, gy);
+    ctx.lineTo(2020 + 1660 * expoOut(seg(t, 18.4 + i * 0.08, 19.4 + i * 0.08)), gy);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  // actual line up to the hero
+  if (t >= CHART_T[0]) {
+    ctx.strokeStyle = C.ink;
+    ctx.lineWidth = 8;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(P[0].x, P[0].y);
+    for (let i = 1; i <= 5; i++) if (t >= CHART_T[i]) ctx.lineTo(P[i].x, P[i].y);
+    if (t < CHART_T[5]) ctx.lineTo(h.x, h.y);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
+  P.forEach((p, i) => {
+    if (i > 5) return;
+    const at = CHART_T[i];
+    if (t < at) return;
+    const s = backOut(seg(t, at, at + 0.3));
+    dot(ctx, p.x, p.y, 9 * s, C.ink);
+    text(ctx, p.m, p.x, 1610, { size: 22, weight: 500, color: C.muted, align: 'center', alpha: seg(t, at, at + 0.3) });
+  });
+  // forecast
+  if (t >= FORE[0]) {
+    const u = expoOut(seg(t, FORE[0], FORE[1]));
+    ctx.strokeStyle = C.orange;
+    ctx.lineWidth = 8;
+    ctx.setLineDash([22, 18]);
+    ctx.beginPath();
+    ctx.moveTo(P[5].x, P[5].y);
+    ctx.lineTo(lerp(P[5].x, P[6].x, u), lerp(P[5].y, P[6].y, u));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    text(ctx, 'Nov', P[6].x, 1610, { size: 22, weight: 600, color: C.orange, align: 'center', alpha: u });
+  }
+  const lab = seg(t, 23.4, 23.8);
+  if (lab > 0) {
+    const dy = (1 - expoOut(lab)) * 30;
+    text(ctx, 'Rp 12,4 jt', P[6].x - 40, P[6].y - 96 + dy, { size: 64, weight: 800, fam: 'Jakarta', align: 'right', alpha: lab });
+    text(ctx, '+18% prediksi November', P[6].x - 40, P[6].y - 56 + dy, { size: 24, weight: 600, color: C.orange, align: 'right', alpha: lab });
+  }
+}
+
+// map of warungs: our whole story happened inside one of these dots
+const MAP = (() => {
+  const S = 45000, pts = [];
+  for (let j = -15; j <= 15; j++)
+    for (let i = -25; i <= 25; i++) {
+      if (i === 0 && j === 0) continue;
+      const x = REGION.x + i * S + (hash(i, j) - 0.5) * S * 0.6;
+      const y = REGION.y + j * S + (hash(j, i + 99) - 0.5) * S * 0.6;
+      pts.push({ x, y, i, j });
+    }
+  return pts;
+})();
+
+// ---- captions (screen space) ------------------------------------------
+const CAPS = [
+  { at: 2.0, out: 3.85, eb: 'KELOLA.AI', line: 'Semua berawal dari satu pesan.' },
+  { at: 5.6, out: 7.9, eb: 'AI AGENT WHATSAPP', line: 'Dibalas otomatis, 24 jam.' },
+  { at: 10.0, out: 12.4, eb: 'KASIR DIGITAL', line: 'Langsung tercatat rapi.' },
+  { at: 15.0, out: 17.85, eb: 'KALKULASI HPP', line: 'Untungnya kelihatan jelas.' },
+  { at: 20.2, out: 24.4, eb: 'PREDIKSI PENDAPATAN', line: 'Bulan depan pun terbaca.' },
+  { at: 29.4, out: 32.6, eb: 'SATU PLATFORM', line: 'Untuk setiap usaha lokal.' },
+];
+function drawCaptions(ctx, t, darkness) {
+  for (const c of CAPS) {
+    if (t < c.at || t > c.out + 0.4) continue;
+    const ink = mixHex(C.ink, C.white, darkness);
+    const block = (str, x, y, size, weight, fam, color, at, ls) => {
+      const inU = expoOut(seg(t, at, at + 0.6));
+      const outU = expoIn(seg(t, c.out, c.out + 0.35));
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, y - size * 1.05, W, size * 1.35);
+      ctx.clip();
+      text(ctx, str, x, y + (1 - inU) * size * 1.2 - outU * size * 1.2, { size, weight, fam, color, ls });
+      ctx.restore();
+    };
+    block(c.eb, 160, 912, 22, 600, 'Inter', C.orange, c.at, '4px');
+    block(c.line, 160, 988, 64, 800, 'Jakarta', ink, c.at + 0.08, '-1.5px');
+  }
+}
+
+// ---- logo targets -----------------------------------------------------
+let LOGO = null;
+function buildLogo() {
+  const size = 300;
+  const cv = document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const g = cv.getContext('2d');
+  font(g, size, 800);
+  g.letterSpacing = '-9px';
+  const wK = g.measureText('kelola').width;
+  const wDot = g.measureText('.').width;
+  const wA = g.measureText('ai').width;
+  const total = wK + wDot + wA;
+  const x0 = CX - total / 2;
+  const base = 560;
+  g.fillStyle = '#fff';
+  g.fillText('kelola', x0, base);
+  g.fillText('ai', x0 + wK + wDot, base);
+  const data = g.getImageData(0, 0, W, H).data;
+  const pts = [];
+  const step = 11;
+  for (let y = 0; y < H; y += step)
+    for (let x = 0; x < W; x += step) if (data[(y * W + x) * 4 + 3] > 128) pts.push({ x, y });
+  pts.sort((a, b) => a.x - b.x);
+  // period position: measure the glyph's ink box
+  const g2 = document.createElement('canvas').getContext('2d');
+  font(g2, size, 800);
+  const m = g2.measureText('.');
+  const dotR = (m.actualBoundingBoxRight + m.actualBoundingBoxLeft) / 2;
+  const dotCX = x0 + wK + (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2;
+  LOGO = { pts, x0, base, size, wK, wDot, dotX: dotCX, dotY: base - m.actualBoundingBoxAscent / 2, dotR };
+}
+
+function drawWorld(ctx, t, cam) {
+  const h = hero(t);
+  const regionPx = REGION.size * cam.z;
+  const detail = clamp((regionPx - 40) / 120);
+  ctx.save();
+  ctx.setTransform(cam.z, 0, 0, cam.z, CX - cam.x * cam.z, CY - cam.y * cam.z);
+  if (detail > 0) {
+    ctx.globalAlpha = 1;
+    drawChat(ctx, t);
+    drawReceipt(ctx, t);
+    drawDonut(ctx, t);
+    drawChart(ctx, t, h);
+    if (!h.hidden) {
+      if (h.shadow) {
+        ctx.fillStyle = 'rgba(26,26,46,0.08)';
+        const hgt = clamp(-h.y / 400);
+        ctx.beginPath();
+        ctx.ellipse(h.x, 4, h.r * (1.1 - hgt * 0.6), 7 * (1 - hgt * 0.5), 0, 0, Math.PI * 2);
+        ctx.globalAlpha = h.shadow;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      dot(ctx, h.x, h.y - h.r * (h.ground || 0), h.r, C.orange, h.sx || 1, h.sy || 1);
+    }
+  }
+  ctx.restore();
+  // once tiny, the whole story is a single orange dot
+  if (detail < 1) {
+    const [sx, sy] = toScreen(cam, REGION.x, REGION.y);
+    ctx.globalAlpha = 1 - detail;
+    dot(ctx, sx, sy - 5, 5, C.orange);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawMap(ctx, t, cam) {
+  const vis = seg(t, 27.6, 28.6);
+  if (vis <= 0) return [];
+  const leave = seg(t, 33.0, 34.6);
+  const out = [];
+  const [hx, hy] = toScreen(cam, REGION.x, REGION.y);
+  for (const p of MAP) {
+    const [x, y] = toScreen(cam, p.x, p.y);
+    if (x < -40 || x > W + 40 || y < -40 || y > H + 40) continue;
+    const d = Math.hypot(x - hx, y - hy);
+    const lit = seg(t, 28.6 + d / 650, 28.9 + d / 650);
+    out.push({ x, y, lit, p });
+  }
+  // network lines between lit neighbours
+  const byKey = new Map(out.map((o) => [o.p.i + ',' + o.p.j, o]));
+  byKey.set('0,0', { x: hx, y: hy - 5, lit: 1 });
+  ctx.lineWidth = 1.5;
+  for (const o of out) {
+    for (const [di, dj] of [[1, 0], [0, 1]]) {
+      const n = byKey.get(o.p.i + di + ',' + (o.p.j + dj));
+      if (!n) continue;
+      const a = Math.min(o.lit, n.lit) * 0.35 * vis * (1 - seg(t, 33.0, 33.6));
+      if (a <= 0) continue;
+      ctx.strokeStyle = `rgba(255,107,43,${a})`;
+      ctx.beginPath();
+      ctx.moveTo(o.x, o.y - 5);
+      ctx.lineTo(n.x, n.y - 5);
+      ctx.stroke();
+    }
+  }
+  for (const o of out) {
+    ctx.globalAlpha = vis * (1 - leave);
+    dot(ctx, o.x, o.y - 5, 5, mixHex(C.dim, C.orange, o.lit));
+  }
+  ctx.globalAlpha = 1;
+  return out;
+}
+
+let SWARM = null;
+function buildSwarm(cam) {
+  const src = [];
+  for (const p of MAP) {
+    const [x, y] = toScreen(cam, p.x, p.y);
+    if (x < -40 || x > W + 40 || y < -40 || y > H + 40) continue;
+    src.push({ x, y: y - 5 });
+  }
+  src.sort((a, b) => a.x - b.x);
+  SWARM = LOGO.pts.map((p, k) => {
+    const s = src[Math.floor((k / LOGO.pts.length) * src.length)];
+    return { sx: s.x, sy: s.y, tx: p.x, ty: p.y, d: 33.0 + (s.x / W) * 0.7 + hash(k, 7) * 0.35, sw: (hash(k, 3) - 0.5) * 2 };
+  });
+}
+
+function drawLogoPhase(ctx, t) {
+  if (t < 33.0 || t >= 38.2) return;
+  const solid = seg(t, 35.7, 36.3);
+  ctx.save();
+  for (const p of SWARM) {
+    const u = seg(t, p.d, p.d + 1.6);
+    if (u <= 0) continue;
+    const e = expoInOut(u);
+    const nx = -(p.ty - p.sy), ny = p.tx - p.sx;
+    const nl = Math.hypot(nx, ny) || 1;
+    const sw = Math.sin(Math.PI * e) * 140 * p.sw;
+    const x = lerp(p.sx, p.tx, e) + (nx / nl) * sw;
+    const y = lerp(p.sy, p.ty, e) + (ny / nl) * sw;
+    ctx.globalAlpha = 1 - solid;
+    dot(ctx, x, y - lerp(5, 6.5, e), lerp(5, 6.5, e), mixHex(C.orange, C.white, seg(u, 0.7, 1)));
+  }
+  ctx.globalAlpha = solid;
+  font(ctx, LOGO.size, 800);
+  ctx.letterSpacing = '-9px';
+  ctx.fillStyle = C.white;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('kelola', LOGO.x0, LOGO.base);
+  ctx.fillText('ai', LOGO.x0 + LOGO.wK + LOGO.wDot, LOGO.base);
+  ctx.letterSpacing = '0px';
+  ctx.restore();
+}
+
+// the hero after the zoom out, in screen space
+function heroScreen(t, cam) {
+  const [hx, hy] = toScreen(cam, REGION.x, REGION.y);
+  const start = { x: hx, y: hy - 5, r: 5 };
+  if (t < 35.8) return start;
+  const imp = 36.5;
+  if (t < imp) {
+    const u = seg(t, 35.8, imp);
+    return { x: lerp(start.x, LOGO.dotX, ease(u)), y: lerp(start.y, LOGO.dotY, u * u) - 260 * Math.sin(Math.PI * Math.min(1, u * 1.15)) * (1 - u), r: lerp(5, LOGO.dotR, ease(u)), sx: 1, sy: 1 };
+  }
+  const s = squashAt(t, [imp, 36.85], [0.35, 0.12]);
+  const by = bounceY(t, [imp, 36.85, 37.0], [40, 8]);
+  return { x: LOGO.dotX, y: LOGO.dotY + by, r: LOGO.dotR, sx: 1 + s, sy: 1 - s };
+}
+
+function drawEnd(ctx, t) {
+  const et = t - 38.0;
+  if (et < 0) return;
+  ctx.fillStyle = C.orange;
+  ctx.fillRect(0, 0, W, H);
+  // logo, letter by letter
+  const size = 220;
+  font(ctx, size, 800);
+  ctx.letterSpacing = '-7px';
+  const word = 'kelola.ai';
+  const widths = [...word].map((ch) => ctx.measureText(ch).width - 7);
+  const total = widths.reduce((a, b) => a + b, 0);
+  let x = CX - total / 2;
+  const base = 470;
+  [...word].forEach((ch, i) => {
+    const u = expoOut(seg(et, 0.1 + i * 0.045, 0.8 + i * 0.045));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x - 10, base - size, widths[i] + 20, size * 1.25);
+    ctx.clip();
+    ctx.fillStyle = ch === '.' ? C.ink : C.white;
+    ctx.textAlign = 'left';
+    ctx.fillText(ch, x, base + (1 - u) * size * 1.1);
+    ctx.restore();
+    x += widths[i];
+  });
+  ctx.letterSpacing = '0px';
+  const line = (str, y, size, weight, fam, at, color = C.white) => {
+    const u = expoOut(seg(et, at, at + 0.7));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, y - size * 1.05, W, size * 1.4);
+    ctx.clip();
+    text(ctx, str, CX, y + (1 - u) * size * 1.3, { size, weight, fam, color, align: 'center', ls: fam === 'Jakarta' ? '-1px' : '0px' });
+    ctx.restore();
+  };
+  line('Satu platform, bisnis lokal makin pintar.', 590, 56, 700, 'Jakarta', 0.7);
+  line('Rp 99.000/bulan  ·  Tanpa komisi', 668, 34, 600, 'Inter', 1.2);
+  const b = pop(et, 1.8, 0.5);
+  if (b.a > 0) {
+    ctx.save();
+    ctx.globalAlpha = b.a;
+    ctx.translate(CX, 770);
+    ctx.scale(b.s, b.s);
+    rr(ctx, -150, -42, 300, 84, 42);
+    ctx.fillStyle = C.white;
+    ctx.fill();
+    text(ctx, 'Coba gratis', 0, 12, { size: 34, weight: 700, fam: 'Jakarta', align: 'center' });
+    ctx.restore();
+  }
+}
+
+// ---- compose ---------------------------------------------------------
+function drawScene(ctx, t) {
+  const cam = camAt(t);
+  const darkness = seg(t, 26.0, 28.0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = mixHex(C.cream, C.ink, easeInOut(darkness));
+  ctx.fillRect(0, 0, W, H);
+
+  if (t < 33.0) drawWorld(ctx, t, cam);
+  drawMap(ctx, t, cam);
+  drawLogoPhase(ctx, t);
+  if (t >= 31.5 && t < 38.0) {
+    const h = heroScreen(t, cam);
+    dot(ctx, h.x, h.y, h.r, C.orange, h.sx ?? 1, h.sy ?? 1);
+  }
+  // flood from the logo's dot
+  if (t >= 37.4 && t < 38.0) {
+    const u = expoIn(seg(t, 37.4, 38.0));
+    dot(ctx, LOGO.dotX, LOGO.dotY - lerp(LOGO.dotR, 2400, u), lerp(LOGO.dotR, 2400, u), C.orange);
+  }
+  drawEnd(ctx, t);
+  drawCaptions(ctx, t, easeInOut(darkness));
+}
+
+// ---- motion blur -----------------------------------------------------
+const main = document.getElementById('c');
+const mctx = main.getContext('2d');
+const off = document.createElement('canvas');
+off.width = W;
+off.height = H;
+const octx = off.getContext('2d');
+const FPS = 60, SUB = 6, SHUTTER = 0.5; // 180-degree shutter
+function frame(t) {
+  mctx.globalCompositeOperation = 'source-over';
+  mctx.globalAlpha = 1;
+  mctx.fillStyle = '#000';
+  mctx.fillRect(0, 0, W, H);
+  // running average: the k-th sub-frame is drawn at alpha 1/(k+1)
+  for (let k = 0; k < SUB; k++) {
+    const st = t + ((k + 0.5) / SUB - 0.5) * (SHUTTER / FPS);
+    drawScene(octx, Math.max(0, Math.min(DURATION - 1e-3, st)));
+    mctx.globalAlpha = 1 / (k + 1);
+    mctx.drawImage(off, 0, 0);
+  }
+  mctx.globalCompositeOperation = 'source-over';
+  mctx.globalAlpha = 1;
+}
+
+window.__ready = Promise.all(['600 10px Jakarta', '700 10px Jakarta', '800 10px Jakarta', '500 10px Inter', '600 10px Inter'].map((f) => document.fonts.load(f)))
+  .then(() => {
+    buildLogo();
+    buildSwarm(camAt(33.0));
+    frame(0);
+    return true;
+  });
+window.render = frame;
+window.DURATION = DURATION;
+window.FPS = FPS;
+</script>
+</body>
+</html>

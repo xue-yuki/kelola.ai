@@ -1,0 +1,14 @@
+{
+  "name": "kelola-motion-dot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audio": "node scripts/audio.mjs",
+    "render": "node scripts/render.mjs",
+    "build": "node scripts/audio.mjs && node scripts/render.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/plus-jakarta-sans": "^5.3.0"
+  }
+}
