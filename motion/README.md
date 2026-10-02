@@ -29,6 +29,18 @@ Hasil ada di `out/`:
 
 Timing subtitle dan ducking musik ikut menyesuaikan durasi rekaman. Kalau ada kalimat yang menabrak kalimat berikutnya, `npm run voice` akan memberi peringatan. Geser nilai `at`-nya di `src/timeline.js`.
 
+## Narasi dari ElevenLabs / Fish Audio
+
+Simpan key sebagai environment variable `ELEVENLABS_API_KEY` atau `FISH_API_KEY`, lalu izinkan domain `api.elevenlabs.io` / `api.fish.audio` di network access environment.
+
+```bash
+node scripts/tts-api.mjs list eleven        # daftar suara perempuan Bahasa Indonesia
+node scripts/tts-api.mjs list fish
+ELEVEN_OWNER=<owner> node scripts/tts-api.mjs gen eleven <voice_id>
+node scripts/tts-api.mjs gen fish <model_id>
+KEEP_VO=1 npm run build
+```
+
 ## Struktur
 
 - `src/gfx.js`: raster pixel 320×180 (dither, sprite, font)
