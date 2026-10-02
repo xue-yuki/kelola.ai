@@ -1,0 +1,11 @@
+{
+  "name": "kelola-motion",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "voice": "node scripts/voice.mjs",
+    "audio": "node scripts/audio.mjs",
+    "render": "node scripts/render.mjs",
+    "build": "node scripts/voice.mjs && node scripts/audio.mjs && node scripts/render.mjs"
+  }
+}
