@@ -2,7 +2,7 @@
 //
 //   node scripts/tts-api.mjs list eleven      female Indonesian voices
 //   node scripts/tts-api.mjs list fish
-//   node scripts/tts-api.mjs gen eleven [voice_id]   default: Sarah (premade)
+//   node scripts/tts-api.mjs gen eleven [voice_id]   default: Jessica (premade)
 //   node scripts/tts-api.mjs gen fish <model_id>
 //
 // Free ElevenLabs plans can only use premade voices over the API; the
@@ -38,7 +38,7 @@ function curl(args, outFile) {
 }
 
 // Premade female voice; with eleven_multilingual_v2 it speaks Indonesian.
-const ELEVEN_DEFAULT = 'EXAVITQu4vr4xnSDxMaL';
+const ELEVEN_DEFAULT = 'cgSgspJ2msm6clMCkdW9';
 const say = (line) => line.say || line.text;
 
 const FEMALE = /(female|woman|women|girl|wanita|perempuan|cewe|cewek|ibu|kakak|mbak|lady)/i;

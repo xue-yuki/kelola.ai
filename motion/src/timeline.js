@@ -17,7 +17,6 @@ export const SCENES = [
 // espeak so it pronounces brand words the Indonesian way. Hosted TTS reads
 // `text` as is, or `say` where it needs a hint.
 export const VO = [
-  { scene: 1, at: 1.0, text: 'Ting. Ting. Ting.' },
   { scene: 1, at: 4.0, text: 'Pernah hitung, berapa jam sehari habis cuma buat balas chat pesanan?', tts: 'Pernah hitung, berapa jam sehari habis cuma buat balas cet pesanan?' },
   { scene: 2, at: 12.6, text: 'Ini Bu Sari.' },
   { scene: 2, at: 14.0, text: 'Warungnya laris.' },

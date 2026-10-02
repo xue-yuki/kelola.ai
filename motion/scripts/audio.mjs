@@ -180,9 +180,9 @@ fx.whoosh(S6.pull[0], 2.0, 0.05, false);
 WARUNGS.forEach((p, i) => {
   if (i > 0 && i % 9 === 0) fx.sparkle(litAt(i), [72, 74, 76, 79, 81, 84][i % 6], 0.02);
 });
-const iconTimes = [timing[22].at, timing[23].at, timing[24].at];
+const iconTimes = [timing[21].at, timing[22].at, timing[23].at];
 iconTimes.forEach((t, i) => fx.sparkle(t, [72, 76, 79][i], 0.06));
-const logoStart = timing[25].at - 0.7;
+const logoStart = timing[24].at - 0.7;
 fx.whoosh(logoStart, 1.3, 0.05);
 const chime = logoStart + 1.4;
 [84, 88, 91, 96].forEach((m, i) => tone(sfx, chime + i * 0.06, 0.02, mtof(m), { wave: 'triangle', vol: 0.05, decay: 0.4, release: 0.8 }));
@@ -249,7 +249,7 @@ for (const m of [48, 52, 55, 60]) tone(music, 84.0, 2.2, mtof(m + 12), { wave: '
 tone(music, 84.0, 2.2, mtof(36), { wave: 'triangle', vol: 0.18, release: 1.4 });
 
 // The breath before "data": silence the score, then a rising run.
-const dataLine = timing[15];
+const dataLine = timing[14];
 const pauseA = dataLine.at + dataLine.dur - 0.75;
 const pauseB = dataLine.at + dataLine.dur + 0.15;
 for (let i = Math.floor(pauseA * SR); i < Math.floor(pauseB * SR); i++) {

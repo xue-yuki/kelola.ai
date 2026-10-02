@@ -987,9 +987,9 @@ function recapIcon(s, i, cx, cy) {
 }
 
 function scene7(s, t, f, timing) {
-  const vo = (i) => (timing && timing[i] ? timing[i].at : [75.0, 77.0, 78.8, 81.3][i - 22]);
-  const iconTimes = [vo(22), vo(23), vo(24)];
-  const logoStart = vo(25) - 0.7;
+  const vo = (i) => (timing && timing[i] ? timing[i].at : [75.0, 77.0, 78.8, 81.3][i - 21]);
+  const iconTimes = [vo(21), vo(22), vo(23)];
+  const logoStart = vo(24) - 0.7;
   const logoDur = 1.4;
 
   const used = new Map();

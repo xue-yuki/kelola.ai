@@ -34,7 +34,7 @@ Timing subtitle dan ducking musik ikut menyesuaikan durasi rekaman. Kalau ada ka
 Simpan key sebagai environment variable `ELEVENLABS_API_KEY`, lalu izinkan domain `api.elevenlabs.io` di network access environment.
 
 ```bash
-npm run build:eleven        # narasi ElevenLabs (Sarah) -> audio -> render
+npm run build:eleven        # narasi ElevenLabs (Jessica) -> audio -> render
 ```
 
 Kalau mau ganti suara: `node scripts/tts-api.mjs gen eleven <voice_id> && KEEP_VO=1 npm run build`.
@@ -43,9 +43,9 @@ Suara bawaan (premade) yang perempuan dan bisa dipakai di paket gratis. Semuanya
 
 | Suara | voice_id |
 |---|---|
-| Sarah (default) | `EXAVITQu4vr4xnSDxMaL` |
+| Sarah | `EXAVITQu4vr4xnSDxMaL` |
 | Matilda | `XrExE9yKIg1WjnnlVkGX` |
-| Jessica | `cgSgspJ2msm6clMCkdW9` |
+| Jessica (default) | `cgSgspJ2msm6clMCkdW9` |
 | Bella | `hpp4J3VqNfWAUOO0d1Us` |
 
 Suara asli Indonesia dari Voice Library (`node scripts/tts-api.mjs list eleven`) butuh paket berbayar. Pakai dengan `ELEVEN_OWNER=<owner> node scripts/tts-api.mjs gen eleven <voice_id>`.
