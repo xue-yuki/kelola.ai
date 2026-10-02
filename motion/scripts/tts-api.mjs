@@ -2,8 +2,11 @@
 //
 //   node scripts/tts-api.mjs list eleven      female Indonesian voices
 //   node scripts/tts-api.mjs list fish
-//   node scripts/tts-api.mjs gen eleven <voice_id>
+//   node scripts/tts-api.mjs gen eleven [voice_id]   default: Sarah (premade)
 //   node scripts/tts-api.mjs gen fish <model_id>
+//
+// Free ElevenLabs plans can only use premade voices over the API; the
+// shared-library voices from `list eleven` need a paid plan.
 //
 // Keys come from ELEVENLABS_API_KEY / FISH_API_KEY. `gen` writes
 // out/vo/line-XX.wav; then run: KEEP_VO=1 npm run build
@@ -33,6 +36,10 @@ function curl(args, outFile) {
   if (outFile) return execFileSync('curl', [...base, '-o', outFile, ...args]);
   return execFileSync('curl', [...base, ...args], { maxBuffer: 64 * 1024 * 1024 }).toString();
 }
+
+// Premade female voice; with eleven_multilingual_v2 it speaks Indonesian.
+const ELEVEN_DEFAULT = 'EXAVITQu4vr4xnSDxMaL';
+const say = (line) => line.say || line.text;
 
 const FEMALE = /(female|woman|women|girl|wanita|perempuan|cewe|cewek|ibu|kakak|mbak|lady)/i;
 
@@ -96,7 +103,7 @@ function genEleven(id) {
   VO.forEach((line, i) => {
     const base = path.join(VODIR, `line-${String(i + 1).padStart(2, '0')}`);
     const body = {
-      text: line.tts || line.text,
+      text: say(line),
       model_id: model,
       voice_settings: { stability: 0.55, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true },
     };
@@ -112,7 +119,7 @@ function genFish(id) {
   const model = process.env.FISH_MODEL || 's1';
   VO.forEach((line, i) => {
     const base = path.join(VODIR, `line-${String(i + 1).padStart(2, '0')}`);
-    const body = { text: line.tts || line.text, reference_id: id, format: 'mp3', mp3_bitrate: 128, normalize: true, latency: 'normal' };
+    const body = { text: say(line), reference_id: id, format: 'mp3', mp3_bitrate: 128, normalize: true, latency: 'normal' };
     curl(['-X', 'POST', '-H', `Authorization: Bearer ${k}`, '-H', `model: ${model}`, '-H', 'Content-Type: application/json',
       '-d', JSON.stringify(body), 'https://api.fish.audio/v1/tts'], base + '.mp3');
     toWav(base + '.mp3', base + '.wav');
@@ -126,10 +133,13 @@ if (cmd === 'list' && (provider === 'eleven' || provider === 'fish')) {
   fs.writeFileSync(path.join(OUT, `voices-${provider}.json`), JSON.stringify(rows, null, 2));
   rows.forEach((r, i) => console.log(`${String(i + 1).padStart(2)}. ${r.name}  [${r.id}]${r.owner ? ` owner=${r.owner}` : ''}\n    ${r.info}\n    ${r.preview}`));
   console.log(`\n${rows.length} suara -> out/voices-${provider}.json`);
-} else if (cmd === 'gen' && voiceId && (provider === 'eleven' || provider === 'fish')) {
-  provider === 'eleven' ? genEleven(voiceId) : genFish(voiceId);
+} else if (cmd === 'gen' && provider === 'eleven') {
+  genEleven(voiceId || ELEVEN_DEFAULT);
+  console.log('selesai. lanjut: KEEP_VO=1 npm run build');
+} else if (cmd === 'gen' && voiceId && provider === 'fish') {
+  genFish(voiceId);
   console.log('selesai. lanjut: KEEP_VO=1 npm run build');
 } else {
-  console.log('usage: node scripts/tts-api.mjs list <eleven|fish> | gen <eleven|fish> <voice_id>');
+  console.log('usage: node scripts/tts-api.mjs list <eleven|fish> | gen eleven [voice_id] | gen fish <model_id>');
   process.exit(1);
 }

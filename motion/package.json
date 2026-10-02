@@ -6,6 +6,7 @@
     "voice": "node scripts/voice.mjs",
     "audio": "node scripts/audio.mjs",
     "render": "node scripts/render.mjs",
-    "build": "node scripts/voice.mjs && node scripts/audio.mjs && node scripts/render.mjs"
+    "build": "node scripts/voice.mjs && node scripts/audio.mjs && node scripts/render.mjs",
+    "build:eleven": "node scripts/tts-api.mjs gen eleven && KEEP_VO=1 npm run build"
   }
 }

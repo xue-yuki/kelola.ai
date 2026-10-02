@@ -13,8 +13,9 @@ export const SCENES = [
   { id: 7, name: 'rangkuman', start: 74, end: 88 },
 ];
 
-// Narration. `at` is the absolute start; `tts` is the spelling fed to the
-// synthesizer so it pronounces brand words the Indonesian way.
+// Narration. `at` is the absolute start; `tts` is the spelling fed to
+// espeak so it pronounces brand words the Indonesian way. Hosted TTS reads
+// `text` as is, or `say` where it needs a hint.
 export const VO = [
   { scene: 1, at: 1.0, text: 'Ting. Ting. Ting.' },
   { scene: 1, at: 4.0, text: 'Pernah hitung, berapa jam sehari habis cuma buat balas chat pesanan?', tts: 'Pernah hitung, berapa jam sehari habis cuma buat balas cet pesanan?' },
@@ -25,23 +26,23 @@ export const VO = [
   { scene: 3, at: 25.6, text: 'Ada yang telat dibalas.' },
   { scene: 3, at: 27.6, text: 'Ada pelanggan yang batal.' },
   { scene: 3, at: 29.7, text: 'Ada catatan yang salah hitung.' },
-  { scene: 4, at: 35.0, text: 'Di sinilah Kelola.ai bekerja.', tts: 'Di sinilah Kelola A I bekerja.' },
-  { scene: 4, at: 37.6, text: 'Agen AI membaca setiap pesan WhatsApp,', tts: 'Agen A I membaca setiap pesan wotsep,' },
+  { scene: 4, at: 35.0, text: 'Di sinilah Kelola.ai bekerja.', tts: 'Di sinilah Kelola A I bekerja.', say: 'Di sinilah Kelola A.I. bekerja.' },
+  { scene: 4, at: 37.6, text: 'Agen AI membaca setiap pesan WhatsApp,', tts: 'Agen A I membaca setiap pesan wotsep,', say: 'Agen A.I. membaca setiap pesan WhatsApp,' },
   { scene: 4, at: 40.6, text: 'mengecek menu dan stok,' },
-  { scene: 4, at: 42.4, text: 'lalu membalas dalam hitungan detik.' },
+  { scene: 4, at: 42.6, text: 'lalu membalas dalam hitungan detik.' },
   { scene: 4, at: 45.2, text: 'Pesanannya langsung tercatat rapi, siang maupun malam.' },
   { scene: 5, at: 50.4, text: 'Lalu ada kejutan kecil.' },
   { scene: 5, at: 52.6, text: 'Setiap chat ternyata adalah data.', tts: 'Setiap cet ternyata adalah data.' },
   { scene: 5, at: 55.6, text: 'Dari situ kelihatan produk mana yang paling laku,' },
-  { scene: 5, at: 58.8, text: 'dan jam berapa pembeli paling ramai.' },
+  { scene: 5, at: 59.0, text: 'dan jam berapa pembeli paling ramai.' },
   { scene: 6, at: 62.8, text: 'Bu Sari kini punya waktu lagi.' },
   { scene: 6, at: 65.2, text: 'Ia menyiapkan stok yang tepat,' },
   { scene: 6, at: 67.5, text: 'melayani pembeli dengan senyum,' },
-  { scene: 6, at: 69.8, text: 'dan membiarkan HP-nya bekerja sendiri.', tts: 'dan membiarkan hape-nya bekerja sendiri.' },
+  { scene: 6, at: 69.8, text: 'dan membiarkan HP-nya bekerja sendiri.', tts: 'dan membiarkan hape-nya bekerja sendiri.', say: 'dan membiarkan hape-nya bekerja sendiri.' },
   { scene: 7, at: 75.0, text: 'Pesan dibalas otomatis.' },
   { scene: 7, at: 77.0, text: 'Pesanan tercatat.' },
   { scene: 7, at: 78.8, text: 'Keputusan berdasarkan data.' },
-  { scene: 7, at: 81.3, text: 'Kelola.ai -', tts: 'Kelola A I.' },
+  { scene: 7, at: 81.3, text: 'Kelola.ai -', tts: 'Kelola A I.', say: 'Kelola A.I.' },
   { scene: 7, at: 82.6, text: 'satu platform, bisnis lokal makin pintar.' },
 ];
 

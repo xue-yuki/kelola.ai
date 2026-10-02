@@ -29,17 +29,30 @@ Hasil ada di `out/`:
 
 Timing subtitle dan ducking musik ikut menyesuaikan durasi rekaman. Kalau ada kalimat yang menabrak kalimat berikutnya, `npm run voice` akan memberi peringatan. Geser nilai `at`-nya di `src/timeline.js`.
 
-## Narasi dari ElevenLabs / Fish Audio
+## Narasi dari ElevenLabs (suara cewek)
 
-Simpan key sebagai environment variable `ELEVENLABS_API_KEY` atau `FISH_API_KEY`, lalu izinkan domain `api.elevenlabs.io` / `api.fish.audio` di network access environment.
+Simpan key sebagai environment variable `ELEVENLABS_API_KEY`, lalu izinkan domain `api.elevenlabs.io` di network access environment.
 
 ```bash
-node scripts/tts-api.mjs list eleven        # daftar suara perempuan Bahasa Indonesia
-node scripts/tts-api.mjs list fish
-ELEVEN_OWNER=<owner> node scripts/tts-api.mjs gen eleven <voice_id>
-node scripts/tts-api.mjs gen fish <model_id>
-KEEP_VO=1 npm run build
+npm run build:eleven        # narasi ElevenLabs (Sarah) -> audio -> render
 ```
+
+Kalau mau ganti suara: `node scripts/tts-api.mjs gen eleven <voice_id> && KEEP_VO=1 npm run build`.
+
+Suara bawaan (premade) yang perempuan dan bisa dipakai di paket gratis. Semuanya bicara Bahasa Indonesia lewat `eleven_multilingual_v2`:
+
+| Suara | voice_id |
+|---|---|
+| Sarah (default) | `EXAVITQu4vr4xnSDxMaL` |
+| Matilda | `XrExE9yKIg1WjnnlVkGX` |
+| Jessica | `cgSgspJ2msm6clMCkdW9` |
+| Bella | `hpp4J3VqNfWAUOO0d1Us` |
+
+Suara asli Indonesia dari Voice Library (`node scripts/tts-api.mjs list eleven`) butuh paket berbayar. Pakai dengan `ELEVEN_OWNER=<owner> node scripts/tts-api.mjs gen eleven <voice_id>`.
+
+Teks yang dibaca ElevenLabs adalah `text` di `src/timeline.js`, atau `say` kalau ada (untuk "Kelola A.I.", "hape"). `tts` khusus untuk espeak.
+
+Fish Audio juga didukung: `FISH_API_KEY`, `node scripts/tts-api.mjs list fish`, `node scripts/tts-api.mjs gen fish <model_id>`.
 
 ## Struktur
 
