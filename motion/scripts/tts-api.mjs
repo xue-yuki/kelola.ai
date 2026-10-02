@@ -37,7 +37,7 @@ function curl(args, outFile) {
   return execFileSync('curl', [...base, ...args], { maxBuffer: 64 * 1024 * 1024 }).toString();
 }
 
-// Premade female voice; with eleven_multilingual_v2 it speaks Indonesian.
+// Premade female voice; eleven_v3 and eleven_multilingual_v2 both speak Indonesian.
 const ELEVEN_DEFAULT = 'cgSgspJ2msm6clMCkdW9';
 const say = (line) => line.say || line.text;
 
@@ -81,14 +81,27 @@ function listFish() {
 }
 
 // ---- generate --------------------------------------------------------
+// Hosted voices leave quiet tails and long dramatic pauses that throw off
+// the timeline: cut silence at both ends, cap inner pauses at 0.3 s.
+const TIDY = [
+  'silenceremove=start_periods=1:start_threshold=-35dB',
+  'silenceremove=stop_periods=-1:stop_duration=0.3:stop_threshold=-35dB:stop_silence=0.3',
+  'areverse', 'silenceremove=start_periods=1:start_threshold=-35dB', 'areverse',
+].join(',');
+
 function toWav(src, dst) {
-  execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', src, '-ac', '1', '-ar', '44100', '-c:a', 'pcm_s16le', dst]);
+  execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-i', src, '-af', TIDY, '-ac', '1', '-ar', '44100', '-c:a', 'pcm_s16le', dst]);
   fs.unlinkSync(src);
 }
 
 function genEleven(id) {
   const k = key('ELEVENLABS_API_KEY');
-  const model = process.env.ELEVEN_MODEL || 'eleven_multilingual_v2';
+  const model = process.env.ELEVEN_MODEL || 'eleven_v3';
+  const v3 = model === 'eleven_v3';
+  // v3 only takes stability 0 / 0.5 / 1 and reads [mood] audio tags.
+  const settings = v3
+    ? { stability: 0.5, similarity_boost: 0.8 }
+    : { stability: 0.55, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true };
   const owner = process.env.ELEVEN_OWNER;
   // Shared-library voices must be added to "My Voices" before use.
   if (owner) {
@@ -103,9 +116,9 @@ function genEleven(id) {
   VO.forEach((line, i) => {
     const base = path.join(VODIR, `line-${String(i + 1).padStart(2, '0')}`);
     const body = {
-      text: say(line),
+      text: v3 && line.mood ? `[${line.mood}] ${say(line)}` : say(line),
       model_id: model,
-      voice_settings: { stability: 0.55, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true },
+      voice_settings: settings,
     };
     curl(['-X', 'POST', '-H', `xi-api-key: ${k}`, '-H', 'Content-Type: application/json', '-d', JSON.stringify(body),
       `https://api.elevenlabs.io/v1/text-to-speech/${id}?output_format=mp3_44100_128`], base + '.mp3');

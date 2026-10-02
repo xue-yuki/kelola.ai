@@ -39,7 +39,9 @@ npm run build:eleven        # narasi ElevenLabs (Jessica) -> audio -> render
 
 Kalau mau ganti suara: `node scripts/tts-api.mjs gen eleven <voice_id> && KEEP_VO=1 npm run build`.
 
-Suara bawaan (premade) yang perempuan dan bisa dipakai di paket gratis. Semuanya bicara Bahasa Indonesia lewat `eleven_multilingual_v2`:
+Modelnya `eleven_v3` (ekspresif). Tiap kalimat di `src/timeline.js` bisa diberi `mood` (misal `curious`, `excited`, `sighs`) yang dikirim sebagai audio tag `[mood]`; subtitle tidak ikut. Untuk suara yang lebih datar dan stabil: `ELEVEN_MODEL=eleven_multilingual_v2`. Hening di awal/akhir klip dipotong dan jeda di tengah kalimat dibatasi 0,3 detik.
+
+Suara bawaan (premade) yang perempuan dan bisa dipakai di paket gratis:
 
 | Suara | voice_id |
 |---|---|
