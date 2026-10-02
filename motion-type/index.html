@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Kelola.ai — Satu Kata, Satu Fitur</title>
+<style>
+  @font-face { font-family: 'Jakarta'; font-weight: 500; src: url(node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Jakarta'; font-weight: 600; src: url(node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-600-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Jakarta'; font-weight: 700; src: url(node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Jakarta'; font-weight: 800; src: url(node_modules/@fontsource/plus-jakarta-sans/files/plus-jakarta-sans-latin-800-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 400; src: url(node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 500; src: url(node_modules/@fontsource/inter/files/inter-latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 600; src: url(node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2) format('woff2'); }
+
+  :root {
+    --orange: #FF6B2B;
+    --orange-soft: #FFE8DC;
+    --ink: #1A1A2E;
+    --muted: #6B7280;
+    --cream: #FFF8F4;
+    --line: #EDE4DD;
+    --card: #FFFFFF;
+    --chip: #F5EFEA;
+    --d-bg: #1A1A2E;
+    --d-card: #22223A;
+    --d-line: #33334D;
+    --d-muted: #9CA3AF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--cream); }
+  body { font-family: 'Inter', sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--cream); }
+  .abs { position: absolute; }
+  .jk { font-family: 'Jakarta', sans-serif; }
+
+  /* frame guides */
+  .guide { position: absolute; background: var(--line); transform-origin: 0 0; }
+
+  #topbar { position: absolute; left: 160px; right: 160px; top: 56px; height: 40px; display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-family: 'Jakarta'; font-weight: 800; letter-spacing: -0.03em; }
+  .logo .dot { color: var(--orange); }
+  #tb-logo { font-size: 30px; }
+  #tb-idx { font-size: 20px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; display: flex; gap: 18px; align-items: center; }
+  #tb-num { color: var(--orange); }
+  #progress { position: absolute; left: 160px; width: 1600px; top: 1000px; height: 2px; background: var(--line); }
+  #progress-fill { height: 100%; width: 100%; background: var(--orange); transform-origin: 0 0; }
+
+  .mask { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.04em 0.02em 0.24em; margin: -0.04em -0.02em -0.24em; }
+  .mask > span { display: inline-block; will-change: transform; }
+
+  #hero { position: absolute; left: 160px; top: 300px; }
+  #eyebrow { font-size: 24px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--orange); margin-bottom: 36px; }
+  .h-line { font-family: 'Jakarta'; font-weight: 800; font-size: 150px; line-height: 1.02; letter-spacing: -0.045em; white-space: nowrap; }
+  .accent { color: var(--orange); }
+  .p { margin-left: -0.09em; }
+
+  .section { position: absolute; inset: 0; display: none; }
+  .slam { position: absolute; left: 0; top: 0; transform-origin: 0 0; font-family: 'Jakarta'; font-weight: 800; line-height: 1; letter-spacing: -0.05em; white-space: nowrap; }
+  .slam span { display: inline-block; transform-origin: 50% 80%; }
+  .feat { position: absolute; left: 160px; top: 500px; width: 720px; }
+  .feat-label { font-size: 24px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--orange); margin-bottom: 18px; }
+  .feat-desc { font-family: 'Jakarta'; font-size: 44px; font-weight: 600; line-height: 1.22; letter-spacing: -0.02em; }
+
+  .card { position: absolute; left: 1000px; top: 230px; width: 760px; border-radius: 28px; border: 1.5px solid var(--line); background: var(--card); overflow: hidden; }
+  .dark .card { background: var(--d-card); border-color: var(--d-line); color: #fff; }
+  .card-h { display: flex; align-items: center; gap: 18px; padding: 26px 32px; border-bottom: 1.5px solid var(--line); }
+  .dark .card-h { border-color: var(--d-line); }
+  .muted { color: var(--muted); }
+  .dark .muted { color: var(--d-muted); }
+
+  /* chat */
+  .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--orange); color: #fff; display: grid; place-items: center; font-family: 'Jakarta'; font-weight: 800; font-size: 22px; }
+  .chat-body { padding: 30px 32px 34px; display: flex; flex-direction: column; gap: 18px; min-height: 400px; }
+  .bubble { max-width: 520px; padding: 20px 24px; border-radius: 24px; font-size: 27px; line-height: 1.38; }
+  .b-in { align-self: flex-start; background: var(--chip); border-bottom-left-radius: 8px; transform-origin: 0 100%; }
+  .b-out { align-self: flex-end; background: var(--orange); color: #fff; border-bottom-right-radius: 8px; transform-origin: 100% 100%; }
+  .typing { align-self: flex-end; background: var(--orange-soft); padding: 22px 26px; border-radius: 24px; border-bottom-right-radius: 8px; display: flex; gap: 10px; transform-origin: 100% 100%; }
+  .typing i { width: 12px; height: 12px; border-radius: 50%; background: var(--orange); display: block; }
+  .meta { align-self: flex-end; display: flex; gap: 10px; align-items: center; font-size: 22px; font-weight: 500; }
+
+  /* rows */
+  .rows { padding: 12px 32px 28px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; padding: 18px 0; border-bottom: 1.5px solid var(--line); font-size: 28px; }
+  .dark .row { border-color: var(--d-line); }
+  .row b { font-weight: 600; }
+  .row.total { border-bottom: 0; font-family: 'Jakarta'; font-weight: 800; font-size: 34px; }
+  .badge { display: inline-flex; gap: 10px; align-items: center; font-size: 20px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--orange); color: var(--orange); letter-spacing: 0.04em; }
+  .omzet { padding: 26px 32px 30px; border-top: 1.5px solid var(--line); display: flex; justify-content: space-between; align-items: flex-end; }
+  .dark .omzet { border-color: var(--d-line); }
+  .big-num { font-family: 'Jakarta'; font-weight: 800; font-size: 56px; letter-spacing: -0.03em; }
+  .bar { height: 18px; border-radius: 999px; background: var(--chip); overflow: hidden; margin-top: 16px; }
+  .bar i { display: block; height: 100%; background: var(--orange); border-radius: 999px; transform-origin: 0 0; }
+
+  #stack { position: absolute; left: 160px; top: 170px; display: none; }
+  .s-line { display: flex; align-items: baseline; gap: 40px; height: 168px; }
+  .s-word { font-family: 'Jakarta'; font-weight: 800; font-size: 150px; letter-spacing: -0.045em; line-height: 1; }
+  .s-tag { font-size: 30px; font-weight: 500; color: var(--muted); }
+  #tagline { position: absolute; left: 160px; top: 360px; display: none; }
+  .t-line { font-family: 'Jakarta'; font-weight: 800; font-size: 136px; letter-spacing: -0.045em; line-height: 1.04; white-space: nowrap; }
+
+  #end { position: absolute; inset: 0; display: none; background: var(--orange); color: #fff; }
+  #end-logo { position: absolute; left: 0; right: 0; top: 330px; text-align: center; font-size: 240px; }
+  #end-logo .dot { color: var(--ink); }
+  #end-price { position: absolute; left: 0; right: 0; top: 650px; text-align: center; font-size: 40px; font-weight: 600; letter-spacing: -0.01em; }
+  #end-cta { position: absolute; left: 50%; top: 750px; transform: translateX(-50%); background: #fff; color: var(--ink); font-family: 'Jakarta'; font-weight: 700; font-size: 34px; padding: 22px 46px; border-radius: 999px; }
+
+  #wipe { position: absolute; inset: 0; background: var(--orange); transform: translateX(-100%); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="guides"></div>
+  <div id="topbar">
+    <div id="tb-logo" class="logo">kelola<span class="dot">.</span>ai</div>
+    <div id="tb-idx"><span id="tb-num">01</span><span id="tb-name">Balas</span></div>
+  </div>
+  <div id="progress"><div id="progress-fill"></div></div>
+
+  <div id="hero">
+    <div id="eyebrow"><span class="mask"><span>Untuk UMKM Indonesia</span></span></div>
+    <div class="h-line" data-words="Bisnis|lokal|kamu,"></div>
+    <div class="h-line" data-words="dikelola|lebih|*cerdas."></div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div id="stack"></div>
+  <div id="tagline">
+    <div class="t-line" data-words="Satu|platform,"></div>
+    <div class="t-line" data-words="bisnis|lokal|makin|*pintar."></div>
+  </div>
+
+  <div id="end">
+    <div id="end-logo" class="logo"></div>
+    <div id="end-price"><span class="mask"><span>Rp 99.000/bulan &nbsp;·&nbsp; Tanpa komisi</span></span></div>
+    <div id="end-cta">Coba gratis</div>
+  </div>
+
+  <div id="wipe"></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------
+// Everything below is a pure function of time: render(t) sets the frame.
+// ---------------------------------------------------------------------
+const W = 1920, H = 1080;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, u) => a + (b - a) * u;
+const expoOut = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const expoIn = (x) => (x <= 0 ? 0 : Math.pow(2, 10 * x - 10));
+const expoInOut = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? Math.pow(2, 20 * x - 10) / 2 : (2 - Math.pow(2, -20 * x + 10)) / 2);
+const backOut = (x) => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const rp = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const CHECK = (c = 'currentColor', s = 26) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>`;
+
+function wordsInto(el) {
+  el.innerHTML = el.dataset.words.split('|').map((w) => {
+    const acc = w.startsWith('*');
+    const txt = (acc ? w.slice(1) : w).replace(/([.,])$/, '<span class="p">$1</span>');
+    return `<span class="mask"><span class="${acc ? 'accent' : ''}">${txt}</span></span>`;
+  }).join(' ');
+}
+$$('[data-words]').forEach(wordsInto);
+
+// frame guides
+const GUIDES = [
+  { x: 160, y: 120, w: 1600, h: 1.5 }, { x: 160, y: 960, w: 1600, h: 1.5 },
+  { x: 160, y: 120, w: 1.5, h: 840 }, { x: 1760, y: 120, w: 1.5, h: 840 },
+];
+GUIDES.forEach((g, i) => {
+  const d = document.createElement('div');
+  d.className = 'guide';
+  Object.assign(d.style, { left: g.x + 'px', top: g.y + 'px', width: g.w + 'px', height: g.h + 'px' });
+  $('#guides').appendChild(d);
+});
+
+// ---------------------------------------------------------------------
+// Sections
+// ---------------------------------------------------------------------
+const SECTIONS = [
+  {
+    key: 'balas', word: 'BALAS.', start: 4, dark: false,
+    label: 'AI Agent WA & Telegram', desc: 'Auto-reply pesanan 24/7 tanpa perlu balas manual.',
+    card: `
+      <div class="card-h"><div class="avatar">WS</div>
+        <div><div class="jk" style="font-weight:700;font-size:28px">Warung Sari</div>
+        <div class="muted" style="font-size:21px;display:flex;align-items:center;gap:8px"><i style="width:10px;height:10px;border-radius:50%;background:var(--orange);display:block"></i>Agen AI aktif</div></div></div>
+      <div class="chat-body">
+        <div class="bubble b-in" data-a="m1">Kak, es teh 2 sama gorengan 5 ya</div>
+        <div class="typing" data-a="typing"><i></i><i></i><i></i></div>
+        <div class="bubble b-out" data-a="m2">Siap kak! Es teh 2 + gorengan 5, totalnya Rp 20.000. Pesanan sudah dicatat.</div>
+        <div class="meta muted" data-a="meta">${CHECK('#FF6B2B', 24)} Dibalas otomatis dalam 2 detik</div>
+      </div>`,
+  },
+  {
+    key: 'catat', word: 'CATAT.', start: 8, dark: true,
+    label: 'Kasir Digital (POS)', desc: 'Catat transaksi offline & online di satu tempat.',
+    card: `
+      <div class="card-h" style="justify-content:space-between"><div class="jk" style="font-weight:700;font-size:28px">Transaksi baru</div><span class="badge" data-a="badge">Via WhatsApp</span></div>
+      <div class="rows">
+        <div class="row" data-a="r1"><span>Es teh <span class="muted">×2</span></span><b>Rp 10.000</b></div>
+        <div class="row" data-a="r2"><span>Gorengan <span class="muted">×5</span></span><b>Rp 10.000</b></div>
+        <div class="row total" data-a="r3"><span>Total</span><span data-n="total">Rp 20.000</span></div>
+      </div>
+      <div class="omzet" data-a="omzet"><div><div class="muted" style="font-size:22px;margin-bottom:6px">Omzet hari ini</div><div class="big-num" data-n="omzet">Rp 1.240.000</div></div>
+        <div class="jk" style="color:var(--orange);font-weight:700;font-size:28px" data-a="plus">+Rp 20.000</div></div>`,
+  },
+  {
+    key: 'hitung', word: 'HITUNG.', start: 12, dark: false,
+    label: 'Kalkulasi HPP Otomatis', desc: 'Hitung harga pokok produksi dengan akurat.',
+    card: `
+      <div class="card-h" style="justify-content:space-between"><div class="jk" style="font-weight:700;font-size:28px">HPP · Es Teh</div><span class="muted" style="font-size:22px">per gelas</span></div>
+      <div class="rows">
+        <div class="row" data-a="h1"><span>Teh &amp; gula</span><b>Rp 1.200</b></div>
+        <div class="row" data-a="h2"><span>Es batu</span><b>Rp 600</b></div>
+        <div class="row" data-a="h3"><span>Gelas &amp; sedotan</span><b>Rp 400</b></div>
+        <div class="row" data-a="h4" style="font-weight:600"><span>HPP</span><span class="jk" style="font-weight:800" data-n="hpp">Rp 2.200</span></div>
+        <div class="row total" data-a="h5"><span>Margin</span><span style="color:var(--orange)" data-n="margin">56%</span></div>
+        <div class="bar" data-a="h6"><i data-a="fill"></i></div>
+        <div class="muted" style="font-size:21px;margin-top:14px;display:flex;justify-content:space-between" data-a="h7"><span>HPP Rp 2.200</span><span>Harga jual Rp 5.000</span></div>
+      </div>`,
+  },
+  {
+    key: 'prediksi', word: 'PREDIKSI.', start: 16, dark: true,
+    label: 'Prediksi Pendapatan', desc: 'AI forecast pendapatan bulan depan berbasis data.',
+    card: `
+      <div class="card-h" style="justify-content:space-between"><div class="jk" style="font-weight:700;font-size:28px">Prediksi November</div><span class="muted" style="font-size:22px">AI forecast</span></div>
+      <div style="padding:26px 32px 10px">
+        <div class="big-num" style="font-size:72px" data-n="pred">Rp 12,4 jt</div>
+        <div class="jk" style="color:var(--orange);font-weight:700;font-size:28px;margin-top:4px" data-a="pct">+18% dari Oktober</div>
+      </div>
+      <svg width="760" height="300" viewBox="0 0 760 300" style="display:block">
+        <g data-a="chart"></g>
+      </svg>`,
+  },
+];
+
+const secRoot = $('#sections');
+for (const s of SECTIONS) {
+  const el = document.createElement('div');
+  el.className = 'section' + (s.dark ? ' dark' : '');
+  el.id = 'sec-' + s.key;
+  el.innerHTML = `
+    <div class="slam">${[...s.word].map((c) => `<span${c === '.' ? ' class="p"' : ''}>${c}</span>`).join('')}</div>
+    <div class="feat"><div class="feat-label"><span class="mask"><span>${s.label}</span></span></div>
+      <div class="feat-desc">${s.desc.split(' ').map((w) => `<span class="mask"><span>${w}</span></span>`).join(' ')}</div></div>
+    <div class="card">${s.card}</div>`;
+  if (s.dark) el.querySelectorAll('.feat-desc').forEach((d) => (d.style.color = '#fff'));
+  secRoot.appendChild(el);
+  s.el = el;
+  s.slam = $('.slam', el);
+  s.letters = $$('.slam span', el);
+  s.card = $('.card', el);
+  s.a = Object.fromEntries($$('[data-a]', el).map((n) => [n.dataset.a, n]));
+  s.n = Object.fromEntries($$('[data-n]', el).map((n) => [n.dataset.n, n]));
+  s.featMasks = $$('.feat .mask > span', el);
+}
+
+// chart geometry for PREDIKSI
+const CH = (() => {
+  const vals = [7.1, 7.8, 8.4, 9.0, 9.9, 10.5, 12.4];
+  const months = ['Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov'];
+  const x0 = 48, x1 = 712, y0 = 240, y1 = 30;
+  const pts = vals.map((v, i) => [x0 + ((x1 - x0) * i) / 6, y0 - ((v - 6.5) / (12.6 - 6.5)) * (y0 - y1)]);
+  const g = $('[data-a="chart"]');
+  const path = (a) => a.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  let html = '';
+  for (let i = 0; i < 4; i++) html += `<line x1="${x0}" x2="${x1}" y1="${y1 + i * 70}" y2="${y1 + i * 70}" stroke="#33334D" stroke-width="1.5"/>`;
+  html += `<path id="actual" d="${path(pts.slice(0, 6))}" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  html += `<path id="fore" d="${path(pts.slice(5))}" fill="none" stroke="#FF6B2B" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 12"/>`;
+  pts.forEach((p, i) => (html += `<circle class="cdot" cx="${p[0]}" cy="${p[1]}" r="${i === 6 ? 11 : 7}" fill="${i === 6 ? '#FF6B2B' : '#fff'}"/>`));
+  months.forEach((m, i) => (html += `<text x="${pts[i][0]}" y="288" text-anchor="middle" font-family="Inter" font-weight="500" font-size="21" fill="${i === 6 ? '#FF6B2B' : '#9CA3AF'}">${m}</text>`));
+  g.innerHTML = html;
+  const actual = $('#actual');
+  const len = actual.getTotalLength();
+  actual.style.strokeDasharray = len;
+  return { pts, len, actual, fore: $('#fore'), dots: $$('.cdot'), foreLen: $('#fore').getTotalLength() };
+})();
+
+// stack
+const STACK = [
+  ['Balas.', 'Auto-reply 24/7'], ['Catat.', 'Kasir digital'], ['Hitung.', 'HPP otomatis'], ['Prediksi.', 'Forecast AI'],
+];
+$('#stack').innerHTML = STACK.map(([w, tag]) => `<div class="s-line"><span class="mask s-word"><span>${w.replace(/\.$/, '<span class="p">.</span>')}</span></span><span class="mask s-tag"><span>${tag}</span></span></div>`).join('');
+
+// end logo
+$('#end-logo').innerHTML = [...'kelola.ai'].map((c) => `<span class="mask"${c === '.' ? ' style="margin-left:-0.07em;margin-right:-0.05em"' : ''}><span class="${c === '.' ? 'dot' : ''}">${c}</span></span>`).join('');
+
+// measure slam words once fonts are ready
+function measure() {
+  for (const s of SECTIONS) {
+    s.el.style.display = 'block';
+    s.el.style.visibility = 'hidden';
+    s.slam.style.fontSize = '100px';
+    const w100 = s.slam.getBoundingClientRect().width;
+    const size = Math.min(400, (1600 / w100) * 100);
+    s.size = size;
+    s.slam.style.fontSize = size + 'px';
+    s.bigW = s.slam.getBoundingClientRect().width;
+    s.bigH = size;
+    s.el.style.display = 'none';
+    s.el.style.visibility = '';
+  }
+}
+
+// ---------------------------------------------------------------------
+// helpers
+// ---------------------------------------------------------------------
+function reveal(el, t, at, dur = 0.55, dist = 105) {
+  const u = expoOut(seg(t, at, at + dur));
+  el.style.transform = `translateY(${(1 - u) * dist}%)`;
+}
+function conceal(el, t, at, dur = 0.35) {
+  const u = expoIn(seg(t, at, at + dur));
+  if (u > 0) el.style.transform = `translateY(${-u * 105}%)`;
+}
+function pop(el, t, at, dur = 0.45, dy = 18) {
+  const u = seg(t, at, at + dur);
+  const e = backOut(u);
+  el.style.opacity = clamp(u * 3);
+  el.style.transform = `translateY(${(1 - expoOut(u)) * dy}px) scale(${lerp(0.88, 1, e)})`;
+}
+function show(el, on) { el.style.display = on ? 'block' : 'none'; }
+
+const SCENE_BG = (t) => {
+  if (t >= 24) return 'end';
+  if (t >= 20) return 'light';
+  if (t >= 16) return 'dark';
+  if (t >= 12) return 'light';
+  if (t >= 8) return 'dark';
+  return 'light';
+};
+const WIPES = [4, 8, 12, 16, 20];
+
+// ---------------------------------------------------------------------
+function render(t) {
+  const mode = SCENE_BG(t);
+  const dark = mode === 'dark';
+  const stage = $('#stage');
+  stage.style.background = dark ? 'var(--d-bg)' : 'var(--cream)';
+
+  // guides + chrome
+  $$('.guide').forEach((g, i) => {
+    const u = expoOut(seg(t, 0.1 + i * 0.12, 0.9 + i * 0.12));
+    g.style.transform = GUIDES[i].w > GUIDES[i].h ? `scaleX(${u})` : `scaleY(${u})`;
+    g.style.background = dark ? 'var(--d-line)' : 'var(--line)';
+  });
+  const chromeIn = expoOut(seg(t, 0.4, 1.0));
+  $('#topbar').style.opacity = chromeIn;
+  $('#topbar').style.color = dark ? '#fff' : 'var(--ink)';
+  $('#progress').style.background = dark ? 'var(--d-line)' : 'var(--line)';
+  $('#progress-fill').style.transform = `scaleX(${seg(t, 0, 24)})`;
+  const cur = SECTIONS.findIndex((s) => t >= s.start && t < s.start + 4);
+  const idx = $('#tb-idx');
+  if (cur >= 0) {
+    idx.style.opacity = 1;
+    $('#tb-num').textContent = String(cur + 1).padStart(2, '0') + ' / 04';
+    $('#tb-name').textContent = SECTIONS[cur].word.replace('.', '');
+  } else idx.style.opacity = 0;
+
+  // hero
+  const heroOn = t < 4;
+  show($('#hero'), heroOn);
+  if (heroOn) {
+    reveal($('#eyebrow .mask > span'), t, 0.8, 0.6);
+    conceal($('#eyebrow .mask > span'), t, 3.3);
+    $$('#hero .h-line .mask > span').forEach((w, i) => {
+      reveal(w, t, 1.0 + i * 0.09, 0.7);
+      conceal(w, t, 3.35 + i * 0.035);
+    });
+  }
+
+  // sections
+  for (const s of SECTIONS) {
+    const lt = t - s.start;
+    const on = lt >= 0 && lt < 4;
+    show(s.el, on);
+    if (!on) continue;
+    // slam letters
+    s.letters.forEach((l, i) => {
+      const at = 0.06 + i * 0.075;
+      const u = seg(lt, at, at + 0.22);
+      l.style.opacity = u > 0 ? 1 : 0;
+      l.style.transform = `translateY(${(1 - expoOut(u)) * 30}%) scale(${lerp(1.35, 1, expoOut(u))})`;
+    });
+    // big -> small
+    const m = expoInOut(seg(lt, 0.95, 1.5));
+    const small = 128 / s.size;
+    const sc = lerp(1, small, m);
+    const x = lerp((W - s.bigW) / 2, 160, m);
+    const y = lerp((H - s.bigH) / 2 - 20, 300, m);
+    s.slam.style.transform = `translate(${x}px, ${y}px) scale(${sc})`;
+    s.slam.style.color = dark ? '#fff' : 'var(--ink)';
+    // feature copy
+    s.featMasks.forEach((w, i) => reveal(w, lt, 1.3 + i * 0.045, 0.6));
+    // card
+    const cu = seg(lt, 1.15, 1.75);
+    s.card.style.opacity = clamp(cu * 2.5);
+    s.card.style.transform = `translateY(${(1 - expoOut(cu)) * 80}px)`;
+    // exit lift
+    const ex = expoIn(seg(lt, 3.55, 3.95));
+    s.el.style.transform = `translateX(${-ex * 120}px)`;
+    CARD[s.key](s, lt);
+  }
+
+  // stack + tagline
+  const st = t - 20;
+  show($('#stack'), st >= 0 && st < 2.5);
+  if (st >= 0 && st < 2.5) {
+    $$('#stack .s-line').forEach((line, i) => {
+      const [w, tag] = $$('.mask > span', line);
+      reveal(w, st, 0.08 + i * 0.5, 0.45);
+      reveal(tag, st, 0.25 + i * 0.5, 0.5);
+      conceal(w, st, 2.05 + i * 0.05, 0.3);
+      conceal(tag, st, 2.0 + i * 0.05, 0.3);
+    });
+  }
+  show($('#tagline'), st >= 2.2 && st < 4);
+  if (st >= 2.2 && st < 4) $$('#tagline .mask > span').forEach((w, i) => reveal(w, st, 2.3 + i * 0.08, 0.7));
+
+  // end card
+  const et = t - 24;
+  show($('#end'), et >= 0);
+  if (et >= 0) {
+    $$('#end-logo .mask > span').forEach((c, i) => reveal(c, et, 0.12 + i * 0.05, 0.7));
+    const dot = $('#end-logo .dot');
+    const pulse = seg(et, 2.4, 2.9);
+    dot.style.display = 'inline-block';
+    if (pulse > 0) dot.style.transform = `translateY(0) scale(${1 + Math.sin(pulse * Math.PI) * 0.35})`;
+    reveal($('#end-price .mask > span'), et, 0.9, 0.7);
+    const cta = $('#end-cta');
+    const cu = seg(et, 1.4, 1.9);
+    cta.style.opacity = clamp(cu * 3);
+    cta.style.transform = `translateX(-50%) scale(${lerp(0.85, 1, backOut(cu))})`;
+  }
+  $('#topbar').style.visibility = et >= 0 ? 'hidden' : 'visible';
+  $('#progress').style.visibility = et >= 0 ? 'hidden' : 'visible';
+
+  // wipes
+  const wipe = $('#wipe');
+  let wx = -100;
+  for (const T of WIPES) {
+    if (t >= T - 0.3 && t < T) wx = lerp(-100, 0, expoIn(seg(t, T - 0.3, T)));
+    else if (t >= T && t < T + 0.32) wx = lerp(0, 100, expoOut(seg(t, T, T + 0.32)));
+  }
+  if (t >= 23.7 && t < 24) wx = lerp(-100, 0, expoIn(seg(t, 23.7, 24)));
+  wipe.style.transform = `translateX(${wx}%)`;
+}
+
+// per-card animation, lt = seconds since section start
+const CARD = {
+  balas(s, lt) {
+    pop(s.a.m1, lt, 1.75);
+    const ty = seg(lt, 2.2, 2.75);
+    s.a.typing.style.display = lt >= 2.2 && lt < 2.75 ? 'flex' : 'none';
+    if (s.a.typing.style.display === 'flex') {
+      pop(s.a.typing, lt, 2.2, 0.3);
+      [...s.a.typing.children].forEach((d, i) => (d.style.transform = `translateY(${-Math.max(0, Math.sin((lt * 9) - i * 0.9)) * 8}px)`));
+    }
+    s.a.m2.style.display = lt >= 2.75 ? '' : 'none';
+    pop(s.a.m2, lt, 2.75);
+    pop(s.a.meta, lt, 3.15, 0.4, 10);
+  },
+  catat(s, lt) {
+    pop(s.a.badge, lt, 1.6, 0.4, 8);
+    pop(s.a.r1, lt, 1.85, 0.4, 14);
+    pop(s.a.r2, lt, 2.1, 0.4, 14);
+    pop(s.a.r3, lt, 2.35, 0.4, 14);
+    s.n.total.textContent = rp(20000 * expoOut(seg(lt, 2.35, 2.95)));
+    pop(s.a.omzet, lt, 1.5, 0.4, 10);
+    s.n.omzet.textContent = rp(1220000 + 20000 * expoOut(seg(lt, 2.9, 3.4)));
+    pop(s.a.plus, lt, 2.9, 0.4, 10);
+  },
+  hitung(s, lt) {
+    ['h1', 'h2', 'h3'].forEach((k, i) => pop(s.a[k], lt, 1.7 + i * 0.18, 0.4, 14));
+    pop(s.a.h4, lt, 2.3, 0.4, 14);
+    s.n.hpp.textContent = rp(2200 * expoOut(seg(lt, 2.3, 2.8)));
+    pop(s.a.h5, lt, 2.55, 0.4, 14);
+    pop(s.a.h6, lt, 2.55, 0.4, 8);
+    pop(s.a.h7, lt, 2.7, 0.4, 8);
+    const f = expoOut(seg(lt, 2.7, 3.4));
+    s.a.fill.style.transform = `scaleX(${0.56 * f})`;
+    s.n.margin.textContent = Math.round(56 * f) + '%';
+  },
+  prediksi(s, lt) {
+    const v = expoOut(seg(lt, 1.6, 2.6));
+    s.n.pred.textContent = 'Rp ' + (12.4 * v).toFixed(1).replace('.', ',') + ' jt';
+    pop(s.a.pct, lt, 2.4, 0.4, 10);
+    const d = seg(lt, 1.7, 2.7);
+    CH.actual.style.strokeDashoffset = CH.len * (1 - expoInOut(d));
+    const fd = expoOut(seg(lt, 2.75, 3.25));
+    CH.fore.style.opacity = fd > 0 ? 1 : 0;
+    CH.fore.style.clipPath = `inset(0 ${(1 - fd) * 100}% 0 0)`;
+    CH.dots.forEach((dot, i) => {
+      const at = i < 6 ? 1.7 + (i / 5) * 1.0 : 3.2;
+      const u = seg(lt, at, at + 0.3);
+      dot.style.transformOrigin = `${CH.pts[i][0]}px ${CH.pts[i][1]}px`;
+      dot.style.transform = `scale(${backOut(u) * (u > 0 ? 1 : 0)})`;
+    });
+  },
+};
+
+window.__ready = Promise.all(['500 10px Jakarta','600 10px Jakarta','700 10px Jakarta','800 10px Jakarta','400 10px Inter','500 10px Inter','600 10px Inter'].map((f) => document.fonts.load(f))).then(() => document.fonts.ready).then(() => { measure(); render(0); return true; });
+window.render = render;
+window.DURATION = 28;
+</script>
+</body>
+</html>
