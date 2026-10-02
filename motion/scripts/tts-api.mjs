@@ -58,8 +58,9 @@ function listFish() {
     const url = `https://api.fish.audio/model?page_size=50&page_number=${page}&language=id&sort_by=score`;
     const { items = [] } = JSON.parse(curl(['-H', `Authorization: Bearer ${k}`, url]));
     for (const m of items) {
-      const text = [m.title, m.description, ...(m.tags || [])].join(' ');
-      if (!FEMALE.test(text)) continue;
+      const tags = (m.tags || []).map((t) => String(t).toLowerCase());
+      const female = tags.length ? tags[0] === 'female' : FEMALE.test(`${m.title} ${m.description}`);
+      if (!female || tags.includes('character-voice') || tags.includes('asmr')) continue;
       rows.push({
         id: m._id,
         name: m.title,
